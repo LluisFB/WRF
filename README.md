@@ -26,3 +26,11 @@ $ git submodule update --init --recursive
 ```
 
 Listing available branches (all official from WRF v7.1) and the ones created by L Fita
+```
+$ git branch -a
+```
+
+To switch to any WRF branch
+```
+$ git checkout [branch_name]
+```
