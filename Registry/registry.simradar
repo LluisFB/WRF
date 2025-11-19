@@ -15,7 +15,10 @@ rconfig   real     distmax       namelist,simradar     1              250.    rh
 rconfig   real     heightmax     namelist,simradar     1               20.    rh{11}    "heightmax"         "maximum height for the radar signal"                    ""
 rconfig   real     radards       namelist,simradar     1              250.    rh{11}    "radards"           "nominal horizontal resolution of radar values in m"     ""
 rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
-rconfig   integer  interp        namelist,simradar     1                1     rh{11}    "interp"            "interpolation method (1: lineal)"                       ""
+rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
+rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency in minutes of time-debugging"                 ""
+rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude in degrees of grid-point debugging (-999., not used)"  ""
+rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude in degrees of grid-point debugging (-999., not used)"   ""
 
 ##
 # NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into the dimension {nzr}, therefore outputs will be
@@ -24,11 +27,13 @@ rconfig   integer  interp        namelist,simradar     1                1     rh
 ##
 
 # All bands variables
-state    real  GATELON     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
-state    real  GATELAT     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
-state    real  GATEHGT     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatehgt"           "ground radar gate height (4/3 Ref)"                       "m"
-state    real  GATEHWGHT   {ir}{jr}           misc        1       -      h{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "ms-1"
-state    real  VR          {nrz}{ir}{jr}      misc        1       -      h{11}    "vr"                "ground radar Doppler Velocity"                            "ms-1"
+state    real  GATELON     {nrz}{ir}{jr}      misc        1       -      rh{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
+state    real  GATELAT     {nrz}{ir}{jr}      misc        1       -      rh{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
+state    real  GATEHGT     {nrz}{ir}{jr}      misc        1       -      rh{11}    "gatehgt"           "ground radar gate height"                                 "m"
+state    real  GATEHWGHT   {nr}{ir}{jr}       misc        1       -      rh{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "1"
+state    real  VR          {nrz}{ir}{jr}      misc        1       -      rh{11}    "vr"                "ground radar Doppler Velocity"                            "ms-1"
+state    integer inradar   ij                 misc        1       -      r         "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
+state    integer radarnum  {nr}ij             misc        1       -      rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
 
 # S-band
 state    real  AIHTOT_S    {nrz}{ir}{jr}      misc        1       -      h{11}    "aihtot_s"          "S-band ground radar total attenuation"                    "dB/km"
