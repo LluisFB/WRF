@@ -3,17 +3,19 @@
 
 # simrad.AR package namelist options
 rconfig   integer  nradar        namelist,simradar     1              1       rh{11}    "nradar"            "amount of surface radar"                                ""
-rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"       ""
-rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"        ""
-rconfig   integer  e_radlon      namelist,simradar     1             1200     rh{11}    "e_radlon"          "radar grid points on the x-axis"                        ""
-rconfig   integer  e_radlat      namelist,simradar     1             1200     rh{11}    "e_radlat"          "radar grid points on the y-axis"                        ""
+rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
+rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
+rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
+rconfig   integer  em_ray        namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "em_ray"     "type of propagation of em ray. 1: 4/3 Ref"                                          ""
+rconfig   integer  e_radlon      namelist,simradar     1             1000     rh{11}    "e_radlon"          "radar grid points on the x-axis"                        ""
+rconfig   integer  e_radlat      namelist,simradar     1             1000     rh{11}    "e_radlat"          "radar grid points on the y-axis"                        ""
 rconfig   integer  e_radhgt      namelist,simradar     1               80     rh{11}    "e_radhgt"          "radar grid points on the z-axis"                        ""
-rconfig   integer  e_radnz       namelist,simradar     1             1000     rh{11}    "e_radnz"           "amount and height extent of radars (nradar)*(e_radhgt)" ""
-rconfig   real     distmax       namelist,simradar     1              300.    rh{11}    "distmax"           "maximum distance from radar in km"                      ""
-rconfig   real     heightmax     namelist,simradar     1              20.     rh{11}    "heightmax"         "maximum height for the radar signal"                    ""
+rconfig   integer  e_radnz       namelist,simradar     1             1600     rh{11}    "e_radnz"           "amount and height extent of radars (nradar)*(e_radhgt)" ""
+rconfig   real     distmax       namelist,simradar     1              250.    rh{11}    "distmax"           "maximum distance from radar in km"                      ""
+rconfig   real     heightmax     namelist,simradar     1               20.    rh{11}    "heightmax"         "maximum height for the radar signal"                    ""
 rconfig   real     radards       namelist,simradar     1              250.    rh{11}    "radards"           "nominal horizontal resolution of radar values in m"     ""
-rconfig   real     missing_vaue  namelist,simradar     1              1.e210  rh{11}    "missing_value"     "missing value"                                          ""
-rconfig   integer  interp        namelist,simradar     1              1       rh{11}    "interp"            "interpolation method (1: lineal)"                       ""
+rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
+rconfig   integer  interp        namelist,simradar     1                1     rh{11}    "interp"            "interpolation method (1: lineal)"                       ""
 
 ##
 # NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into the dimension {nzr}, therefore outputs will be
@@ -22,9 +24,10 @@ rconfig   integer  interp        namelist,simradar     1              1       rh
 ##
 
 # All bands variables
-state    real  GATELON     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelon"           "ground radar gate longitude"                        "degree_east"
-state    real  GATELAT     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelat"           "ground radar gate latitude"                         "degree_north"
+state    real  GATELON     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
+state    real  GATELAT     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
 state    real  GATEHGT     {nrz}{ir}{jr}      misc        1       -      h{11}    "gatehgt"           "ground radar gate height (4/3 Ref)"                       "m"
+state    real  GATEHWGHT   {ir}{jr}           misc        1       -      h{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "ms-1"
 state    real  VR          {nrz}{ir}{jr}      misc        1       -      h{11}    "vr"                "ground radar Doppler Velocity"                            "ms-1"
 
 # S-band
