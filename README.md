@@ -12,6 +12,8 @@ The WRF Model is open-source code in the public domain, and its use is unrestric
 # Lluís Fita Borrell fork #
 This is the WRF repository of Lluis Fita Borrell, forked from WRF v7.1. CIMA-IFAECI, UBA-CONICET-CNRS-IRD, C. A. Buenos Aries Argentina
 
+This branch 'simradAR' is to include 'in-line' surface polarimetric radar simulator based in simrad.AR (CONGREMET XIII, Galligani et al. 2018) 
+
 ## Installation ##
 
 Getting the code from the fork in a INSTDIR
@@ -25,12 +27,7 @@ Getting submodules
 $ git submodule update --init --recursive
 ```
 
-Listing available branches (all official from WRF v7.1) and the ones created by L Fita
+Branches (all official from WRF v7.1) and the ones created by L Fita. To switch to simradAR
 ```
-$ git branch -a
-```
-
-To switch to any WRF branch
-```
-$ git checkout [branch_name]
+$ git checkout simradAR
 ```
