@@ -102,6 +102,10 @@ MODULE module_driver_constants
    !  The maximum number of domains used by the external model with which wrf is communicating in coupled mode
 
    INTEGER , PARAMETER :: max_extdomains = 5
+   
+! L. Fita simrad.AR
+   !  The maximum amunt of surface radars
+   INTEGER , PARAMETER                                   :: max_nradar
 
    !  2. Following related to driver level data structures for DM_PARALLEL communications
 
