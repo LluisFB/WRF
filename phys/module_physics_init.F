@@ -1739,6 +1739,25 @@ CHARACTER(LEN=8) :: name
    end if
 #endif
 
+     CALL simradar_init(
+
+       ,xlong, xlat                                                                                   &
+       ,londbg, latdbg                                                                                &
+       ,ijdbg                                                                                         &
+       ,ids, ide, jds, jde, kds, kde                                                                  &
+       ,ims, ime, jms, jme, kms, kme                                                                  &
+       ,its, ite, jts, jte, kts, kte                      
+
+       ,config_flags%nradar,                                                                          &
+       ,config_flags%e_rlon, ,config_flags%e_rlat                                                     &
+       ,config_flags%e_rhgt, ,config_flags%e_rnz                                                      &
+       ,config_flags%gatelon, ,config_flags%gatelat, config_flags%gatehgt                             &
+       ,config_flags%radards, ,config_flags%radinterp, config_flags%missing_value                     &
+       ,gatehwght, gatehdist                                                                          &
+       ,inradar, radnum                                                                               &
+      
+       )
+
    END SUBROUTINE phy_init
 
 !=====================================================================
@@ -5746,5 +5765,214 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
    END IF
 
   END SUBROUTINE shalwater_init
+
+  SUBROUTINE simradar_init(
+  
+    ,xlong, xlat                                                                                      &
+    ,londbg, latdbg                                                                                   &
+    ,ijdbg                                                                                            &
+    ,ids, ide, jds, jde, kds, kde                                                                     &
+    ,ims, ime, jms, jme, kms, kme                                                                     &
+    ,its, ite, jts, jte, kts, kte                                                                     &
+
+    ,nradar, nrs, nrc, nrx                                                                            &
+    ,e_rlon, e_rlat                                                                                   &
+    ,e_rhgt, e_rnz                                                                                    &
+    ,radartype, radarband                                                                             &
+    ,gatelon, gatelat, gatehgt                                                                        &
+    ,distmax, heightmax, radards                                                                      &
+    ,gatetype, gateband                                                                               &
+    ,radinterp, em_ray, missing_value                                                                 &
+    ,gatehwght, gatehdist                                                                             &
+    ,inradar, radsnum, radcnum, radxnum                                                               &
+    )
+    
+    ! Subroutine to initialize the simrad.AR syntehtic surface radar 
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ids, ide, jds, jde, kds, kde
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat
+    REAL, INTENT(in)                                     :: londbg, latdbg
+    
+    INTEGER, INTENT(in)                                  :: nradar
+    INTEGER, INTENT(in)                                  :: e_rlon, e_rlat
+    INTEGER, INTENT(in)                                  :: e_rhgt, e_rnz
+    REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
+      heightmax
+    REAL, INTENT(in)                                     :: radards, missing_value
+    INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
+
+    ! Output
+    INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
+    REAL, DIMENSION(ims:ime, jms:jme), INTENT(out)       :: gatehwght, gatehdist
+    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
+    INTEGER, DIMENSION(nradar, ims:ime, jms:jme),                                                     &
+      INTENT(out)                                        :: radnum
+
+    ! Local
+    INTEGER                                              :: ir
+    INTEGER                                              :: i,j,k
+    INTEGER                                              :: idbg, jdbg
+    REAL                                                 :: inczsoil
+    REAL                                                 :: mindist
+    REAL                                                 :: ddlon, ddlat, mindd
+    REAL                                                 :: rlon, rlat, rhgt, rband, rtype
+    REAL                                                 :: maxrdistmax, maxrhgtmax
+    REAL                                                 :: lonSW, lonNW, lonNE, lonSE
+    REAL                                                 :: latSW, latNW, latNE, latSE
+    REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
+    CHARACTER (LEN=1000)                                 :: diag_message
+    LOGICAL                                              :: found
+    CHARACTER(len=50)                                    :: fname
+
+!!!!!!!! Variables
+! xlong, xlat: matrices of longitudes and latitudes
+! londbg, latdbg: coordinates of the debugging grid point
+! ids, ide, jds, jde, kds, kde: extension of the matrices
+! ims, ime, jms, jme, kms, kme: extension of the matrices in memory
+! its, ite, jts, jte, kts, kte: extension of the martices by tile
+! idbg, jdbg: point coordinates of the debugging point
+
+    fname = 'simradar_init'
+
+    ! Consistency checks
+    !! Collapsed dimensions
+    IF ( e_rnz /= nradar * e_rhgt) THEN
+      PRINT *, '  e_rnz: ', e_rnz, ' nradar: ', nradar, ' e_rhgt: ', e_rhgt
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_rght " //           &
+        "and e_rnz do not coincide! e_rnz = nradar*e_rght"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
+    !! Maximum radar coverage
+    maxrdistmax = MAX(distmax(1:nradar)
+
+    IF ( e_rlon /= INT(2*maxrdistmax / radards)) THEN
+      PRINT *, '  e_rlon: ', e_rlon, ' maximum distmax: ', maxrdistmax, ' radards: ', radards
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along x-axis e_rlon does not " //   &
+        "coincide with the maximum maximum spatial radar range (maximum distmax) and its " //         &
+        "resolution (radards)! e_rlon = INT(2*maxrdistmax / radards)"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    IF ( e_rlat /= INT(2*maxrdistmax / radards)) THEN
+      PRINT *, '  e_rlat: ', e_rlat, ' maximum distmax: ', maxrdistmax, ' radards: ', radards
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along y-axis e_rlat does not " //   &
+        "coincide with the maximum maximum spatial radar range (maximum distmax) and its " //         &
+        "resolution (radards)! e_rlat = INT(2*maxrdistmax / radards)"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    !! Maximum radar coverage
+    maxrhgtmax = MAX(heightmax(1:nradar)
+    IF ( e_rhgt /= INT(maxrhgtmax / radards)) THEN
+      PRINT *, '  e_rlon: ', e_rhgt, ' maxrhgtmax: ', maxrhgtmax, ' radards: ', radards
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along z-axis e_rhgt does not " //   &
+        "coincide with the maximum maximum height radar range (maxrhgtmax) and its resolution " //    &
+        "(radards)! e_rhgt = INT(maxrhgtmax / radards)"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
+    IF ( e_rnz /= nradar * e_rhgt) THEN
+      PRINT *, '  e_rnz: ', e_rnz, ' nradar: ', nradar, ' e_rhgt: ', e_rhgt
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_rght " //           &
+        "and e_rnz do not coincide! e_rnz = nradar*e_rght"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    IF ( nradar /= nrs + nrc + nrx) THEN
+      PRINT *, '  nradar: ', nradar, ' nrs: ', nrs, ' nrc: ', nrc, ' nrx: ', nrx
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: total amount of radars nradar and amount " //   &
+        "of radar types do not coincide! nradar = nrs + nrc + nrx"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    ! lon, lat debugging point 
+    !   L. Fita, UBA-CIMA-IFAECI. This should be done as in share/wrf_timeseries.F, but it uses 
+    !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
+    ! Minimum grid distance
+    ! Filling matrices with absurd numbers
+    DO i=ims, ime
+      DO j=jms, jme
+        dlon(i,j) = 10000.*i + 10.*j
+        dlat(i,j) = 20000.*i + 10.*j
+      END DO
+    END DO
+    dlon(its:ite-1,jts:jte-1) = xlong(its:ite-1,jts:jte-1)-xlong(its+1:ite,jts+1:jte)   
+    dlat(its:ite-1,jts:jte-1) = xlat(its:ite-1,jts:jte-1)-xlat(its+1:ite,jts+1:jte)
+
+    ddist = 1000.
+    ddist = SQRT(dlon*dlon + dlat*dlat)
+    mindd = MINVAL(ddist)
+    
+    ! Minimum distance to the debugging point
+    dist = SQRT((xlong-londbg)**2+(xlat-latdbg)**2)
+    mindist = MINVAL(dist)
+    
+    found = .FALSE.
+    WRITE(diag_message,*)'its,ite:', its,ite,' jts,jte:', jts,jte,'  mindist:', mindist, ' mindd:', mindd
+    CALL wrf_debug(75,diag_message)
+    IF (mindist < mindd) THEN
+      DO i=its, ite
+        DO j=jts, jte
+
+          IF (dist(i,j) == mindist) THEN
+            idbg = i
+            jdbg = j
+            found = .TRUE.
+            WRITE(diag_message,*)'  found debugging grid point _______' 
+            CALL wrf_debug(75,diag_message)
+            WRITE(diag_message,*)'  lon,lat dbg: ', londbg, ' ,', latdbg,' mindist:', mindist
+            CALL wrf_debug(75,diag_message)
+            WRITE(diag_message,*)'  i,j dbg: ', idbg, jdbg
+            CALL wrf_debug(75,diag_message)
+            ijdbg(1) = idbg
+            ijdbg(2) = jdbg
+            EXIT
+          END IF
+        END DO
+        IF (found) EXIT
+      END DO
+    END IF 
+    
+    ! Getting borders of the tile
+    lonSW = xlong(its,jts)
+    lonNW = xlong(its,jte)
+    lonNE = xlong(ite,jte)
+    lonSE = xlong(ite,jts)
+
+    ! Getting actual areas encompassed by a radar
+    look_radar: DO ir=1, nradar
+      rlon = gatelon(ir)
+      rlat = gatelat(ir)
+      rhgt = gatehgt(ir)
+      rband = gateband(ir)
+      rtype = gatetype(ir)
+      
+      ! Is this radar inside the range of the tile?
+      dist = SQRT((xlong-rlon)**2+(xlat-rlat)**2)
+      mindist = MINVAL(dist)
+
+      IF (mindist < mindd) THEN
+      ! Chances to be inside
+      
+      
+      END IF
+
+      IF (rlon > lonSW .AND. rlon < lon
+    
+    
+    END DO look_radar
+
+  END SUBROUTINE simradar_init
 
 END MODULE module_physics_init
