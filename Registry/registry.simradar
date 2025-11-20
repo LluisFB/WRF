@@ -31,6 +31,7 @@ state    real  GATELON     {nrz}{ir}{jr}      misc        1       -      rh{11} 
 state    real  GATELAT     {nrz}{ir}{jr}      misc        1       -      rh{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
 state    real  GATEHGT     {nrz}{ir}{jr}      misc        1       -      rh{11}    "gatehgt"           "ground radar gate height"                                 "m"
 state    real  GATEHWGHT   {nr}{ir}{jr}       misc        1       -      rh{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "1"
+state    real  GATEHDIST   {nr}{ir}{jr}       misc        1       -      rh{11}    "gatehdist"         "ground radar horizontal distance of the grid point"       "m"
 state    real  VR          {nrz}{ir}{jr}      misc        1       -      rh{11}    "vr"                "ground radar Doppler Velocity"                            "ms-1"
 state    integer inradar   ij                 misc        1       -      r         "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
 state    integer radarnum  {nr}ij             misc        1       -      rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
