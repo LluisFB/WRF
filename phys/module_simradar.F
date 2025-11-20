@@ -393,6 +393,8 @@ MODULE module_simradar
             CALL wrf_debug(75,msg)
           END IF
           
+          
+          
           ijdbg = .FALSE.
 
         END DO
