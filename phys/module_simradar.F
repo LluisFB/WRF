@@ -16,8 +16,8 @@ MODULE module_simradar
                       mu, mub,                                                                        &
                       ph, phb, rho,                                                                   &
                       nradar,                                                                         &
-                      e_radlon, e_radlat,                                                             &
-                      e_radhgt, e_radnz,                                                              &
+                      e_rlon, e_rlat,                                                                 &
+                      e_rhgt, e_rnz,                                                                  &
                       gatelon, gatelat, gatehgt, gatehwght,                                           &
                       inradar, radnum,                                                                &
                       radards, radinterp, missing_value,                                              &
@@ -76,11 +76,11 @@ MODULE module_simradar
 !----------------------------------------------------------------------
 ! Main subroutine to compute CORDEX required variables
 
-  USE module_dm, ONLY: wrf_dm_sum_real, wrf_dm_maxval
-  USE module_configure 
-  USE module_diagvar_simradar
+    USE module_dm, ONLY: wrf_dm_sum_real, wrf_dm_maxval
+    USE module_configure 
+    USE module_diagvar_simradar
 
-  IMPLICIT NONE
+    IMPLICIT NONE
 
 !======================================================================
 ! Definitions
@@ -140,10 +140,10 @@ MODULE module_simradar
 ! rho: air density [kgm-3]
 
 ! nrad: amount of surface radar
-! e_radlon: radar grid points on the x-axis
-! e_radlat: radar grid points on the y-axis
-! e_radhgt: radar grid points on the z-axis
-! e_radnz: amount and height extent of radars (nradar)*(e_radhgt)
+! e_rlon: radar grid points on the x-axis
+! e_rlat: radar grid points on the y-axis
+! e_rhgt: radar grid points on the z-axis
+! e_rnz: amount and height extent of radars (nradar)*(e_rhgt)
 
 ! radards: nominal horizontal resolution of radar values in m
 ! radinterp: method of interpolation to the radar space (1: lineal)
@@ -231,7 +231,7 @@ MODULE module_simradar
 
 !======================================================================
 
-  INTEGER,      INTENT(in)                               ::                                           &
+    INTEGER,      INTENT(in)                             ::                                           &
                                             ids,ide, jds,jde, kds,kde,                                &
                                             ims,ime, jms,jme, kms,kme,                                &
                                             ips,ipe, jps,jpe, kps,kpe,                                &
@@ -240,33 +240,162 @@ MODULE module_simradar
                                             n_moist
 
 
-  INTEGER, DIMENSION(num_tiles), INTENT(in)              :: i_start, i_end, j_start, j_end
-  INTEGER, INTENT(in)                                    :: m_qv, m_qc, m_qr, m_qs, m_qi, m_qg, m_qh
+    INTEGER, DIMENSION(num_tiles), INTENT(in)            :: i_start, i_end, j_start, j_end
+    INTEGER, INTENT(in)                                  :: m_qv, m_qc, m_qr, m_qs, m_qi, m_qg, m_qh
 
-  REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)           :: lon, lat
-  REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)           :: mu, mub, sina, cosa
-  REAL, DIMENSION(kms:kme), INTENT(in)                   :: deta
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: mu, mub, sina, cosa
+    REAL, DIMENSION(kms:kme), INTENT(in)                 :: deta
 
-  REAL, DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(in)   :: qv, qc, qr, qs, qi, qg, qh, ph, phb, rho
+    REAL, DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(in) :: qv, qc, qr, qs, qi, qg, qh, ph, phb, rho
 
-  REAL, INTENT(in)                                       :: DT, XTIME
-  REAL, INTENT(in)                                       :: curr_secs2
-  LOGICAL, INTENT(in)                                    :: is_restart, is_output_time
-  INTEGER, INTENT(in)                                    :: timedbg
-  REAL, INTENT(in)                                       :: londbg, latdbg
-  INTEGER, INTENT(in)                                    :: idbg, jdbg
+    REAL, INTENT(in)                                     :: DT, XTIME
+    REAL, INTENT(in)                                     :: curr_secs2
+    LOGICAL, INTENT(in)                                  :: is_restart, is_output_time
+    INTEGER, INTENT(in)                                  :: timedbg
+    REAL, INTENT(in)                                     :: londbg, latdbg
+    INTEGER, INTENT(in)                                  :: idbg, jdbg
 
-  INTEGER, INTENT(inout)                                 :: nsteps
+    INTEGER, INTENT(inout)                               :: nsteps
   
 ! Specific Radar variables
-  INTEGER, INTENT(in)                                    :: nrad, e_radlon, e_radlat, e_radhgt, e_radnz
-  INTEGER, INTENT(in)                                    :: radinterp
-  REAL, INTENT(in)                                       :: radards, missing_value
-  REAL, DIMENSION(nrad), INTENT(in)                      :: gatelon, gatelat, gatehgt
-  REAL, DIMENSION(e_radnz,ims:ime,jms:jme), INTENT(in)   :: gatehwght
-  INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(in)        :: inradar, radarnum
+    INTEGER, INTENT(in)                                  :: nrad, e_rlon, e_rlat, e_rhgt, e_rnz
+    INTEGER, INTENT(in)                                  :: radinterp
+    REAL, INTENT(in)                                     :: radards, missing_value
+    REAL, DIMENSION(nrad), INTENT(in)                    :: gatelon, gatelat, gatehgt
+    REAL, DIMENSION(e_rnz,ims:ime,jms:jme), INTENT(in)   :: gatehwght
+    INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(in)      :: inradar, radarnum
   
-  REAL, DIMENSION
+    REAL,DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)     :: vr
+
+    ! S-band
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_s 
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_s, aih_snow_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_s, aih_hail_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_s, kdp_snow_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_s, kdp_hail_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_s, zdr_snow_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_s, zdr_hail_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_s, zh_snow_s
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_s, zh_hail_s
+
+    ! C-band
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_c 
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_c, aih_cnow_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_c, aih_hail_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_c, kdp_cnow_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_c, kdp_hail_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_c, zdr_cnow_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_c, zdr_hail_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_c, zh_cnow_c
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_c, zh_hail_c
+
+    ! X-band
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_x 
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_x, aih_xnow_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_x, aih_hail_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_x, kdp_xnow_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_x, kdp_hail_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_x, zdr_xnow_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_x, zdr_hail_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_x, zh_xnow_x
+    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_x, zh_hail_x
+
+    ! LOCAL  VAR
+
+    INTEGER                                              :: i, j, k, m, its, ite, jts, jte, ij
+    INTEGER                                              :: idp, jdp, dimz, dimz1, dz1
+    INTEGER                                              :: i1, i_1, j1, j_1, k2, tdbg
+    INTEGER, DIMENSION(num_tiles)                        :: i2, j2
+
+    REAL                                                 :: xtimep
+    REAL                                                 :: prv
+    
+    LOGICAL, EXTERNAL                                    :: wrf_dm_on_monitor
+    CHARACTER(len=256)                                   :: msg
+    LOGICAL                                              :: ijdbg, cdone
+    INTEGER                                              :: dbg_level
+ 
+    fname = 'simradar_calc'
+
+    ! Showing version of the module
+    IF (curr_secs2 == 0. ) THEN
+      WRITE(msg,*) '  simrad.AR module version: ' // TRIM(simradARversion) // ' ...'
+      PRINT *, TRIM(msg)
+      CALL wrf_debug(0,msg)
+    END IF
+
+    ! timedbg
+    !  when time-debug in minutes
+    tdbg = MOD(xtime, timedbg*1.)
+
+    ! Getting the overall debug level
+    CALL get_wrf_debug_level( dbg_level ) 
+    cdone = .FALSE.
+
+    ! L. Fita: NOTE about efficiency
+    !   I am not sure if this is the more efficient way:
+    !     1.- IF --> 2.- repeat DO
+    !     1.- DO -->  2.- IF
+
+    dimz = kme - kms + 1
+    dimz1 = dimz + 1
+    dz1 = dimz - 1
+    mutot = mu + mub
+    zg = (ph + phb)/9.81
+
+    ! For test purposes
+    IF ((londbg == -999.) .OR. (latdbg == -999.)) THEN
+      !$OMP PARALLEL DO   &
+      !$OMP PRIVATE ( ij )
+      DO ij = 1 , num_tiles
+        i2(ij) = INT(0.5*(i_start(ij) + i_end(ij)))
+        j2(ij) = INT(0.5*(j_start(ij) + j_end(ij)))
+      END DO
+      !$OMP END PARALLEL DO
+    ELSE
+      !$OMP PARALLEL DO   &
+      !$OMP PRIVATE ( ij )
+      DO ij = 1 , num_tiles
+        i2(ij) = idbg
+        j2(ij) = jdbg
+      END DO
+      !$OMP END PARALLEL DO
+    END IF
+    k2 = 0.5*(kms+kme)
+
+    ! Computing variables 
+    ijdbg = .FALSE.
+    !$OMP PARALLEL DO   &
+    !$OMP PRIVATE ( ij )
+    DO ij = 1 , num_tiles
+      DO i = i_start(ij), i_end(ij)
+        DO j = j_start(ij), j_end(ij)
+          IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
+            i1 = MIN(i+1,i_end(ij))
+            i_1 = MAX(i-1,i_start(ij))
+            j1 = MIN(j+1,j_end(ij))
+            j_1 = MAX(j-1,j_start(ij))
+            
+            
+
+        END DO
+      END DO
+    END DO
+    !$OMP END PARALLEL DO
+
+    RETURN
+  
+  END SUBROUTINE simradar_calc
 
 END MODULE module_simradar
 
