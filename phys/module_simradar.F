@@ -18,7 +18,8 @@ MODULE module_simradar
                       nradar,                                                                         &
                       e_rlon, e_rlat,                                                                 &
                       e_rhgt, e_rnz,                                                                  &
-                      gatelon, gatelat, gatehgt, gatehwght,                                           &
+                      gatelon, gatelat, gatehgt,                                                      &
+                      gatehwght, gatehdist,                                                           &
                       inradar, radnum,                                                                &
                       radards, radinterp, missing_value,                                              &
 
@@ -151,6 +152,7 @@ MODULE module_simradar
 ! gatelon: ground radar gate longitude [degree_east]
 ! gatelat: ground radar gate latitude [degree_north]
 ! gatehgt: ground radar gate height [m]
+! gatehdist: ground radar horizontal distance of the grid point [m]
 ! gatehwght: ground radar horizontal weights for interpolation [1]
 ! inradar: pertinence of the grid cell to any radar (1: yes) [1]
 ! radarnum: pertinence of the grid cell inside a given radar area [1]
@@ -263,7 +265,7 @@ MODULE module_simradar
     INTEGER, INTENT(in)                                  :: radinterp
     REAL, INTENT(in)                                     :: radards, missing_value
     REAL, DIMENSION(nrad), INTENT(in)                    :: gatelon, gatelat, gatehgt
-    REAL, DIMENSION(e_rnz,ims:ime,jms:jme), INTENT(in)   :: gatehwght
+    REAL, DIMENSION(e_rnz,ims:ime,jms:jme), INTENT(in)   :: gatehwght, gatehdist
     INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(in)      :: inradar, radarnum
   
     REAL,DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)     :: vr
@@ -381,12 +383,17 @@ MODULE module_simradar
       DO i = i_start(ij), i_end(ij)
         DO j = j_start(ij), j_end(ij)
           IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
-            i1 = MIN(i+1,i_end(ij))
-            i_1 = MAX(i-1,i_start(ij))
-            j1 = MIN(j+1,j_end(ij))
-            j_1 = MAX(j-1,j_start(ij))
+          i1 = MIN(i+1,i_end(ij))
+          i_1 = MAX(i-1,i_start(ij))
+          j1 = MIN(j+1,j_end(ij))
+          j_1 = MAX(j-1,j_start(ij))
             
-            
+          IF (dbg_level >= 75 .AND. ijdbg .AND. tdbg==0) THEN
+            WRITE(msg,*) '  ' // TRIM(fname) // ' ',i,' ,',j,' : final checks _______' 
+            CALL wrf_debug(75,msg)
+          END IF
+          
+          ijdbg = .FALSE.
 
         END DO
       END DO
