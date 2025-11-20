@@ -5807,7 +5807,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
-    REAL, DIMENSION(ims:ime, jms:jme), INTENT(out)       :: gatehwght, gatehdist
+    REAL, DIMENSION(nradar, ims:ime, jms:jme),                                                        &
+      INTENT(out)                                        :: gatehwght, gatehdist
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
     INTEGER, DIMENSION(nradar, ims:ime, jms:jme),                                                     &
       INTENT(out)                                        :: radnum
@@ -5819,13 +5820,15 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: inczsoil
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
-    REAL                                                 :: rlon, rlat, rhgt, rband, rtype
+    REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rdist
     REAL                                                 :: maxrdistmax, maxrhgtmax
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
     REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
+    REAL, DIMENSION( ims:ime )                           :: distlon
+    REAL, DIMENSION( jms:jme )                           :: distlat
     CHARACTER (LEN=1000)                                 :: diag_message
-    LOGICAL                                              :: found
+    LOGICAL                                              :: found, inside
     CHARACTER(len=50)                                    :: fname
 
 !!!!!!!! Variables
@@ -5837,6 +5840,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! idbg, jdbg: point coordinates of the debugging point
 
     fname = 'simradar_init'
+    
+    ! Initializing outputs
+    inradar = 0
+    radnum = 0
+    gatehwght = 0.
+    gatehdist = 0.
 
     ! Consistency checks
     !! Collapsed dimensions
@@ -5957,22 +5966,82 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       rhgt = gatehgt(ir)
       rband = gateband(ir)
       rtype = gatetype(ir)
+      rdist = distmax(ir)
       
       ! Is this radar inside the range of the tile?
-      dist = SQRT((xlong-rlon)**2+(xlat-rlat)**2)
-      mindist = MINVAL(dist)
-
-      IF (mindist < mindd) THEN
-      ! Chances to be inside
+      inside = .FALSE.
       
-      
+      ! Do we need to be efficient?
+      !! E border
+      distlon = SQRT((xlong(its:ite,:)-rlon)**2+(xlat-rlat)**2)
+      mindist = MINVAL(distlon)
+      IF (mindist < rdist) THEN      
+        inside = .TRUE.
+        CALL real_distances(
+          ids, ide, jds, jde, kds, kde,                                                               &
+          ims, ime, jms, jme, kms, kme,                                                               &
+          its, ite, jts, jte, kts, kte,                                                               &
+          lon, lat,                                                                                   &
+          lonv, latv,     
+          gatehdist(ir,:,:))
       END IF
 
-      IF (rlon > lonSW .AND. rlon < lon
-    
+      ! Filling other vaues with a single loop
+      DO i=its, ite
+        DO j=jts, jte
+          IF (gatehdist(ir,i,j) < rdist) THEN
+            inradar(i,j) = 1
+            radnum(ir,i,j) = 1
+          
+          ELSE
+            gatehdist(ir,i,j) = missing_value
+          END IF
+        END DO
+      END DO
     
     END DO look_radar
 
   END SUBROUTINE simradar_init
+  
+  SUBROUTINE real_distances(
+    ,ims, ime, jms, jme                                                                               &
+    ,lon, lat                                                                                         &
+    ,lonv, latv
+    dist)
+    ! Subroutine to compute the real distance to a point
+    !   Following: https://en.wikipedia.org/wiki/Geographical_distance
+    !
+    !     D = 2*R * SQRT( [sin(dlat /2)*cos(dlon/2)]**2 + [cos(latm)*sin(dlon/2)]**2 )
+    
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
+    REAL, INTENT(in)                                     :: lonv, latv
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(out)        :: dist
+
+    ! Local 
+    INTEGER                                              :: i, j
+    REAL, PARAMETER                                      :: R = 6371.009 
+    REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm
+    CHARACTER(len=50)                                    :: fname
+    
+!!!!!!! Variables
+! lon, lat: 2D array longitude, latitude matrices
+! lonv, latv: point to compute the distance
+  
+    fname = 'real_distance'
+  
+    dist = 0.
+    
+    dlat = lat - latv
+    dlon = lon - lonv
+    latm = (lat + latv) / 2.
+    
+    dist = 2.*R * SQRT( (sin(dlat /2.)*cos(dlon/2.))**2 + (cos(latm)*sin(dlon/2.))**2 )
+   
+    RETURN
+ 
+  END SUBROUTINE real_distances
 
 END MODULE module_physics_init
