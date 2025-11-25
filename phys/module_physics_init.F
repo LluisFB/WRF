@@ -5769,6 +5769,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
   SUBROUTINE simradar_init(
   
     ,xlong, xlat                                                                                      &
+    ,xlong_u, xlat_u                                                                                  &
+    ,xlong_v, xlat_v                                                                                  &
     ,londbg, latdbg                                                                                   &
     ,ijdbg                                                                                            &
     ,ids, ide, jds, jde, kds, kde                                                                     &
@@ -5795,6 +5797,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
     INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_u, xlat_u
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_v, xlat_v
     REAL, INTENT(in)                                     :: londbg, latdbg
     
     INTEGER, INTENT(in)                                  :: nradar
@@ -5824,7 +5828,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: maxrdistmax, maxrhgtmax
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
+    REAL                                                 :: lonmin, lonmax, latmin, latmax
+    REAL, DIMENSION(4)                                   :: lonvertices, latvertices
     REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
+    REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( ims:ime )                           :: distlon
     REAL, DIMENSION( jms:jme )                           :: distlat
     CHARACTER (LEN=1000)                                 :: diag_message
@@ -5833,6 +5840,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
 !!!!!!!! Variables
 ! xlong, xlat: matrices of longitudes and latitudes
+! xlong_u/v, xlat_u/v: u/vstaggered matrices of longitudes and latitudes
 ! londbg, latdbg: coordinates of the debugging grid point
 ! ids, ide, jds, jde, kds, kde: extension of the matrices
 ! ims, ime, jms, jme, kms, kme: extension of the matrices in memory
@@ -5953,11 +5961,37 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       END DO
     END IF 
     
+    ! Boundaries of the cells
+    ! SW
+    bnds_lon(ims:ime,jms:jme:,1) = xlong_u(ims:ime,jms:jme)
+    bnds_lat(ims:ime,jms:jme:,1) = xlatg_u(ims:ime,jms:jme)
+    ! NW
+    bnds_lon(ims:ime,jms:jme:,2) = xlong_v(ims:ime,jms+1:jme+1)
+    bnds_lat(ims:ime,jms:jme:,2) = xlat_v(ims:ime,jms+1:jme+1)
+    ! NE
+    bnds_lon(ims:ime,jms:jme:,3) = xlong_u(ims+1:ime+1,jms:jme)
+    bnds_lat(ims:ime,jms:jme:,3) = xlat_u(ims+1:ime+1,jms:jme)
+    ! SW
+    bnds_lon(ims:ime,jms:jme:,4) = xlong_v(ims:ime,jms:jme)
+    bnds_lat(ims:ime,jms:jme:,4) = xlat_v(ims:ime,jms:jme)
+    
     ! Getting borders of the tile
     lonSW = xlong(its,jts)
     lonNW = xlong(its,jte)
     lonNE = xlong(ite,jte)
     lonSE = xlong(ite,jts)
+    latSW = xlat(its,jts)
+    latNW = xlat(its,jte)
+    latNE = xlat(ite,jte)
+    latSE = xlat(ite,jts)
+    
+    ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
+    lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
+    latvertices = (/ latSW, latNW, latNE, latSE /)
+    lonmin = MINVAL(lonvertices)
+    lonmax = MAXVAL(lonvertices)
+    latmin = MINVAL(latvertices)
+    latmax = MAXVAL(latvertices)
 
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
@@ -5968,40 +6002,183 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       rtype = gatetype(ir)
       rdist = distmax(ir)
       
-      ! Is this radar inside the range of the tile?
-      inside = .FALSE.
+      CALL radar_inside (ims, ime, jms, jme, lon, lat, bnds_lon, bnds_lat rlon, rlat, rdist,          &
+        missing_value, gatehdist(ir,:,:), inradar, radnum(ir,:,:), inside)
+        
+      ! Getting lon,lat for the radar matrix
+      ! Can we know from the radar perspective which of its grid points are inside this tile?
+      ! Even if I could know that, radar matrix is not (by now) parallelized !
+      ! Therefore, I need to compute the whole radar matrix at each tile
       
-      ! Do we need to be efficient?
-      !! E border
-      distlon = SQRT((xlong(its:ite,:)-rlon)**2+(xlat-rlat)**2)
-      mindist = MINVAL(distlon)
-      IF (mindist < rdist) THEN      
-        inside = .TRUE.
-        CALL real_distances(
-          ids, ide, jds, jde, kds, kde,                                                               &
-          ims, ime, jms, jme, kms, kme,                                                               &
-          its, ite, jts, jte, kts, kte,                                                               &
-          lon, lat,                                                                                   &
-          lonv, latv,     
-          gatehdist(ir,:,:))
-      END IF
-
-      ! Filling other vaues with a single loop
-      DO i=its, ite
-        DO j=jts, jte
-          IF (gatehdist(ir,i,j) < rdist) THEN
-            inradar(i,j) = 1
-            radnum(ir,i,j) = 1
-          
-          ELSE
-            gatehdist(ir,i,j) = missing_value
-          END IF
-        END DO
-      END DO
-    
+      IF (inside) THEN
+        ! Let's compute radar lon,lat matrices only in the tile that contains the location of the radar
+        IF (rlon > lonSW .AND. rlon < lonNE .AND. rlat > lonSW .AND. rlat < latNE)
+      END IF    
+        
     END DO look_radar
 
   END SUBROUTINE simradar_init
+  
+  SUBROUTINE radar_inside (ims, ime, jms, jme, lon, lat, bnds_lon, bnds_lat, rlon, rlat, rdist,       &
+    missing_value, gatehdist, inradar, radnum, inside)
+  ! Subroutine to determine if a radar fells inside the tile
+  
+    IMPLICIT NONE
+  
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
+    REAL, DIMENSION(ims:ime,jms:jme,4), INTENT(in)       :: bnds_lon, bnds_lat
+    REAL, INTENT(in)                                     :: rlon, rlat, rdist, missing_value
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(out)        :: gatehdist
+    INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(out)     :: inradar, radnum
+    LOGICAL, INTENT(out)                                 :: inside
+  
+    ! Local
+    INTEGER                                              :: ii, ie, ji, je
+    INTEGER                                              :: ibnd
+    CHARACTER(len=50)                                    :: fname
+    
+!!!!!!! Variables
+! lon, lat: 2D array longitude, latitude matrices at the center 
+! bnds_lon, bnds_lat: 2D array longitude, latitude matrices of the vertices
+! rlonv, rlat: location of the radar
+! rdist: maximum distance to the radar
+! gatehdist: distance to the radar in the model grid
+! inradar: whether the model grid lays inside the measurement area of any radar
+! radnum: pertinence of the model grid to a given radar
+  
+    fname = 'radar_inside'
+  
+    ! Is this radar inside the range of the tile?
+    inside = .FALSE.
+    
+    gatehdist = missing_value
+    inradar = -1
+    radnum = -1
+      
+    ! Do we need to be efficient?
+    !! S border
+    ii = ims
+    ie = ime
+    ji = jms
+    je = jms
+    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+
+    ! Going to the borders
+    DO ibnd=1, 4
+      CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,    &
+        rlat, rdist, gatehdist)  
+    END DO
+    
+    !! W border
+    IF (.NOT.inside) THEN
+      ii = ims
+      ie = ims
+      ji = jms
+      je = jme
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+
+      ! Going to the borders
+      DO ibnd=1, 4
+        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
+          rlat, rdist, gatehdist)  
+      END DO
+    END IF
+    
+    !! N border
+    IF (.NOT.inside) THEN
+      ii = ims
+      ie = ime
+      ji = jme
+      je = jme
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+
+      ! Going to the borders
+      DO ibnd=1, 4
+        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
+          rlat, rdist, gatehdist)  
+      END DO
+    END IF
+        
+    !! E border
+    IF (.NOT.inside) THEN
+      ii = ime
+      ie = ime
+      ji = jms
+      je = jme
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+
+      ! Going to the borders
+      DO ibnd=1, 4
+        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
+          rlat, rdist, gatehdist)  
+      END DO
+    END IF
+
+    ! Filling other values with a single loop
+    IF (inside) THEN
+      DO i=its, ite
+        DO j=jts, jte
+          IF (gatehdist(i,j) <= rdist) THEN
+            inradar(i,j) = 1
+            radnum(i,j) = 1        
+          ELSE
+            gatehdist(i,j) = missing_value
+          END IF
+        END DO
+      END DO
+    END IF
+
+    RETURN
+
+  END SUBROUTINE radar_inside
+  
+  SUBROUTINE border_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, gatehdist, inside)
+  ! Subroutine to check if a border gets a radar
+  
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
+    REAL, INTENT(in)                                     :: rlon, rlat, rdist
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(inout)      :: gatehdist
+    LOGICAL, INTENT(inout)                               :: inside
+  
+    ! Local
+    REAL                                                 :: mindist
+    REAL, DIMENSION(:,:), ALLOCATABLE                    :: distborder  
+    CHARACTER(len=50)                                    :: fname
+    
+!!!!!!! Variables
+! lon, lat: 2D array longitude, latitude matrices at the center 
+! rlonv, rlat: location of the radar
+! rdist: maximum distance to the radar
+! gatehdist: distance to the radar in the model grid
+  
+    fname = 'border_inside'
+      
+    IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
+    ALLOCATE(distborder(ims:ime,jms:jme))
+    CALL real_distances(
+      ims, ime, jms, jme,                                                                             &
+      lon(ims:ime,jms:jme), lat(ims:ime,jms:jme),                                                     &
+      rlon, rlat,     
+      distborder)
+    mindist = MINVAL(distborder)
+    IF (mindist < rdist) THEN      
+      inside = .TRUE.
+      CALL real_distances(
+        ims, ime, jms, jme,                                                                           &
+        lon, lat,                                                                                     &
+        rlon, rlat,     
+        gatehdist)
+    END IF
+
+    IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
+    
+    RETURN
+
+  END SUBROUTINE border_inside
   
   SUBROUTINE real_distances(
     ,ims, ime, jms, jme                                                                               &
