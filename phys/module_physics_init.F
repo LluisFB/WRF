@@ -5787,6 +5787,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,radinterp, em_ray, missing_value                                                                 &
     ,gatehwght, gatehdist                                                                             &
     ,inradar, radsnum, radcnum, radxnum                                                               &
+    ,radarlons, radarlats, radardist                                                                  &
     )
     
     ! Subroutine to initialize the simrad.AR syntehtic surface radar 
@@ -5805,8 +5806,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, INTENT(in)                                  :: e_rlon, e_rlat
     INTEGER, INTENT(in)                                  :: e_rhgt, e_rnz
     REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
-      heightmax
-    REAL, INTENT(in)                                     :: radards, missing_value
+      heightmax, radards
+    REAL, INTENT(in)                                     :: missing_value
     INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
 
     ! Output
@@ -5816,26 +5817,29 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
     INTEGER, DIMENSION(nradar, ims:ime, jms:jme),                                                     &
       INTENT(out)                                        :: radnum
+    REAL, DIMENSION(nradar, e_rlon, e_rlat), INTENT(out) :: radarlons, radarlats, radardist
 
     ! Local
     INTEGER                                              :: ir
     INTEGER                                              :: i,j,k
     INTEGER                                              :: idbg, jdbg
+    INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: inczsoil
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
     REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rdist
-    REAL                                                 :: maxrdistmax, maxrhgtmax
+    REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
     REAL                                                 :: lonmin, lonmax, latmin, latmax
+    REAL                                                 :: rrlon, rrlat
     REAL, DIMENSION(4)                                   :: lonvertices, latvertices
     REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
     REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( ims:ime )                           :: distlon
     REAL, DIMENSION( jms:jme )                           :: distlat
     CHARACTER (LEN=1000)                                 :: diag_message
-    LOGICAL                                              :: found, inside
+    LOGICAL                                              :: found, inside, centerin
     CHARACTER(len=50)                                    :: fname
 
 !!!!!!!! Variables
@@ -5867,33 +5871,34 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
     !! Maximum radar coverage
     maxrdistmax = MAX(distmax(1:nradar)
+    minrds = MIN(radards(1:nradar)
 
-    IF ( e_rlon /= INT(2*maxrdistmax / radards)) THEN
-      PRINT *, '  e_rlon: ', e_rlon, ' maximum distmax: ', maxrdistmax, ' radards: ', radards
+    IF ( e_rlon /= INT(2*maxrdistmax / minrds)) THEN
+      PRINT *, '  e_rlon: ', e_rlon, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along x-axis e_rlon does not " //   &
-        "coincide with the maximum maximum spatial radar range (maximum distmax) and its " //         &
-        "resolution (radards)! e_rlon = INT(2*maxrdistmax / radards)"
+        "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal  "// &
+        "resolution (minimum radards)! e_rlon = INT(2*maxrdistmax / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
 
-    IF ( e_rlat /= INT(2*maxrdistmax / radards)) THEN
-      PRINT *, '  e_rlat: ', e_rlat, ' maximum distmax: ', maxrdistmax, ' radards: ', radards
+    IF ( e_rlat /= INT(2*maxrdistmax / minrds)) THEN
+      PRINT *, '  e_rlat: ', e_rlat, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along y-axis e_rlat does not " //   &
-        "coincide with the maximum maximum spatial radar range (maximum distmax) and its " //         &
-        "resolution (radards)! e_rlat = INT(2*maxrdistmax / radards)"
+        "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal "//  &
+        "resolution (minimum radards)! e_rlat = INT(2*maxrdistmax / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
 
     !! Maximum radar coverage
     maxrhgtmax = MAX(heightmax(1:nradar)
-    IF ( e_rhgt /= INT(maxrhgtmax / radards)) THEN
-      PRINT *, '  e_rlon: ', e_rhgt, ' maxrhgtmax: ', maxrhgtmax, ' radards: ', radards
+    IF ( e_rhgt /= INT(maxrhgtmax / minrds)) THEN
+      PRINT *, '  e_rlon: ', e_rhgt, ' maxrhgtmax: ', maxrhgtmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along z-axis e_rhgt does not " //   &
-        "coincide with the maximum maximum height radar range (maxrhgtmax) and its resolution " //    &
-        "(radards)! e_rhgt = INT(maxrhgtmax / radards)"
+        "coincide with the maximum maximum height radar range (maxrhgtmax) and the minimal " //       &
+        "(minimum radards)! e_rhgt = INT(maxrhgtmax / minrds)"
       CALL wrf_error_fatal ( diag_message )
     END IF
     
@@ -5992,9 +5997,17 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     lonmax = MAXVAL(lonvertices)
     latmin = MINVAL(latvertices)
     latmax = MAXVAL(latvertices)
-
+    
+    klonmin = MINLOC(lonvertices)
+    klatmin = MINLOC(latvertices)
+    klonmax = MAXLOC(lonvertices)
+    klatmax = MAXLOC(latvertices)
+    
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
+    
+      centerin = .FALSE.
+      
       rlon = gatelon(ir)
       rlat = gatelat(ir)
       rhgt = gatehgt(ir)
@@ -6012,7 +6025,19 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       
       IF (inside) THEN
         ! Let's compute radar lon,lat matrices only in the tile that contains the location of the radar
-        IF (rlon > lonSW .AND. rlon < lonNE .AND. rlat > lonSW .AND. rlat < latNE)
+        IF (rlon > lonvertices(klonmin) .AND. rlon < lonvertices(klonmax) .AND.                       &
+          rlat > latvertices(klonmin) .AND. rlat < latvertices(klatmax)) THEN
+          centerin = .TRUE.
+          
+          ! Looping all over the radar matrix
+          DO i=1, e_radlon
+            DO j=1, r_radlat
+              rrlon = rlon + (i-e_radlon2)*radards(ir)
+              
+            END DO
+          END DO
+          
+        END IF
       END IF    
         
     END DO look_radar
@@ -6180,6 +6205,47 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
   END SUBROUTINE border_inside
   
+  SUBROUTINE real_distances(
+    ,ims, ime, jms, jme                                                                               &
+    ,lonv, latv                                                                                       &
+    ,dist
+    ,dlonpt, dlatpt)
+    ! Subroutine to compute the diferential of coordinattes of a distance from a given point
+    !   Following: https://en.wikipedia.org/wiki/Geographical_distance
+    !
+    !     D = 2*R * SQRT( [sin(dlat /2)*cos(dlon/2)]**2 + [cos(latm)*sin(dlon/2)]**2 )
+    
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
+    REAL, INTENT(in)                                     :: lonv, latv, dist
+    REAL, INTENT(out)                                    :: dlonpt, dlatpt
+
+    ! Local 
+    INTEGER                                              :: i, j
+    REAL, PARAMETER                                      :: R = 6371.009 
+    REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm
+    CHARACTER(len=50)                                    :: fname
+    
+!!!!!!! Variables
+! lon, lat: 2D array longitude, latitude matrices
+! lonv, latv: point to compute the distance
+  
+    fname = 'real_distance'
+  
+    dist = 0.
+    
+    dlat = lat - latv
+    dlon = lon - lonv
+    latm = (lat + latv) / 2.
+    
+    dist = 2.*R * SQRT( (sin(dlat /2.)*cos(dlon/2.))**2 + (cos(latm)*sin(dlon/2.))**2 )
+   
+    RETURN
+ 
+  END SUBROUTINE real_distances
+
   SUBROUTINE real_distances(
     ,ims, ime, jms, jme                                                                               &
     ,lon, lat                                                                                         &
