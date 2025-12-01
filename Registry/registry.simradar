@@ -6,14 +6,18 @@ dimspec    ri      2     namelist=e_radlon                 c     radar_lon
 dimspec    rj      2     namelist=e_radlat                 c     radar_lat
 dimspec    rz      2     namelist=e_radhgt                 c     radar_hgt
 dimspec    rn      2     namelist=nradar                   c     radar_num
+dimpsec    rng     2     namelist=ngrid_radar              c     ngrid_radar
 dimspec    rns     2     namelist=nradar_s                 c     radar_s_num
 dimspec    rnc     2     namelist=nradar_c                 c     radar_c_num
 dimspec    rnx     2     namelist=nradar_x                 c     radar_x_num
+dimspec    coord   2     constant=2                        z     coord
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
 dimspec    rnz     2     namelist=e_radnz                  c     radar_numhgt
+dimpsec    rnngg   2     namelist=nradgrid_radar           c     nradgrid_radar
 dimspec    rnsz    2     namelist=e_radnsz                 c     radars_numhgt
 dimspec    rncz    2     namelist=e_radncz                 c     radarc_numhgt
 dimspec    rnxz    2     namelist=e_radnxz                 c     radarx_numhgt
+dimspec    rnggcoord 2   namelist=rnggcoord                c     rnggcoord
 
 # simrad.AR package namelist options
 rconfig   integer  nradar        namelist,simradar     1              1       rh{11}    "nradar"            "amount of surface radar"                                ""
@@ -31,6 +35,9 @@ rconfig   integer  e_radlon      namelist,simradar     1             1000     rh
 rconfig   integer  e_radlat      namelist,simradar     1             1000     rh{11}    "e_radlat"          "radar grid points on the y-axis"                        ""
 rconfig   integer  e_radhgt      namelist,simradar     1               80     rh{11}    "e_radhgt"          "radar grid points on the z-axis"                        ""
 rconfig   integer  e_radnz       namelist,simradar     1             1600     rh{11}    "e_radnz"           "amount and height extent of radars (nradar)*(e_radhgt)" ""
+rconfig   integer  ngrid_radar   namelist,simradar     1              100     rh{11}    "ngrid_radar"       "amount of radar grid points into a given WRF grid point" ""
+rconfig   integer  nradgrid_radar namelist,simradar    1             2000     rh{11}    "nradgrid_radar"    "amount of rdaras and radar grid points into a given WRF grid point" ""
+rconfig   integer  rnggcoord     namelist,simradar     1             4000     rh{11}    "ngrid_radar"       "amount of rdaras and radar grid points and its coordinates of radar grid points into a given WRF grid point" ""
 rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
 rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
 rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency in minutes of time-debugging"                 ""
@@ -45,12 +52,14 @@ rconfig   real     latdbg        namelist,simradar     1             -999.    rh
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     r         "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
-state    integer radarnum  {rn}ij             misc        1       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
-state    real  GATELON     {rnz}{ri}{rj}      misc        1       -     rh{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
-state    real  GATELAT     {rnz}{ri}{rj}      misc        1       -     rh{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
-state    real  GATEHGT     {rnz}{ri}{rj}      misc        1       -     rh{11}    "gatehgt"           "ground radar gate height"                                 "m"
-state    real  GATEHWGHT   {rn}{ri}{rj}       misc        1       -     rh{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "1"
-state    real  GATEHDIST   {rn}{ri}{rj}       misc        1       -     rh{11}    "gatehdist"         "ground radar horizontal distance of the grid point"       "m"
+state    integer radarnum  ij{rn}             misc        1       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
+state    real  GATELON     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
+state    real  GATELAT     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
+state    real  GATEHGT     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatehgt"           "ground radar gate height"                                 "m"
+state    real  GATEHDIST   {ri}{rj}{rn}       misc        1       -     rh{11}    "gatehdist"         "ground radar horizontal distance of the grid point"       "m"
+state    real  NGRIDRADAR  ij{rngg}           misc        1       -     rh{11}    "ngridradar"        "amount of radar grid points inside the grid point"        "1"
+state    real  IJGRIDRADAR ij{rnggcoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar grid points inside the grid point"   "-"
+state    real  GATEHWGHT   ij{rngg}           misc        1       -     rh{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "1"
 
 # S-band
 state    real  VRS         {rnsz}{ri}{rj}     misc        1       -     rh{11}    "vrs"               "ground S-band radar Doppler Velocity"                     "ms-1"

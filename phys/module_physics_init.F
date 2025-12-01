@@ -5791,6 +5791,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     )
     
     ! Subroutine to initialize the simrad.AR syntehtic surface radar 
+    
+    USE module_simradar_tools
 
     IMPLICIT NONE
 
@@ -5807,22 +5809,29 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, INTENT(in)                                  :: e_rhgt, e_rnz
     REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
       heightmax, radards
+    INTEGER, INTENT(in)                                  :: rng, rnngg, rnggcoord
     REAL, INTENT(in)                                     :: missing_value
     INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
-    REAL, DIMENSION(nradar, ims:ime, jms:jme),                                                        &
+    REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                        &
       INTENT(out)                                        :: gatehwght, gatehdist
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
-    INTEGER, DIMENSION(nradar, ims:ime, jms:jme),                                                     &
+    INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
       INTENT(out)                                        :: radnum
-    REAL, DIMENSION(nradar, e_rlon, e_rlat), INTENT(out) :: radarlons, radarlats, radardist
+    REAL, DIMENSION(e_rlon, e_rlat, nradar), INTENT(out) :: radarlons, radarlats, radardist
+    REAL, DIMENSION(ims:ime,jms:jme, nradar),INTENT(out) :: ngridradar
+    REAL, DIMENSION(ims:ime, jms:jme, rnggcoord),                                                     &
+      INTENT(out)                                        :: ijgridradar
+    REAL, DIMENSION(ims:ime, jms:jme, rngg), INTENT(out) :: gatehwght
 
     ! Local
     INTEGER                                              :: ir
     INTEGER                                              :: i,j,k
     INTEGER                                              :: idbg, jdbg
+    INTEGER                                              :: itile_radm, jtile_rad
+    INTEGER                                              :: irng, irnngg, irnggcoord
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: inczsoil
     REAL                                                 :: mindist
@@ -5832,7 +5841,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
     REAL                                                 :: lonmin, lonmax, latmin, latmax
-    REAL                                                 :: rrlon, rrlat
+    REAL                                                 :: lonrad, latrad, distrad
     REAL, DIMENSION(4)                                   :: lonvertices, latvertices
     REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
     REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
@@ -6003,8 +6012,20 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
     
+    e_radlon2 = e_radlon / 2
+    e_radlat2 = e_radlat / 2
+  
+    ! Getting the right distances accordingly the position of the radar
+    IF (cradgridpos == 0) THEN
+      offset = -1.
+    ELSE
+      offset = -0.5
+    END IF
+
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
+    
+      irng = 0
     
       centerin = .FALSE.
       
@@ -6023,268 +6044,87 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       ! Even if I could know that, radar matrix is not (by now) parallelized !
       ! Therefore, I need to compute the whole radar matrix at each tile
       
-      IF (inside) THEN
-        ! Let's compute radar lon,lat matrices only in the tile that contains the location of the radar
-        IF (rlon > lonvertices(klonmin) .AND. rlon < lonvertices(klonmax) .AND.                       &
-          rlat > latvertices(klonmin) .AND. rlat < latvertices(klatmax)) THEN
-          centerin = .TRUE.
-          
-          ! Looping all over the radar matrix
-          DO i=1, e_radlon
-            DO j=1, r_radlat
-              rrlon = rlon + (i-e_radlon2)*radards(ir)
+      ! Let's compute radar lon,lat matrices only in the tile that contains the location of the radar
+      IF (rlon > lonvertices(klonmin) .AND. rlon < lonvertices(klonmax) .AND.                       &
+        rlat > latvertices(klonmin) .AND. rlat < latvertices(klatmax)) THEN
+
+        centerin = .TRUE.
+                   
+        radarlons = missing_value
+        radarlats = missing_value
+        ! Looping all over the radar matrix
+        lonlat_radar: DO i=1, e_radlom
+          DO j=1, e_radlat
+            im = (i - dimx2 + offset)
+            jm = (j - dimy2 + offset)
+            radardists(ir,i,j) = radards(ir)*SQRT(im**2 + jm**2)
+            iis(i,j) = im
+            jjs(i,j) = jm
+      
+            IF (dist > distmax(ir)) CYCLE
+            angle = ATAN(jm,im)
+            angle = angle * rad
+            
+            CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, radarlons(ir,i,j),     &
+              radarlats(ir,i,j))
+            
+            ! Is this point of the radar matrix inside this tile?
+            ! ... hope this IF is enough!
+            IF (radarlons(ir,i,j) > lonvertices(klonmin) .AND.                                        &
+              radarlons(ir,i,j) < lonvertices(klonmax) .AND. radarlats(ir,i,j) > latvertices(klonmin) &
+              .AND. radarlats(ir,i,j) < latvertices(klatmax)) THEN
               
-            END DO
+               Minimum distance to the debugging point
+               dist = SQRT((xlong-radarlons(ir,i,j))**2+(xlat-radarlats(ir,i,j))**2)
+               (/itile_rad, jtile_rad /) = MINLOC(dist)
+
+               ! Amount of radar points in this grid point
+               irng = irng + 1
+                              
+               ! Combined coordinate of amount of radars, and amount of radar points in this grid point
+               irngg = ir*nradar + irng
+               ngridradar(itile_rad, jtile_rad, ir) = irng
+
+               ! Combined coordinate of amount of radars, amount of radar points and their coordinates 
+               !   in this grid point
+               irnggcoord = irngg + 1
+               ijgridradar(itile_rad, jtile_rad, irnggcoord) = im
+               irnggcoord = irrng + 2
+               ijgridradar(itile_rad, jtile_rad, irnggcoord) = jm
+               
+               ! Looking for thw weights for the horizontal interpolation
+               
+               
+            END IF
+            
           END DO
-          
-        END IF
-      END IF    
+        END DO lonlat_radar
         
+      ELSE
+      
+        ! Any area of th radar measurement outside the tile
+        IF (.NOT.inside) CYCLE
+                  
+        ! Looping all over the radar matrix
+        lonlat_radar: DO i=1, e_radlom
+          DO j=1, e_radlat
+            im = (i - dimx2 + offset)
+            jm = (j - dimy2 + offset)
+            distrad = ddist*SQRT(im**2 + jm**2)
+            iis(i,j) = im
+            jjs(i,j) = jm
+      
+            IF (dist > max_dist) CYCLE
+            angle = ATAN(jm,im)
+            angle = angle * rad
+            
+            CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonrad, radlatrad))
+              
+          END DO
+        END DO lonlat_radar
+                  
     END DO look_radar
 
   END SUBROUTINE simradar_init
-  
-  SUBROUTINE radar_inside (ims, ime, jms, jme, lon, lat, bnds_lon, bnds_lat, rlon, rlat, rdist,       &
-    missing_value, gatehdist, inradar, radnum, inside)
-  ! Subroutine to determine if a radar fells inside the tile
-  
-    IMPLICIT NONE
-  
-    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
-    REAL, DIMENSION(ims:ime,jms:jme,4), INTENT(in)       :: bnds_lon, bnds_lat
-    REAL, INTENT(in)                                     :: rlon, rlat, rdist, missing_value
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(out)        :: gatehdist
-    INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(out)     :: inradar, radnum
-    LOGICAL, INTENT(out)                                 :: inside
-  
-    ! Local
-    INTEGER                                              :: ii, ie, ji, je
-    INTEGER                                              :: ibnd
-    CHARACTER(len=50)                                    :: fname
-    
-!!!!!!! Variables
-! lon, lat: 2D array longitude, latitude matrices at the center 
-! bnds_lon, bnds_lat: 2D array longitude, latitude matrices of the vertices
-! rlonv, rlat: location of the radar
-! rdist: maximum distance to the radar
-! gatehdist: distance to the radar in the model grid
-! inradar: whether the model grid lays inside the measurement area of any radar
-! radnum: pertinence of the model grid to a given radar
-  
-    fname = 'radar_inside'
-  
-    ! Is this radar inside the range of the tile?
-    inside = .FALSE.
-    
-    gatehdist = missing_value
-    inradar = -1
-    radnum = -1
-      
-    ! Do we need to be efficient?
-    !! S border
-    ii = ims
-    ie = ime
-    ji = jms
-    je = jms
-    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
-
-    ! Going to the borders
-    DO ibnd=1, 4
-      CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,    &
-        rlat, rdist, gatehdist)  
-    END DO
-    
-    !! W border
-    IF (.NOT.inside) THEN
-      ii = ims
-      ie = ims
-      ji = jms
-      je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
-
-      ! Going to the borders
-      DO ibnd=1, 4
-        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
-      END DO
-    END IF
-    
-    !! N border
-    IF (.NOT.inside) THEN
-      ii = ims
-      ie = ime
-      ji = jme
-      je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
-
-      ! Going to the borders
-      DO ibnd=1, 4
-        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
-      END DO
-    END IF
-        
-    !! E border
-    IF (.NOT.inside) THEN
-      ii = ime
-      ie = ime
-      ji = jms
-      je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
-
-      ! Going to the borders
-      DO ibnd=1, 4
-        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
-      END DO
-    END IF
-
-    ! Filling other values with a single loop
-    IF (inside) THEN
-      DO i=its, ite
-        DO j=jts, jte
-          IF (gatehdist(i,j) <= rdist) THEN
-            inradar(i,j) = 1
-            radnum(i,j) = 1        
-          ELSE
-            gatehdist(i,j) = missing_value
-          END IF
-        END DO
-      END DO
-    END IF
-
-    RETURN
-
-  END SUBROUTINE radar_inside
-  
-  SUBROUTINE border_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, gatehdist, inside)
-  ! Subroutine to check if a border gets a radar
-  
-    IMPLICIT NONE
-    
-    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
-    REAL, INTENT(in)                                     :: rlon, rlat, rdist
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(inout)      :: gatehdist
-    LOGICAL, INTENT(inout)                               :: inside
-  
-    ! Local
-    REAL                                                 :: mindist
-    REAL, DIMENSION(:,:), ALLOCATABLE                    :: distborder  
-    CHARACTER(len=50)                                    :: fname
-    
-!!!!!!! Variables
-! lon, lat: 2D array longitude, latitude matrices at the center 
-! rlonv, rlat: location of the radar
-! rdist: maximum distance to the radar
-! gatehdist: distance to the radar in the model grid
-  
-    fname = 'border_inside'
-      
-    IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
-    ALLOCATE(distborder(ims:ime,jms:jme))
-    CALL real_distances(
-      ims, ime, jms, jme,                                                                             &
-      lon(ims:ime,jms:jme), lat(ims:ime,jms:jme),                                                     &
-      rlon, rlat,     
-      distborder)
-    mindist = MINVAL(distborder)
-    IF (mindist < rdist) THEN      
-      inside = .TRUE.
-      CALL real_distances(
-        ims, ime, jms, jme,                                                                           &
-        lon, lat,                                                                                     &
-        rlon, rlat,     
-        gatehdist)
-    END IF
-
-    IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
-    
-    RETURN
-
-  END SUBROUTINE border_inside
-  
-  SUBROUTINE real_distances(
-    ,ims, ime, jms, jme                                                                               &
-    ,lonv, latv                                                                                       &
-    ,dist
-    ,dlonpt, dlatpt)
-    ! Subroutine to compute the diferential of coordinattes of a distance from a given point
-    !   Following: https://en.wikipedia.org/wiki/Geographical_distance
-    !
-    !     D = 2*R * SQRT( [sin(dlat /2)*cos(dlon/2)]**2 + [cos(latm)*sin(dlon/2)]**2 )
-    
-    IMPLICIT NONE
-
-    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
-    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
-    REAL, INTENT(in)                                     :: lonv, latv, dist
-    REAL, INTENT(out)                                    :: dlonpt, dlatpt
-
-    ! Local 
-    INTEGER                                              :: i, j
-    REAL, PARAMETER                                      :: R = 6371.009 
-    REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm
-    CHARACTER(len=50)                                    :: fname
-    
-!!!!!!! Variables
-! lon, lat: 2D array longitude, latitude matrices
-! lonv, latv: point to compute the distance
-  
-    fname = 'real_distance'
-  
-    dist = 0.
-    
-    dlat = lat - latv
-    dlon = lon - lonv
-    latm = (lat + latv) / 2.
-    
-    dist = 2.*R * SQRT( (sin(dlat /2.)*cos(dlon/2.))**2 + (cos(latm)*sin(dlon/2.))**2 )
-   
-    RETURN
- 
-  END SUBROUTINE real_distances
-
-  SUBROUTINE real_distances(
-    ,ims, ime, jms, jme                                                                               &
-    ,lon, lat                                                                                         &
-    ,lonv, latv
-    dist)
-    ! Subroutine to compute the real distance to a point
-    !   Following: https://en.wikipedia.org/wiki/Geographical_distance
-    !
-    !     D = 2*R * SQRT( [sin(dlat /2)*cos(dlon/2)]**2 + [cos(latm)*sin(dlon/2)]**2 )
-    
-    IMPLICIT NONE
-
-    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
-    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
-    REAL, INTENT(in)                                     :: lonv, latv
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(out)        :: dist
-
-    ! Local 
-    INTEGER                                              :: i, j
-    REAL, PARAMETER                                      :: R = 6371.009 
-    REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm
-    CHARACTER(len=50)                                    :: fname
-    
-!!!!!!! Variables
-! lon, lat: 2D array longitude, latitude matrices
-! lonv, latv: point to compute the distance
-  
-    fname = 'real_distance'
-  
-    dist = 0.
-    
-    dlat = lat - latv
-    dlon = lon - lonv
-    latm = (lat + latv) / 2.
-    
-    dist = 2.*R * SQRT( (sin(dlat /2.)*cos(dlon/2.))**2 + (cos(latm)*sin(dlon/2.))**2 )
-   
-    RETURN
- 
-  END SUBROUTINE real_distances
 
 END MODULE module_physics_init
