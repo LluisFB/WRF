@@ -3,7 +3,7 @@ MODULE module_simradar_tools
 !   L. Fita, CIMA-IFAECI, November 2025
 
 !!!!!!! Subroutines / functions
-! border_inside: Subroutine to check if a border gets a radar
+! is_inside: Subroutine to check if a tile gets a radar
 ! DIRCT1: Solution of the geodetic direct problem after T. Vincenty
 ! position_from_point: Subroutine tro compute the coordinates at a given distance and angle from a 
 !   given point
@@ -209,6 +209,7 @@ MODULE module_simradar_tools
     LOGICAL, INTENT(out)                                 :: inside
   
     ! Local
+    INTEGER                                              :: i, j
     INTEGER                                              :: ii, ie, ji, je
     INTEGER                                              :: ibnd
     CHARACTER(len=50)                                    :: fname
@@ -236,12 +237,13 @@ MODULE module_simradar_tools
     ie = ime
     ji = jms
     je = jms
-    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,  &
+      inside)
 
     ! Going to the borders
     DO ibnd=1, 4
       CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,    &
-        rlat, rdist, gatehdist)  
+        rlat, rdist, gatehdist, inside)  
     END DO
     
     !! W border
@@ -250,12 +252,13 @@ MODULE module_simradar_tools
       ie = ims
       ji = jms
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
+      inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
+          rlat, rdist, gatehdist, inside)  
       END DO
     END IF
     
@@ -265,12 +268,13 @@ MODULE module_simradar_tools
       ie = ime
       ji = jme
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
+      inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
+          rlat, rdist, gatehdist, inside)  
       END DO
     END IF
         
@@ -280,19 +284,20 @@ MODULE module_simradar_tools
       ie = ime
       ji = jms
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
+      inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist)  
+          rlat, rdist, gatehdist, inside)  
       END DO
     END IF
 
     ! Filling other values with a single loop
     IF (inside) THEN
-      DO i=its, ite
-        DO j=jts, jte
+      DO i=ims, ime
+        DO j=jms, jme
           IF (gatehdist(i,j) <= rdist) THEN
             inradar(i,j) = 1
             radnum(i,j) = 1        
@@ -307,8 +312,8 @@ MODULE module_simradar_tools
 
   END SUBROUTINE radar_inside
   
-  SUBROUTINE border_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, gatehdist, inside)
-  ! Subroutine to check if a border gets a radar
+  SUBROUTINE is_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, gatehdist, inside)
+  ! Subroutine to check if a tile gets a radar
   
     IMPLICIT NONE
     
@@ -328,22 +333,20 @@ MODULE module_simradar_tools
     ! rlonv, rlat: location of the radar
     ! rdist: maximum distance to the radar
     ! gatehdist: distance to the radar in the model grid
-    fname = 'border_inside'
+    fname = 'is_inside'
       
     IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
     ALLOCATE(distborder(ims:ime,jms:jme))
-    CALL real_distances(
-      ims, ime, jms, jme,                                                                             &
+    CALL real_distances(ims, ime, jms, jme,                                                           &
       lon(ims:ime,jms:jme), lat(ims:ime,jms:jme),                                                     &
-      rlon, rlat,     
+      rlon, rlat,                                                                                     &
       distborder)
     mindist = MINVAL(distborder)
     IF (mindist < rdist) THEN      
       inside = .TRUE.
-      CALL real_distances(
-        ims, ime, jms, jme,                                                                           &
+      CALL real_distances(ims, ime, jms, jme,                                                         &
         lon, lat,                                                                                     &
-        rlon, rlat,     
+        rlon, rlat,                                                                                   &
         gatehdist)
     END IF
 
@@ -351,13 +354,13 @@ MODULE module_simradar_tools
     
     RETURN
 
-  END SUBROUTINE border_inside
+  END SUBROUTINE is_inside
   
-  SUBROUTINE real_distances(
-    ,ims, ime, jms, jme                                                                               &
+  SUBROUTINE real_distances(ims, ime, jms, jme                                                        &
+    ,lon, lat                                                                                         &
     ,lonv, latv                                                                                       &
-    ,dist
-    ,dlonpt, dlatpt)
+    ,dist)
+!    ,dlonpt, dlatpt)
     ! Subroutine to compute the diferential of coordinattes of a distance from a given point
     !   Following: https://en.wikipedia.org/wiki/Geographical_distance
     !
@@ -367,8 +370,9 @@ MODULE module_simradar_tools
 
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
-    REAL, INTENT(in)                                     :: lonv, latv, dist
-    REAL, INTENT(out)                                    :: dlonpt, dlatpt
+    REAL, INTENT(in)                                     :: lonv, latv
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(out)    :: dist
+!    REAL, INTENT(out)                                    :: dlonpt, dlatpt
 
     ! Local 
     INTEGER                                              :: i, j
