@@ -85,6 +85,7 @@ MODULE module_simradar_tools
     !    STOP -1
     !  END IF
 
+    !PRINT *,'  ' // TRIM(fname) // ": ", a, f, glat1, glon1, ddist
     CALL dirct1(a, f, glat1, glon1, glat2, glon2, faz, baz, ddist)
    
     lat_dist = glat2*rad
@@ -122,8 +123,8 @@ MODULE module_simradar_tools
 
     IMPLICIT NONE
 
-    REAL(kind=rr8), INTENT(in)                           :: GLAT1, GLON1, FAZ, A, F
-    REAL(kind=rr8), INTENT(out)                          :: GLAT2, GLON2, BAZ, S
+    REAL(kind=rr8), INTENT(in)                           :: GLAT1, GLON1, FAZ, A, F, S
+    REAL(kind=rr8), INTENT(out)                          :: GLAT2, GLON2, BAZ
 
     ! Local
     INTEGER                                              :: i
@@ -375,7 +376,6 @@ MODULE module_simradar_tools
 !    REAL, INTENT(out)                                    :: dlonpt, dlatpt
 
     ! Local 
-    INTEGER                                              :: i, j
     REAL, PARAMETER                                      :: R = 6371.009 
     REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm
     CHARACTER(len=50)                                    :: fname
