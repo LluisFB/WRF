@@ -238,13 +238,12 @@ MODULE module_simradar_tools
     ie = ime
     ji = jms
     je = jms
-    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,  &
-      inside)
+    CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, inside)
 
     ! Going to the borders
     DO ibnd=1, 4
       CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,    &
-        rlat, rdist, gatehdist, inside)  
+        rlat, rdist, inside)  
     END DO
     
     !! W border
@@ -253,13 +252,12 @@ MODULE module_simradar_tools
       ie = ims
       ji = jms
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
-      inside)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist, inside)  
+          rlat, rdist, inside)  
       END DO
     END IF
     
@@ -269,13 +267,12 @@ MODULE module_simradar_tools
       ie = ime
       ji = jme
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
-      inside)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist, inside)  
+          rlat, rdist, inside)  
       END DO
     END IF
         
@@ -285,20 +282,20 @@ MODULE module_simradar_tools
       ie = ime
       ji = jms
       je = jme
-      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, gatehdist,&
-      inside)
+      CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, inside)
 
       ! Going to the borders
       DO ibnd=1, 4
         CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
-          rlat, rdist, gatehdist, inside)  
+          rlat, rdist, inside)  
       END DO
     END IF
 
     ! Filling other values with a single loop
     IF (inside) THEN
       DO i=ims, ime
-        DO j=jms, jme
+        DO j=jms, jme     
+          CALL real_distances(ims, ime, jms, jme, lon, lat, rlon, rlat, gatehdist(i,j))
           IF (gatehdist(i,j) <= rdist) THEN
             inradar(i,j) = 1
             radnum(i,j) = 1        
@@ -313,7 +310,7 @@ MODULE module_simradar_tools
 
   END SUBROUTINE radar_inside
   
-  SUBROUTINE is_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, gatehdist, inside)
+  SUBROUTINE is_inside(ime, ims, jms, jme, lon, lat, rlon, rlat, rdist, inside)
   ! Subroutine to check if a tile gets a radar
   
     IMPLICIT NONE
@@ -321,7 +318,6 @@ MODULE module_simradar_tools
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
     REAL, INTENT(in)                                     :: rlon, rlat, rdist
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(inout)      :: gatehdist
     LOGICAL, INTENT(inout)                               :: inside
   
     ! Local
@@ -343,13 +339,7 @@ MODULE module_simradar_tools
       rlon, rlat,                                                                                     &
       distborder)
     mindist = MINVAL(distborder)
-    IF (mindist < rdist) THEN      
-      inside = .TRUE.
-      CALL real_distances(ims, ime, jms, jme,                                                         &
-        lon, lat,                                                                                     &
-        rlon, rlat,                                                                                   &
-        gatehdist)
-    END IF
+    IF (mindist < rdist) inside = .TRUE.
 
     IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
     
