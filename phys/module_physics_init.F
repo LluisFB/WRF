@@ -5778,8 +5778,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,its, ite, jts, jte, kts, kte                                                                     &
 
     ,nradar, nrs, nrc, nrx                                                                            &
-    ,e_rlon, e_rlat                                                                                   &
-    ,e_rhgt, e_rnz                                                                                    &
+    ,e_radlon, e_radlat                                                                               &
+    ,e_radhgt, e_rnz                                                                                  &
     ,radartype, radarband                                                                             &
     ,gatelon, gatelat, gatehgt                                                                        &
     ,distmax, heightmax, radards                                                                      &
@@ -5805,8 +5805,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, INTENT(in)                                     :: londbg, latdbg
     
     INTEGER, INTENT(in)                                  :: nradar
-    INTEGER, INTENT(in)                                  :: e_rlon, e_rlat
-    INTEGER, INTENT(in)                                  :: e_rhgt, e_rnz
+    INTEGER, INTENT(in)                                  :: e_radlon, e_radlat
+    INTEGER, INTENT(in)                                  :: e_radhgt, e_rnz
     REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
       heightmax, radards
     INTEGER, INTENT(in)                                  :: rng, rnngg, rnggcoord
@@ -5830,13 +5830,15 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: ir
     INTEGER                                              :: i,j,k
     INTEGER                                              :: idbg, jdbg
-    INTEGER                                              :: itile_radm, jtile_rad
-    INTEGER                                              :: irng, irnngg, irnggcoord
+    INTEGER                                              :: itile_rad, jtile_rad
+    INTEGER                                              :: irng, irngg, irnggcoord
+    INTEGER                                              :: e_radlon2, e_radlat2
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: inczsoil
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
-    REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rdist
+    REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rddist,   &
+      rdistx
     REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
@@ -6034,7 +6036,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       rhgt = gatehgt(ir)
       rband = gateband(ir)
       rtype = gatetype(ir)
-      rdist = distmax(ir)
+      rdist = ddist(ir)
+      rdistx = distmax(ir)
       
       CALL radar_inside (ims, ime, jms, jme, lon, lat, bnds_lon, bnds_lat rlon, rlat, rdist,          &
         missing_value, gatehdist(ir,:,:), inradar, radnum(ir,:,:), inside)
@@ -6053,7 +6056,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         radarlons = missing_value
         radarlats = missing_value
         ! Looping all over the radar matrix
-        lonlat_radar: DO i=1, e_radlom
+        lonlat_radar: DO i=1, e_radlon
           DO j=1, e_radlat
             im = (i - dimx2 + offset)
             jm = (j - dimy2 + offset)
