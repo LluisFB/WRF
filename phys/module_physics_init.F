@@ -5791,7 +5791,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     )
     
     ! Subroutine to initialize the simrad.AR syntehtic surface radar 
-    
+    !   NOTE radars are in polar space:
+    !     dx: distance    dy: angle    dz: azimuth
+    !     3Dvariables (dy,dz,dx),        lon,lats(dy,dx),        hgt(dx,dz)
+
     USE module_simradar_tools
 
     IMPLICIT NONE
@@ -5805,13 +5808,18 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, INTENT(in)                                     :: londbg, latdbg
     
     INTEGER, INTENT(in)                                  :: nradar
-    INTEGER, INTENT(in)                                  :: e_radlon, e_radlat
-    INTEGER, INTENT(in)                                  :: e_radhgt, e_rnz
+    INTEGER, INTENT(in)                                  :: e_azimuth, eloption
+    INTEGER, INTENT(inout)                               :: e_angle, e_dist
     REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
       heightmax, radards
-    INTEGER, INTENT(in)                                  :: rng, rnngg, rnggcoord
+!    INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
+    INTEGER, DIMENSION(nradar), INTENT(in)               :: em_ray
+    REAL, INTENT(in)                                     :: radii_ddist
     REAL, INTENT(in)                                     :: missing_value
-    INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
+    REAL, DIMENSION(e_azimuth), INTENT(inout)            :: azimuths
+    ! Compressed dimensions
+    INTEGER, INTENT(in)                                  :: e_rna, e_rnh, e_rnd, e_rnad, e_rnhd,      &
+      e_rnahd, e_rad, e_rhd, e_rahd
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
@@ -5832,7 +5840,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
     INTEGER                                              :: irng, irngg, irnggcoord
-    INTEGER                                              :: e_radlon2, e_radlat2
+    INTEGER                                              :: e_angle2, e_azimuth2, e_dist2
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: inczsoil
     REAL                                                 :: mindist
@@ -5861,6 +5869,45 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! ims, ime, jms, jme, kms, kme: extension of the matrices in memory
 ! its, ite, jts, jte, kts, kte: extension of the martices by tile
 ! idbg, jdbg: point coordinates of the debugging point
+! Radar variables
+! nradar: amount of radars
+! gatelon: longitude of the radar location
+! gatelat: latitude of the radar location
+! gatehgt: height of the radar location [m]
+! distmax: horizontal range of measuremnt of the radar [km]
+! heightmax: vertical range of measuremnt of the radar [km]
+! radards: radial resolution of the radar space [m]
+! radii_ddist: radii (km) at which arc resolution is the same as minimum ddist (same for all radars)
+! em_ray: type of propagation of em ray
+!    1: 4/3 Ref 
+! eloption: type of ellipsoide to use
+!    1: 'GRS80 / WGS84  (NAD83)'
+!        a = 6378137.d0
+!        f = 1.d0/298.25722210088d0
+!    2: 'Clarke 1866    (NAD27)'
+!        a = 6378206.4d0
+!        f = 1.d0/294.9786982138d0
+! e_angle: amount of angle beams (horizontal) in the radar space [computed a 2*pi*radii_ddist / (min(ddist))
+! e_azimuth: amount of azimuth angles (vertical) in the radar space (same for all radars)
+! azimuths: azimuth angles
+!   IF azimuths(1) == -1; aximuths are internally computed from Nazimuth, by regular intervals 
+!     30. / (e_azimuth-1)
+! e_dist: amount of distances (horizontal) in the radar space [computed as 2.*max(distmax) / min(ddist)]
+! lutfilen: name of the netCDF file with the look-up-tables for a given miscrophysics of the 
+!   polymetries obntained via the T-matrix derived
+! doppler_scheme: mtehod to use to retrieve the radial velocities after LUT
+!   0: Reflectivity weighted terminal velocity
+!   1:  Get PSD integrated backscattering cross section int = v S/S [not implemented]
+!! Compressed dimensions
+! e_rna = nradar*e_angle
+! e_rnh = nradar*e_azimuth
+! e_rnd = nradar*e_dist
+! e_rnad = nradar*e_angle*e_dist
+! e_rnhd = nradar*e_azimuth*e_dist
+! e_rnahd = nradar*e_angle*e_azimuth*e_dist
+! e_rad = e_angle*e_dist
+! e_rhd = e_azimuth*e_dist
+! e_rahd = e_angle*e_azimuth*e_dist
 
     fname = 'simradar_init'
     
@@ -5872,63 +5919,93 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     ! Consistency checks
     !! Collapsed dimensions
-    IF ( e_rnz /= nradar * e_rhgt) THEN
-      PRINT *, '  e_rnz: ', e_rnz, ' nradar: ', nradar, ' e_rhgt: ', e_rhgt
+    IF ( e_rna /= nradar * e_angle) THEN
+      PRINT *, '  e_rna: ', e_rna, ' nradar: ', nradar, ' e_angle: ', e_rna
       WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_rght " //           &
-        "and e_rnz do not coincide! e_rnz = nradar*e_rght"
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle " //          &
+        "and e_rna do not coincide! e_rna = nradar*e_angle"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    IF ( e_rnh /= nradar * e_azimuth) THEN
+      PRINT *, '  e_rnh: ', e_rnh, ' nradar: ', nradar, ' e_azimuth: ', e_azimuth
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth " //        &
+        "and e_rnh do not coincide! e_rnh = nradar*e_azimuth"
       CALL wrf_error_fatal ( diag_message )
     END IF
     
+    IF ( e_rnd /= nradar * e_dist) THEN
+      PRINT *, '  e_rnd: ', e_rnd, ' nradar: ', nradar, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_dist " //           &
+        "and e_rnd do not coincide! e_rnd = nradar*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
+    IF ( e_rnad /= nradar * e_angle * e_dist) THEN
+      PRINT *, '  e_rnad: ', e_rnad, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, e_dist " //  &
+        "and e_rnad do not coincide! e_rnad = nradar*e_angle*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
+    IF ( e_rnhd /= nradar * e_azimuth * e_dist) THEN
+      PRINT *, '  e_rnhd: ', e_rnhd,' nradar: ', nradar,' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth, e_dist " //&
+        "and e_rnhd do not coincide! e_rnhd = nradar*e_azimuth*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
+    IF ( e_rnahd /= nradar * e_angle * e_azimuth * e_dist) THEN
+      PRINT *, '  e_rnhd: ', e_rnahd, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_azimuth: ',     &
+        e_azimuth, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, " //         &
+        "e_azimuth, e_dist and e_rnahd do not coincide! e_rnahd = nradar*e_angle*e_azimuth*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+   
+    IF ( e_rad /= e_angle * e_dist) THEN
+      PRINT *, '  e_rad: ', e_rahd, ' e_angle: ', e_angle, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_dist " //          &
+        "and e_rad do not coincide! e_rad = e_angle*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+   
+    IF ( e_rhd /= e_azimuth * e_dist) THEN
+      PRINT *, '  e_rhd: ', e_rhd, ' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_azimuth, e_dist " //        &
+        "and  e_rhd do not coincide! e_rhd = e_azimuth*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    IF ( e_rahd /= e_angle * e_azimuth * e_dist) THEN
+      PRINT *, '  e_rahd: ', e_rahd, ' e_angle: ', e_angle, ' e_azimuth: ', e_azimuth, ' e_dist: ',   &
+        e_dist
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_azimuth, " //      &
+        "e_dist and e_rahd do not coincide! e_rahd = e_angle*e_azimuth*e_dist"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
     !! Maximum radar coverage
     maxrdistmax = MAX(distmax(1:nradar)
     minrds = MIN(radards(1:nradar)
 
-    IF ( e_rlon /= INT(2*maxrdistmax / minrds)) THEN
-      PRINT *, '  e_rlon: ', e_rlon, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
+    IF ( e_dist /= INT(2*maxrdistmax / minrds)) THEN
+      PRINT *, '  e_rlon: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along x-axis e_rlon does not " //   &
+        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along radial-axis does not " //     &
         "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal  "// &
-        "resolution (minimum radards)! e_rlon = INT(2*maxrdistmax / minradards)"
+        "resolution (minimum radards)! e_dist = INT(2*maxrdistmax / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
-
-    IF ( e_rlat /= INT(2*maxrdistmax / minrds)) THEN
-      PRINT *, '  e_rlat: ', e_rlat, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along y-axis e_rlat does not " //   &
-        "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal "//  &
-        "resolution (minimum radards)! e_rlat = INT(2*maxrdistmax / minradards)"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
-
-    !! Maximum radar coverage
-    maxrhgtmax = MAX(heightmax(1:nradar)
-    IF ( e_rhgt /= INT(maxrhgtmax / minrds)) THEN
-      PRINT *, '  e_rlon: ', e_rhgt, ' maxrhgtmax: ', maxrhgtmax, ' minimum radards: ', minrds
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: radar range along z-axis e_rhgt does not " //   &
-        "coincide with the maximum maximum height radar range (maxrhgtmax) and the minimal " //       &
-        "(minimum radards)! e_rhgt = INT(maxrhgtmax / minrds)"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
-    
-    IF ( e_rnz /= nradar * e_rhgt) THEN
-      PRINT *, '  e_rnz: ', e_rnz, ' nradar: ', nradar, ' e_rhgt: ', e_rhgt
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_rght " //           &
-        "and e_rnz do not coincide! e_rnz = nradar*e_rght"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
-
-    IF ( nradar /= nrs + nrc + nrx) THEN
-      PRINT *, '  nradar: ', nradar, ' nrs: ', nrs, ' nrc: ', nrc, ' nrx: ', nrx
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: total amount of radars nradar and amount " //   &
-        "of radar types do not coincide! nradar = nrs + nrc + nrx"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
-
+   
     ! lon, lat debugging point 
     !   L. Fita, UBA-CIMA-IFAECI. This should be done as in share/wrf_timeseries.F, but it uses 
     !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
@@ -6014,16 +6091,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
     
-    e_radlon2 = e_radlon / 2
-    e_radlat2 = e_radlat / 2
+    e_angle2 = e_angle / 2
+    e_azimuth2 = e_azimuth / 2
+    e_dist2 = e_dist / 2
   
-    ! Getting the right distances accordingly the position of the radar
-    IF (cradgridpos == 0) THEN
-      offset = -1.
-    ELSE
-      offset = -0.5
-    END IF
-
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
     
