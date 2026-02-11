@@ -1,0 +1,22 @@
+simrad.AR: Implementation of a radar emulator in WRF
+
+L. Fita, V. Galligani (CIMA-IFAECI), Aregntina
+
+This effort is absolutely in shoulders of giants and is based in multiple different works:
+
+ - Bessel, F. W., (1826) On the computation of geographical longitude and latitude from geodetic measurements, Astronomische Nachrichten (Astronomical Notes), Band 4, No. 86, Spalten 241-254, Altona 1826
+ - Leinonen, J., High-level interface to T-matrix scattering calculations: architecture, capabilities and limitations, Opt. Express, vol. 22, issue 2, 1655-1660 (2014), doi: 10.1364/OE.22.001655.
+ - Mishchenko, M. I. and L. D. Travis, T-matrix computations of light scattering by large spheroidal particles, Opt. Commun., vol. 109, 16-21 (1994)
+ - Mishchenko, M. I., L. D. Travis, and A. Macke, Scattering of light by polydisperse, randomly oriented, finite circular cylinders, Appl. Opt., vol. 35, 4927-4940 (1996)
+ - Vincenty, T., (1975) Direct and inverse solutions on the ellipsoid with application of nested equations, Survey Review, Vol. 23, No. 176, pp. 88-93.
+ - Vincenty, T., (1976) Correspondence: solutions of geodesics, survey Review, Vol. 23, No. 180, p. 294.
+ - Wielaard, D. J., M. I. Mishchenko, A. Macke, and B. E. Carlson, Improved T-matrix computations for large, nonabsorbing and weakly absorbing nonspherical particles and comparison with geometrical optics approximation, Appl. Opt., vol. 36, 4305-4313 (1997)
+
+
+There is a prototype off-line working version available from CIMA's GIT repository, from which the code is based on:
+https://git.cima.fcen.uba.ar/lluis.fita/simradar/-/wikis/home
+
+This code is available from Lluis Fita's WRF fork (git@github.com:LluisFB/WRF.git) in branch 'simradAR'
+
+
+
