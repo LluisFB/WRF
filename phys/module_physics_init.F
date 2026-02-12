@@ -5772,6 +5772,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,xlong_u, xlat_u                                                                                  &
     ,xlong_v, xlat_v                                                                                  &
     ,londbg, latdbg                                                                                   &
+    ,dbg                                                                                              &
     ,ijdbg                                                                                            &
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
@@ -5785,7 +5786,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,distmax, heightmax, radards                                                                      &
     ,gatetype, gateband                                                                               &
     ,radinterp, em_ray, missing_value                                                                 &
-    ,gatehwght, gatehdist                                                                             &
+    ,gatehdist                                                                             &
     ,inradar, radsnum, radcnum, radxnum                                                               &
     ,radarlons, radarlats, radardist                                                                  &
     )
@@ -5807,7 +5808,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_v, xlat_v
     REAL, INTENT(in)                                     :: londbg, latdbg
     
-    INTEGER, INTENT(in)                                  :: nradar
+    INTEGER, INTENT(in)                                  :: nradar, ngrid_radar
     INTEGER, INTENT(in)                                  :: e_azimuth, eloption
     INTEGER, INTENT(inout)                               :: e_angle, e_dist
     REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
@@ -5819,23 +5820,31 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION(e_azimuth), INTENT(inout)            :: azimuths
     ! Compressed dimensions
     INTEGER, INTENT(in)                                  :: e_rna, e_rnh, e_rnd, e_rnad, e_rnhd,      &
-      e_rnahd, e_rad, e_rhd, e_rahd
+      e_rnahd, e_rad, e_rhd, e_rahd, nrnn, nrnncoord, nrcoord, nr4coord 
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
     REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                        &
-      INTENT(out)                                        :: gatehwght, gatehdist
+      INTENT(out)                                        :: gatehdist
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
     INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
       INTENT(out)                                        :: radnum
-    REAL, DIMENSION(e_rlon, e_rlat, nradar), INTENT(out) :: radarlons, radarlats, radardist
-    REAL, DIMENSION(ims:ime,jms:jme, nradar),INTENT(out) :: ngridradar
-    REAL, DIMENSION(ims:ime, jms:jme, rnggcoord),                                                     &
+    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist,          &
+      radarhgts, radarlhgts
+    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlons_bnds, radarlat_bnds,            &
+    REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
+                                                         :: radarhgt_bnds
+    INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
+      INTENT(out)                                        :: ngridradar
+    INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                  &
       INTENT(out)                                        :: ijgridradar
+    REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(out) :: ijdistgridradar
     REAL, DIMENSION(ims:ime, jms:jme, rngg), INTENT(out) :: gatehwght
 
     ! Local
     INTEGER                                              :: ir
+    INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
+      inr4coord
     INTEGER                                              :: i,j,k
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
@@ -5846,7 +5855,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
     REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rddist,   &
-      rdistx
+      rdistx, rhgtx
+    REAL(kind=rr8)                                       :: a, f
+    CHARACTER(len=30)                                    :: elips
     REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
@@ -5857,8 +5868,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( ims:ime )                           :: distlon
     REAL, DIMENSION( jms:jme )                           :: distlat
+    REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlons_bnds_NOc, radarlat_bnds_NOc,    &
+      radarhgt_bnds_NOc
+    INTEGER, DIMENSION(ims:ime, jms:jme, 2, ngrid_radar) :: ijgridradar_NOc
+    REAL, DIMENSION(ims:ime, jms:jme, ngrid_radar)       :: ijdistgridradar_NOc
     CHARACTER (LEN=1000)                                 :: diag_message
-    LOGICAL                                              :: found, inside, centerin
+    LOGICAL                                              :: found, inside, dbg
     CHARACTER(len=50)                                    :: fname
 
 !!!!!!!! Variables
@@ -5898,6 +5913,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! doppler_scheme: mtehod to use to retrieve the radial velocities after LUT
 !   0: Reflectivity weighted terminal velocity
 !   1:  Get PSD integrated backscattering cross section int = v S/S [not implemented]
+! ngrid_radar: maximum amount of radar cells in a WRF grid
 !! Compressed dimensions
 ! e_rna = nradar*e_angle
 ! e_rnh = nradar*e_azimuth
@@ -5908,6 +5924,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! e_rad = e_angle*e_dist
 ! e_rhd = e_azimuth*e_dist
 ! e_rahd = e_angle*e_azimuth*e_dist
+! nrnn = nradar*ngrid_radar
+! nrcoord = nradar*2
+! nrnncoord = nradar*ngrid_radar*2
+! nncoord = ngrid_radar*2
+! nr4coord = nradar*4
 
     fname = 'simradar_init'
     
@@ -5919,6 +5940,48 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     ! Consistency checks
     !! Collapsed dimensions
+    
+    ! nrnn = nradar*ngrid_radar
+    IF ( nrnn /= nradar * ngrid_radar) THEN
+      PRINT *, '  nrnn: ', nrnn, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, ngrid_radar " //      &
+        "and nrnn do not coincide! nrnn = nradar*ngrid_radar"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    ! nrcoord = nradar*2
+    IF ( nrcoord /= nradar * 2) THEN
+      PRINT *, '  nrcoord: ', nrcoord, ' nradar: ', nradar
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar " //                   &
+        "and nrcoord do not coincide! nrcoord = nradar*2"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    ! nrnncoord = nradar*ngrid_radar*2
+    IF ( nrnncoord /= nradar * ngrid_radar * 2) THEN
+      PRINT *, '  nrrnn: ', nrnn, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, ngrid_radar " //      &
+        "and nrnncoord do not coincide! nrnn = nradar*ngrid_radar*2"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    ! nncoord = ngrid_radar*2
+    IF ( nncoord /= ngrid_radar * 2) THEN
+      PRINT *, '  nrrnncoord: ', nrnncoord, ' ngrid_radar: ', ngrid_radar
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges ngrid_radar " //              &
+        "and nrnncoord do not coincide! nrnncoord = ngrid_radar*2"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    ! nr4coord = nradar*4
+    IF ( nr4coord /= nradar * 4) THEN
+      PRINT *, '  nrcoord: ', nrcoord, ' nradar: ', nradar
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar " //                   &
+        "and nr4coord do not coincide! nrcoord = nradar*4"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    
     IF ( e_rna /= nradar * e_angle) THEN
       PRINT *, '  e_rna: ', e_rna, ' nradar: ', nradar, ' e_angle: ', e_rna
       WRITE (diag_message , * ) &
@@ -5998,7 +6061,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     minrds = MIN(radards(1:nradar)
 
     IF ( e_dist /= INT(2*maxrdistmax / minrds)) THEN
-      PRINT *, '  e_rlon: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
+      PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along radial-axis does not " //     &
         "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal  "// &
@@ -6006,6 +6069,15 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
    
+    IF ( e_angle /= INT(2.*pict*radii_ddist*1000./minrds)) THEN
+      PRINT *, '  e_angle: ', e_angle, ' radii_ddist: ', radii_ddist, ' minimum radards: ', minrds
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: amount of range along radial-axis does not " // &
+        "coincide with the radii at the same arc size as radial resolution (radii_dist) and the " //  &
+        "minimal  resolution (minimum radards)! e_angle = INT(2*pi*radii_ddist*1000. / minradards)"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
     ! lon, lat debugging point 
     !   L. Fita, UBA-CIMA-IFAECI. This should be done as in share/wrf_timeseries.F, but it uses 
     !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
@@ -6027,6 +6099,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! Minimum distance to the debugging point
     dist = SQRT((xlong-londbg)**2+(xlat-latdbg)**2)
     mindist = MINVAL(dist)
+    
+    ! How to get True/False from namelist debug number?
+    dbg = TRUE
     
     found = .FALSE.
     WRITE(diag_message,*)'its,ite:', its,ite,' jts,jte:', jts,jte,'  mindist:', mindist, ' mindd:', mindd
@@ -6095,13 +6170,28 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     e_azimuth2 = e_azimuth / 2
     e_dist2 = e_dist / 2
   
+    ! Getting projection details for the radar space
+    ! Ellipsoide
+    IF (eloption == 1) THEN
+      a = 6378137.d0
+      f = 1.d0/298.25722210088d0
+      elipsn = 'GRS80 / WGS84  (NAD83)'
+    ELSE IF (eloption == 2) THEN
+      a = 6378206.4d0
+      f = 1.d0/294.9786982138d0
+      elipsn = 'Clarke 1866    (NAD27)'
+    !ELSE IF (config%eloption == 3) THEN
+    !    CALL elipss (elips)
+    ELSE
+      WRITE (diag_message , * ) &
+        "simrad.AR: ERROR -- error -- ERROR -- error: ellipsoide option eloption = " //               &
+          TRIM(StoI(eloption)) // " not ready !! Available ones: 1, 2"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+  
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
     
-      irng = 0
-    
-      centerin = .FALSE.
-      
       rlon = gatelon(ir)
       rlat = gatelat(ir)
       rhgt = gatehgt(ir)
@@ -6109,94 +6199,37 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       rtype = gatetype(ir)
       rdist = ddist(ir)
       rdistx = distmax(ir)
-      
-      CALL radar_inside (ims, ime, jms, jme, lon, lat, bnds_lon, bnds_lat rlon, rlat, rdist,          &
-        missing_value, gatehdist(ir,:,:), inradar, radnum(ir,:,:), inside)
+      rhgtx = heightmax(ir)
+      ! Polar coordinates of the radar space
+      !!
+      CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rdist,           &
+        rdistx*1000., rhgtx*1000., azimuths, a, f, elipsn, angle(:,ir), distance(:,ir),               &
+        azimuth(:,ir), radarlons), radarlats(:,:,ir), radarhgts(:,:,ir), radarlhgts(:,:,ir),          &
+        radarlon_bnds_NOc, radarlat_bnds_NOc, radarhgt_bnds_NOc, dbg)     
+
+      ! Checking pertinence of the radar into this tile
+      CALL pertinence_polar(ims, ime, jms, jme, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
+          e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx, missing_value,           &
+          ngrid_radar, gatehdist(:,:,ir), inradar, radarnum(:,:,ir), ngridradar(:,:,ir), 2,           &
+          ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
+          
+      ! Compressing results
+      DO i=1, ngrid_radar
+        inrnn = ir*i
+        ijdistgridradar(:,:,inrnn) = ijdistgridradar_NOc(:,:,i)
+        DO j=1, 2
+          inrnncoord = ir*i*j
+          inncoord = i*j
+          ijgridradar(:,:,inrnncoord) = ijgridradar_NOc(:,:,i,j)
+        END DO
+      END DO
         
-      ! Getting lon,lat for the radar matrix
-      ! Can we know from the radar perspective which of its grid points are inside this tile?
-      ! Even if I could know that, radar matrix is not (by now) parallelized !
-      ! Therefore, I need to compute the whole radar matrix at each tile
-      
-      ! Let's compute radar lon,lat matrices only in the tile that contains the location of the radar
-      IF (rlon > lonvertices(klonmin) .AND. rlon < lonvertices(klonmax) .AND.                       &
-        rlat > latvertices(klonmin) .AND. rlat < latvertices(klatmax)) THEN
-
-        centerin = .TRUE.
-                   
-        radarlons = missing_value
-        radarlats = missing_value
-        ! Looping all over the radar matrix
-        lonlat_radar: DO i=1, e_radlon
-          DO j=1, e_radlat
-            im = (i - dimx2 + offset)
-            jm = (j - dimy2 + offset)
-            radardists(ir,i,j) = radards(ir)*SQRT(im**2 + jm**2)
-            iis(i,j) = im
-            jjs(i,j) = jm
-      
-            IF (dist > distmax(ir)) CYCLE
-            angle = ATAN(jm,im)
-            angle = angle * rad
-            
-            CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, radarlons(ir,i,j),     &
-              radarlats(ir,i,j))
-            
-            ! Is this point of the radar matrix inside this tile?
-            ! ... hope this IF is enough!
-            IF (radarlons(ir,i,j) > lonvertices(klonmin) .AND.                                        &
-              radarlons(ir,i,j) < lonvertices(klonmax) .AND. radarlats(ir,i,j) > latvertices(klonmin) &
-              .AND. radarlats(ir,i,j) < latvertices(klatmax)) THEN
-              
-               Minimum distance to the debugging point
-               dist = SQRT((xlong-radarlons(ir,i,j))**2+(xlat-radarlats(ir,i,j))**2)
-               (/itile_rad, jtile_rad /) = MINLOC(dist)
-
-               ! Amount of radar points in this grid point
-               irng = irng + 1
-                              
-               ! Combined coordinate of amount of radars, and amount of radar points in this grid point
-               irngg = ir*nradar + irng
-               ngridradar(itile_rad, jtile_rad, ir) = irng
-
-               ! Combined coordinate of amount of radars, amount of radar points and their coordinates 
-               !   in this grid point
-               irnggcoord = irngg + 1
-               ijgridradar(itile_rad, jtile_rad, irnggcoord) = im
-               irnggcoord = irrng + 2
-               ijgridradar(itile_rad, jtile_rad, irnggcoord) = jm
-               
-               ! Looking for thw weights for the horizontal interpolation
-               
-               
-            END IF
-            
-          END DO
-        END DO lonlat_radar
-        
-      ELSE
-      
-        ! Any area of th radar measurement outside the tile
-        IF (.NOT.inside) CYCLE
-                  
-        ! Looping all over the radar matrix
-        lonlat_radar: DO i=1, e_radlom
-          DO j=1, e_radlat
-            im = (i - dimx2 + offset)
-            jm = (j - dimy2 + offset)
-            distrad = ddist*SQRT(im**2 + jm**2)
-            iis(i,j) = im
-            jjs(i,j) = jm
-      
-            IF (dist > max_dist) CYCLE
-            angle = ATAN(jm,im)
-            angle = angle * rad
-            
-            CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonrad, radlatrad))
-              
-          END DO
-        END DO lonlat_radar
-                  
+      DO j=1, 4
+        inr4coord = ir*j
+        radarlon_bnds(:,:,inr4coord) = radarlon_bnds_NOc(:,:,j)
+        radarlat_bnds(:,:,inr4coord) = radarlat_bnds_NOc(:,:,j)
+        radarhgt_bnds(:,:,inr4coord) = radarhgt_bnds_NOc(:,:,j)
+      END DO
     END DO look_radar
 
   END SUBROUTINE simradar_init
