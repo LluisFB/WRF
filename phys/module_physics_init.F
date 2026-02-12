@@ -273,7 +273,17 @@ CONTAINS
                          ,alevsiz_cu,num_months,no_src_types_cu,aeromcu,aeropcu   & ! PSH/TWG 06/10/16                         
                          ,EFCG,EFCS,EFIG,EFIS,EFSG,EFSS                           & ! TWG
 #endif
-                          )
+
+! simrad.AR
+                         ,nradar, e_angle, e_dist, nr4coord                       &
+                         ,nrnncoord, nrnn                                         &
+                         ,ijdbg                                                   &
+                         ,gatehdist, inradar, radnum                              &
+                         ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
+                         ,radarlons_bnds, radarlat_bnds, radarhgt_bnds            &
+                         ,ngridradar, ijgridradar, ijdistgridradar                &
+                         ,lutgrid
+                         )
 
 !-----------------------------------------------------------------
    USE module_domain
@@ -909,6 +919,29 @@ CONTAINS
 REAL(KIND=8) :: co2dum,n2odum,ch4dum,f11dum,f12dum
 CHARACTER(LEN=8) :: name
 !-----------------------------------------------------------------
+
+! simrad.AR
+  INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, nr4coord,        &
+    nrnncoord, nrnn
+  INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
+  REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                          &
+    INTENT(out)                                          :: gatehdist
+  INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)      :: inradar
+  INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                       &
+    INTENT(out)                                          :: radnum
+  REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist,          &
+    radarhgts, radarlhgts
+  REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlons_bnds, radarlat_bnds,            &
+  REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                             &
+                                                         :: radarhgt_bnds
+  INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                        &
+    INTENT(out)                                          :: ngridradar
+  INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                    &
+    INTENT(out)                                          :: ijgridradar
+  REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(out)   :: ijdistgridradar
+   
+  ! LUT space
+  TYPE(lut_vars), INTENT(out)                            :: lutgrid
 
 #if ( EM_CORE == 1 )
 
@@ -1740,22 +1773,30 @@ CHARACTER(LEN=8) :: name
 #endif
 
      CALL simradar_init(
-
+       model_config_rec                                                                               &
        ,xlong, xlat                                                                                   &
+       ,xlong_u, xlat_u                                                                               &
+       ,xlong_v, xlat_v                                                                               &
        ,londbg, latdbg                                                                                &
+       ,dbg                                                                                           &
        ,ijdbg                                                                                         &
        ,ids, ide, jds, jde, kds, kde                                                                  &
        ,ims, ime, jms, jme, kms, kme                                                                  &
        ,its, ite, jts, jte, kts, kte                      
 
-       ,config_flags%nradar,                                                                          &
-       ,config_flags%e_rlon, ,config_flags%e_rlat                                                     &
-       ,config_flags%e_rhgt, ,config_flags%e_rnz                                                      &
-       ,config_flags%gatelon, ,config_flags%gatelat, config_flags%gatehgt                             &
-       ,config_flags%radards, ,config_flags%radinterp, config_flags%missing_value                     &
-       ,gatehwght, gatehdist                                                                          &
-       ,inradar, radnum                                                                               &
-      
+       ,model_config_rec%nradar,                                                                      &
+       ,model_config_rec%nradar, model_config_rec%nrnn, model_config_rec%nrnncoord                    &
+       ,model_config_rec%nrcoord, model_config_rec%nr4coord                                           &
+       ,model_config_rec%e_angle, model_config_rec%e_azimuth, model_config_rec%e_dist                 &
+
+       ! output
+       ,azimuths                                                                                      &
+       ,ijdbg                                                                                         &
+       ,gatehdist, inradar, radnum                                                                    &
+       ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                        &
+       ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                  &
+       ,ngridradar, ijgridradar, ijdistgridradar                                                      &
+       ,lutgrid
        )
 
    END SUBROUTINE phy_init
@@ -5779,17 +5820,17 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
 
-    ,nradar, nrs, nrc, nrx                                                                            &
-    ,e_radlon, e_radlat                                                                               &
-    ,e_radhgt, e_rnz                                                                                  &
-    ,radartype, radarband                                                                             &
-    ,gatelon, gatelat, gatehgt                                                                        &
-    ,distmax, heightmax, radards                                                                      &
-    ,gatetype, gateband                                                                               &
-    ,radinterp, em_ray, missing_value                                                                 &
-    ,gatehdist                                                                             &
-    ,inradar, radsnum, radcnum, radxnum                                                               &
-    ,radarlons, radarlats, radardist                                                                  &
+    ,nradar, nrnn, nrnncoord, nrcoord, nr4coord                                                       &
+    ,e_angle, e_azimuth, e_dist                                                                       &
+
+    ! output
+    ,azimuths                                                                                         &
+    ,ijdbg                                                                                            &
+    ,gatehdist, inradar, radnum                                                                       &
+    ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                           &
+    ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                     &
+    ,ngridradar, ijgridradar, ijdistgridradar                                                         &
+    ,lutgrid
     )
     
     ! Subroutine to initialize the simrad.AR syntehtic surface radar 
@@ -5821,8 +5862,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, INTENT(in)                                     :: missing_value
     REAL, DIMENSION(e_azimuth), INTENT(inout)            :: azimuths
     ! Compressed dimensions
-    INTEGER, INTENT(in)                                  :: e_rna, e_rnh, e_rnd, e_rnad, e_rnhd,      &
-      e_rnahd, e_rad, e_rhd, e_rahd, nrnn, nrnncoord, nrcoord, nr4coord 
+    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord 
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
@@ -5843,21 +5883,18 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(out) :: ijdistgridradar
     
     ! LUT space
-    REAL, DIMENSION(dimv), INTENT(out)                   :: q_rain_vec, q_snow_vec, q_grau_vec,       &
-      q_ice_vec
     TYPE(lut_vars), INTENT(out)                          :: lutgrid
 
     ! Local
     INTEGER                                              :: ir
+    INTEGER                                              :: ierr
     INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
       inr4coord
     INTEGER                                              :: i,j,k
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
-    INTEGER                                              :: irng, irngg, irnggcoord
     INTEGER                                              :: e_angle2, e_azimuth2, e_dist2
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
-    REAL                                                 :: inczsoil
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
     REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rddist,   &
@@ -6240,20 +6277,25 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !! Look-up tables space for T-matrix
     CALL read_lut(lutfilen, lutgrid, dbg)
     
-    ALLOCATE(q_rain_vec(qwater_constants%dimv), STAT=ierr)
-    ALLOCATE(q_snow_vec(qwater_constants%dimv), STAT=ierr)
-    ALLOCATE(q_grau_vec(qwater_constants%dimv), STAT=ierr)
-    ALLOCATE(q_ice_vec(qwater_constants%dimv), STAT=ierr)
+    ALLOCATE(lutgrid%q_rain_vec(config_flags%dimv), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_rain_vec', 1, (/config_flags%dimv/), fname, ierr)   
+    ALLOCATE(lutgrid%q_snow_vec(config_flags%dimv), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_snow_vec', 1, (/config_flags%dimv/), fname, ierr)
+    ALLOCATE(lutgrid%q_grau_vec(config_flags%dimv), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_grau_vec', 1, (/config_flags%dimv/), fname, ierr)
+    ALLOCATE(lutgrid%q_ice_vec(config_flags%dimv), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_ice_vec', 1, (/config_flags%dimv/), fname, ierr)
         
-    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_rain_min, qwater_constants%q_rain_max, &
-      qwater_constants%dimv, q_rain_vec, dbg)
-    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_snow_min, qwater_constants%q_snow_max, &
-      qwater_constants%dimv, q_snow_vec, .FALSE.)
-    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_grau_min, qwater_constants%q_grau_max, &
-      qwater_constants%dimv, q_grau_vec, .FALSE.)
-    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_ice_min, qwater_constants%q_ice_max,   &
-      qwater_constants%dimv, q_ice_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(config_flags%q_rain_min, config_flags%q_rain_max,         &
+      config_flags%dimv, lutgrid%q_rain_vec, dbg)
+    CALL create_logarithmic_scaled_vectorsD(config_flags%q_snow_min, config_flags%q_snow_max,         &
+      config_flags%dimv, lutgrid%q_snow_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(config_flags%q_grau_min, config_flags%q_grau_max,         &
+      config_flags%dimv, lutgrid%q_grau_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(config_flags%q_ice_min, config_flags%q_ice_max,           &
+      config_flags%dimv, lutgrid%q_ice_vec, .FALSE.)
 
+    RETURN
 
   END SUBROUTINE simradar_init
 
