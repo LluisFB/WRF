@@ -5768,6 +5768,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
   SUBROUTINE simradar_init(
   
+    config_flags                                                                                      &
     ,xlong, xlat                                                                                      &
     ,xlong_u, xlat_u                                                                                  &
     ,xlong_v, xlat_v                                                                                  &
@@ -5800,6 +5801,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     IMPLICIT NONE
 
+    TYPE (grid_config_rec_type), INTENT(in)              :: config_flags   
     INTEGER, INTENT(in)                                  :: ids, ide, jds, jde, kds, kde
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
     INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
@@ -5839,7 +5841,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                  &
       INTENT(out)                                        :: ijgridradar
     REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(out) :: ijdistgridradar
-    REAL, DIMENSION(ims:ime, jms:jme, rngg), INTENT(out) :: gatehwght
+    
+    ! LUT space
+    REAL, DIMENSION(dimv), INTENT(out)                   :: q_rain_vec, q_snow_vec, q_grau_vec,       &
+      q_ice_vec
+    TYPE(lut_vars), INTENT(out)                          :: lutgrid
 
     ! Local
     INTEGER                                              :: ir
@@ -5935,7 +5941,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! Initializing outputs
     inradar = 0
     radnum = 0
-    gatehwght = 0.
     gatehdist = 0.
 
     ! Consistency checks
@@ -6231,6 +6236,24 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         radarhgt_bnds(:,:,inr4coord) = radarhgt_bnds_NOc(:,:,j)
       END DO
     END DO look_radar
+    
+    !! Look-up tables space for T-matrix
+    CALL read_lut(lutfilen, lutgrid, dbg)
+    
+    ALLOCATE(q_rain_vec(qwater_constants%dimv), STAT=ierr)
+    ALLOCATE(q_snow_vec(qwater_constants%dimv), STAT=ierr)
+    ALLOCATE(q_grau_vec(qwater_constants%dimv), STAT=ierr)
+    ALLOCATE(q_ice_vec(qwater_constants%dimv), STAT=ierr)
+        
+    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_rain_min, qwater_constants%q_rain_max, &
+      qwater_constants%dimv, q_rain_vec, dbg)
+    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_snow_min, qwater_constants%q_snow_max, &
+      qwater_constants%dimv, q_snow_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_grau_min, qwater_constants%q_grau_max, &
+      qwater_constants%dimv, q_grau_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(qwater_constants%q_ice_min, qwater_constants%q_ice_max,   &
+      qwater_constants%dimv, q_ice_vec, .FALSE.)
+
 
   END SUBROUTINE simradar_init
 
