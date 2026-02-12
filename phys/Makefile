@@ -209,7 +209,9 @@ MODULES = \
 	module_wind_mav.o \
 	module_sf_lake.o \
 	module_diagnostics_driver.o \
-	module_irrigation.o
+	module_irrigation.o \
+	module_simradar_tools.o \
+	module_simradar.o
 
 FIRE_MODULES = \
         module_fr_fire_driver.o \
