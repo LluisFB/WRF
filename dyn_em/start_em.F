@@ -52,6 +52,9 @@
    USE module_model_constants
    USE module_avgflx_em, ONLY : zero_avgflx
 
+! simrad.AR
+   USE module_simradar_tools, ONLY lutgrid
+
    IMPLICIT NONE
    !  Input data.
    TYPE (domain)          :: grid
@@ -1271,6 +1274,16 @@ endif
                       ,grid%NC_CU, grid%NI_CU, grid%NR_CU, grid%NS_CU,grid%CCN_CU                    &
                       ,grid%alevsiz_cu,grid%num_months,grid%no_src_types_cu,grid%aeromcu             &
                       ,grid%aeropcu,grid%EFCG,grid%EFCS,grid%EFIG,grid%EFIS,grid%EFSG,grid%EFSS      &
+! simrad.AR
+                      ,config_flags%nradar, config_flags%e_angle, config_flags%e_dist                &
+                      ,config_flags%nr4coord, config_flags%nrnncoord, config_flags%nrnn              &
+                      ,grid%ijdbg                                                                    &
+                      ,grid%gatehdist, grid%inradar, grid%radnum                                     &
+                      ,grid%radarlons, grid%radarlats, grid%radardist                                & 
+                      ,grid%radarhgts, grid%radarlhgts                                               &
+                      ,grid%radarlons_bnds, grid%radarlat_bnds, grid%radarhgt_bnds                   &
+                      ,grid%ngridradar, grid%ijgridradar, grid%ijdistgridradar                       &
+                      ,lutgrid
                       )
        ENDDO ! loop of tiles for phy_init
 
