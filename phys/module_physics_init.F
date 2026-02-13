@@ -932,8 +932,8 @@ CHARACTER(LEN=8) :: name
   INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)      :: inradar
   INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                       &
     INTENT(out)                                          :: radnum
-  REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist,          &
-    radarhgts, radarlhgts
+  REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist
+  REAL, DIMENSION(e_azimuth, e_dist, nradar),INTENT(out) :: radarhgts, radarlhgts
   REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlons_bnds, radarlat_bnds,            &
   REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                             &
                                                          :: radarhgt_bnds
@@ -1793,6 +1793,8 @@ CHARACTER(LEN=8) :: name
        ,model_config_rec%nradar, model_config_rec%nrnn, model_config_rec%nrnncoord                    &
        ,model_config_rec%nrcoord, model_config_rec%nr4coord                                           &
        ,model_config_rec%e_angle, model_config_rec%e_azimuth, model_config_rec%e_dist                 &
+       ,model_config_rec%gatelon, model_config_rec%gatelat, model_config_rec%gatehgt                  & 
+       ,model_config_rec%distmax, model_config_rec%heightmax, model_config_rec%radards                &
 
        ! output
        ,azimuths                                                                                      &
@@ -5826,9 +5828,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
-
     ,nradar, nrnn, nrnncoord, nrcoord, nr4coord                                                       &
     ,e_angle, e_azimuth, e_dist                                                                       &
+    ,gatelon, gatelat, gatehgt, distmax, heightmax, radards                                           &
 
     ! output
     ,azimuths                                                                                         &
@@ -5879,7 +5881,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
       INTENT(out)                                        :: radnum
     REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist,          &
-      radarhgts, radarlhgts
+    REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(out) :: radarhgts, radarlhgts
     REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlons_bnds, radarlat_bnds,            &
     REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
                                                          :: radarhgt_bnds
@@ -5934,7 +5936,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! ims, ime, jms, jme, kms, kme: extension of the matrices in memory
 ! its, ite, jts, jte, kts, kte: extension of the martices by tile
 ! idbg, jdbg: point coordinates of the debugging point
-! Radar variables
+!! Radar variables
 ! nradar: amount of radars
 ! gatelon: longitude of the radar location
 ! gatelat: latitude of the radar location
@@ -5965,15 +5967,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 !   1:  Get PSD integrated backscattering cross section int = v S/S [not implemented]
 ! ngrid_radar: maximum amount of radar cells in a WRF grid
 !! Compressed dimensions
-! e_rna = nradar*e_angle
-! e_rnh = nradar*e_azimuth
-! e_rnd = nradar*e_dist
-! e_rnad = nradar*e_angle*e_dist
-! e_rnhd = nradar*e_azimuth*e_dist
-! e_rnahd = nradar*e_angle*e_azimuth*e_dist
-! e_rad = e_angle*e_dist
-! e_rhd = e_azimuth*e_dist
-! e_rahd = e_angle*e_azimuth*e_dist
 ! nrnn = nradar*ngrid_radar
 ! nrcoord = nradar*2
 ! nrnncoord = nradar*ngrid_radar*2
@@ -6264,17 +6257,16 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
           
       ! Compressing results
       DO i=1, ngrid_radar
-        inrnn = ir*i
+        inrnn = (ir-1)*ngrid_radar + i
         ijdistgridradar(:,:,inrnn) = ijdistgridradar_NOc(:,:,i)
         DO j=1, 2
-          inrnncoord = ir*i*j
-          inncoord = i*j
+          inrnncoord = (ir-1)*ngrid_radar*2 + (i-1)*2 + j
           ijgridradar(:,:,inrnncoord) = ijgridradar_NOc(:,:,i,j)
         END DO
       END DO
         
       DO j=1, 4
-        inr4coord = ir*j
+        inr4coord = (ir-1)*4 + j
         radarlon_bnds(:,:,inr4coord) = radarlon_bnds_NOc(:,:,j)
         radarlat_bnds(:,:,inr4coord) = radarlat_bnds_NOc(:,:,j)
         radarhgt_bnds(:,:,inr4coord) = radarhgt_bnds_NOc(:,:,j)
