@@ -1,10 +1,11 @@
 # registry for simrad.AR
 #  V. Galligani, L. Fita (CIMA-IFAECI), Argentina. November 2025
+#ifdef SIMRADAR
 
 ## L. Fita. This should work, but WRF is not prepared for 4D output variables like this
 dimspec    ri         2     namelist=e_dist                  c     e_dist
 dimspec    rj         2     namelist=e_angle                 c     e_angle
-dimspec    rz         2     namelist=e_azimuth               c     e_azimuth
+dimspec    rk         2     namelist=e_azimuth               c     e_azimuth
 dimspec    rn         2     namelist=nradar                  c     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    cii        2     constant=2                       z     coord2
@@ -80,33 +81,33 @@ state    real  RADARHGTS   {rk}{ri}{rn}       misc        1       -     rh{11}  
 state    real  RADARLHGTS  {rk}{ri}{rn}       misc        1       -     rh{11}    "radarlhgts"        "ground radar gate local height"                           "m"
 state    real  RADARDIST   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
 state    real  NGRIDRADAR  ij{rn}             misc        1       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
-state    real  IJGRIDRADAR ij{rnnrcoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
+state    real  IJGRIDRADAR ij{nrnncoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
 
 # radar band values
-state    real  ZH_RAIN     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
-state    real  ZDR_RAIN    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_RAIN"          "ZDR for Rain"                                             "dBz"
-state    real  KDP_RAIN    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_RAIN"          "KDP for Rain"                                             "degree/km"
-state    real  ZH_SNOW     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_SNOW"           "Reflectivity for Snow"                                    "dBZ"
-state    real  ZDR_SNOW    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_SNOW"          "ZDR for Snow"                                             "dBz"
-state    real  KDP_SNOW    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_SNOW"          "KDP for Snow"                                             "degree/km"
-state    real  ZH_GRAU     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_GRAU"           "Reflectivity for Graupel"                                 "dBZ"
-state    real  ZDR_GRAU    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_GRAU"          "ZDR for Graupel"                                          "dBz"
-state    real  KDP_GRAU    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_GRAU"          "KDP for Graupel"                                          "degree/km"
-state    real  ZH_ICE      {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_ICE"            "Reflectivity for cloud Ice"                               "dBZ"
-state    real  ZDR_ICE     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_ICE"           "ZDR for cloud Ice"                                        "dBz"
-state    real  KDP_ICE     {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_ICE"           "KDP for cloud Ice"                                        "degree/km"
-state    real  ZH_HAIL     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_HAIL"           "Reflectivity for Hail"                                    "dBZ"
-state    real  ZDR_HAIL    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_HAIL"          "ZDR for Hail"                                             "dBz"
-state    real  KDP_HAIL    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_HAIL"          "KDP for Hail"                                             "degree/km"
-state    real  ZH_TOTAL    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_TOTAL"          "Reflectivity for all species"                             "dBZ"
-state    real  ZDR_TOTAL   {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_TOTAL"         "ZDR for all species"                                      "dBz"
-state    real  KDP_TOTAL   {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_TOTAL"         "KDP for all species"                                      "degree/km"
+state    real  ZH_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
+state    real  ZDR_RAIN    {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_RAIN"          "ZDR for Rain"                                             "dBz"
+state    real  KDP_RAIN    {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_RAIN"          "KDP for Rain"                                             "degree/km"
+state    real  ZH_SNOW     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_SNOW"           "Reflectivity for Snow"                                    "dBZ"
+state    real  ZDR_SNOW    {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_SNOW"          "ZDR for Snow"                                             "dBz"
+state    real  KDP_SNOW    {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_SNOW"          "KDP for Snow"                                             "degree/km"
+state    real  ZH_GRAU     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_GRAU"           "Reflectivity for Graupel"                                 "dBZ"
+state    real  ZDR_GRAU    {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_GRAU"          "ZDR for Graupel"                                          "dBz"
+state    real  KDP_GRAU    {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_GRAU"          "KDP for Graupel"                                          "degree/km"
+state    real  ZH_ICE      {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_ICE"            "Reflectivity for cloud Ice"                               "dBZ"
+state    real  ZDR_ICE     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_ICE"           "ZDR for cloud Ice"                                        "dBz"
+state    real  KDP_ICE     {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_ICE"           "KDP for cloud Ice"                                        "degree/km"
+state    real  ZH_HAIL     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_HAIL"           "Reflectivity for Hail"                                    "dBZ"
+state    real  ZDR_HAIL    {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_HAIL"          "ZDR for Hail"                                             "dBz"
+state    real  KDP_HAIL    {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_HAIL"          "KDP for Hail"                                             "degree/km"
+state    real  ZH_TOTAL    {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_TOTAL"          "Reflectivity for all species"                             "dBZ"
+state    real  ZDR_TOTAL   {rj}{rk}{nrd}      misc        1       -      h{11}    "ZDR_TOTAL"         "ZDR for all species"                                      "dBz"
+state    real  KDP_TOTAL   {rj}{rk}{nrd}      misc        1       -      h{11}    "KDP_TOTAL"         "KDP for all species"                                      "degree/km"
 
-state    real  TV_RAIN     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_RAIN"           "terminal velocity for Rain"                               "ms-1"
-state    real  TV_SNOW     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_SNOW"           "terminal velocity for Snow"                               "ms-1"
-state    real  TV_GRAU     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_GRAU"           "terminal velocity for Graupel"                            "ms-1"
-state    real  TV_ICE      {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_ICE"            "terminal velocity for cloud Ice"                          "ms-1"
-state    real  TV_HAIL     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_HAIL"           "terminal velocity for Hail"                               "ms-1"
-state    real  TV_WGT      {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_WGT"            "weighted terminal velocity"                               "ms-1"
-state    real  VR          {rj}{rk}{rnd}      misc        1       -      h{11}    "VR"                "Doppler velocity"                                         "ms-1"
-
+state    real  TV_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_RAIN"           "terminal velocity for Rain"                               "ms-1"
+state    real  TV_SNOW     {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_SNOW"           "terminal velocity for Snow"                               "ms-1"
+state    real  TV_GRAU     {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_GRAU"           "terminal velocity for Graupel"                            "ms-1"
+state    real  TV_ICE      {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_ICE"            "terminal velocity for cloud Ice"                          "ms-1"
+state    real  TV_HAIL     {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_HAIL"           "terminal velocity for Hail"                               "ms-1"
+state    real  TV_WGT      {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_WGT"            "weighted terminal velocity"                               "ms-1"
+state    real  VR          {rj}{rk}{nrd}      misc        1       -      h{11}    "VR"                "Doppler velocity"                                         "ms-1"
+#endif
