@@ -1,4 +1,5 @@
 MODULE module_simradar_tools
+#ifdef SIMRADAR
 ! Module wiuth the tools for simrad.AR
 !   L. Fita, CIMA-IFAECI, November 2025
 
@@ -1657,5 +1658,5 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE get_varD3D_ncid
-  
+#endif
 END MODULE module_simradar_tools

@@ -1,4 +1,5 @@
 MODULE module_simradar
+#ifdef SIMRADAR
 ! Module for the simulation of surface polimeric radar following simrad.AR, Galligani et al (CONGREMET XIII), 2018
 
   CONTAINS
@@ -406,5 +407,5 @@ MODULE module_simradar
   
   END SUBROUTINE simradar_calc
 
+#endif
 END MODULE module_simradar
-

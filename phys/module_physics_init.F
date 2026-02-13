@@ -274,6 +274,7 @@ CONTAINS
                          ,EFCG,EFCS,EFIG,EFIS,EFSG,EFSS                           & ! TWG
 #endif
 
+#ifdef SIMRADAR
 ! simrad.AR
                          ,nradar, e_angle, e_dist, nr4coord                       &
                          ,nrnncoord, nrnn                                         &
@@ -281,8 +282,9 @@ CONTAINS
                          ,gatehdist, inradar, radnum                              &
                          ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
                          ,radarlons_bnds, radarlat_bnds, radarhgt_bnds            &
-                         ,ngridradar, ijgridradar, ijdistgridradar                &
+                         ,ngridradar, ijgridradar, ijdistgridradar                &              
                          ,lutgrid
+#endif                         
                          )
 
 !-----------------------------------------------------------------
@@ -920,6 +922,7 @@ REAL(KIND=8) :: co2dum,n2odum,ch4dum,f11dum,f12dum
 CHARACTER(LEN=8) :: name
 !-----------------------------------------------------------------
 
+#ifdef SIMRADAR
 ! simrad.AR
   INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, nr4coord,        &
     nrnncoord, nrnn
@@ -942,6 +945,7 @@ CHARACTER(LEN=8) :: name
    
   ! LUT space
   TYPE(lut_vars), INTENT(out)                            :: lutgrid
+#endif
 
 #if ( EM_CORE == 1 )
 
@@ -1772,6 +1776,7 @@ CHARACTER(LEN=8) :: name
    end if
 #endif
 
+#ifdef SIMRADAR
      CALL simradar_init(
        model_config_rec                                                                               &
        ,xlong, xlat                                                                                   &
@@ -1798,6 +1803,7 @@ CHARACTER(LEN=8) :: name
        ,ngridradar, ijgridradar, ijdistgridradar                                                      &
        ,lutgrid
        )
+#endif
 
    END SUBROUTINE phy_init
 
@@ -5807,6 +5813,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
   END SUBROUTINE shalwater_init
 
+#ifdef SIMRADAR
   SUBROUTINE simradar_init(
   
     config_flags                                                                                      &
@@ -6298,5 +6305,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     RETURN
 
   END SUBROUTINE simradar_init
+#endif
 
 END MODULE module_physics_init
