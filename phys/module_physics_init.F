@@ -5899,7 +5899,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: ierr
     INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
       inr4coord
-    INTEGER                                              :: i,j,k
+    INTEGER                                              :: i,j,k,l,n
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
     INTEGER                                              :: e_angle2, e_azimuth2, e_dist2
@@ -6256,21 +6256,26 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
           ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
           
       ! Compressing results
-      DO i=1, ngrid_radar
-        inrnn = (ir-1)*ngrid_radar + i
-        ijdistgridradar(:,:,inrnn) = ijdistgridradar_NOc(:,:,i)
-        DO j=1, 2
-          inrnncoord = (ir-1)*ngrid_radar*2 + (i-1)*2 + j
-          ijgridradar(:,:,inrnncoord) = ijgridradar_NOc(:,:,i,j)
+      DO i=ims, ime
+        DO j=jms, jme
+          DO n=1, ngridradar(i,j,ir)
+            inrnn = (ir-1)*ngrid_radar + n
+            ijdistgridradar(i,j,inrnn) = ijdistgridradar_NOc(i,j,n)
+            DO l=1, 2
+              inrnncoord = (ir-1)*ngrid_radar*2 + (n-1)*2 + l
+            ijgridradar(i,j,inrnncoord) = ijgridradar_NOc(i,j,n,l)
+            END DO
+          END DO
+        
+          DO l=1, 4
+            inr4coord = (ir-1)*4 + l
+            radarlon_bnds(i,j,inr4coord) = radarlon_bnds_NOc(i,j,l)
+            radarlat_bnds(i,j,inr4coord) = radarlat_bnds_NOc(i,j,l)
+            radarhgt_bnds(i,j,inr4coord) = radarhgt_bnds_NOc(i,j,l)
+          END DO
         END DO
       END DO
-        
-      DO j=1, 4
-        inr4coord = (ir-1)*4 + j
-        radarlon_bnds(:,:,inr4coord) = radarlon_bnds_NOc(:,:,j)
-        radarlat_bnds(:,:,inr4coord) = radarlat_bnds_NOc(:,:,j)
-        radarhgt_bnds(:,:,inr4coord) = radarhgt_bnds_NOc(:,:,j)
-      END DO
+      
     END DO look_radar
     
     !! Look-up tables space for T-matrix
