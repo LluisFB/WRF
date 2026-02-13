@@ -16,15 +16,20 @@ MODULE module_simradar
                       qv, qc, qr, qs, qi, qg, qh,                                                     &
                       mu, mub,                                                                        &
                       ph, phb, rho,                                                                   &
-                      nradar,                                                                         &
-                      e_rlon, e_rlat,                                                                 &
-                      e_rhgt, e_rnz,                                                                  &
-                      gatelon, gatelat, gatehgt,                                                      &
-                      gatehwght, gatehdist,                                                           &
-                      inradar, radnum,                                                                &
-                      radards, radinterp, missing_value,                                              &
+                      nradar, nrnn, nrnncoord, nrcoord, nr4coord,                                     &
+                      e_angle, e_azimuth, e_dist,                                                     &
+                      gatelon, gatelat, gatehgt, gateband                                             &
+                      radarlons, radarlats, radardist, radarhgts, radarlhgts,                         &
+                      azimuths,                                                                       &
+                      ijdbg,                                                                          &
+                      gatehdist, inradar, radnum,                                                     &
+                      radarlons, radarlats, radardist, radarhgts, radarlhgts,                         &
+                      radarlons_bnds, radarlat_bnds, radarhgt_bnds,                                   &
+                      ngridradar, ijgridradar, ijdistgridradar,                                       &
+                      lutgrid,                                                                        &
+                      missing_value,                                                                  &
 
-                     ! Output
+                      ! Output
                       vr,                                                                             &
 
                      !! S-band
@@ -141,22 +146,42 @@ MODULE module_simradar
 ! phb: 3D gepotential base state [m2s-2]
 ! rho: air density [kgm-3]
 
-! nrad: amount of surface radar
-! e_rlon: radar grid points on the x-axis
-! e_rlat: radar grid points on the y-axis
-! e_rhgt: radar grid points on the z-axis
-! e_rnz: amount and height extent of radars (nradar)*(e_rhgt)
-
-! radards: nominal horizontal resolution of radar values in m
-! radinterp: method of interpolation to the radar space (1: lineal)
-! missing_value: missing value
-! gatelon: ground radar gate longitude [degree_east]
-! gatelat: ground radar gate latitude [degree_north]
-! gatehgt: ground radar gate height [m]
-! gatehdist: ground radar horizontal distance of the grid point [m]
-! gatehwght: ground radar horizontal weights for interpolation [1]
-! inradar: pertinence of the grid cell to any radar (1: yes) [1]
-! radarnum: pertinence of the grid cell inside a given radar area [1]
+!! Radar variables
+! nradar: amount of radars
+! gatelon: longitude of the radar location
+! gatelat: latitude of the radar location
+! gatehgt: height of the radar location [m]
+! distmax: horizontal range of measuremnt of the radar [km]
+! heightmax: vertical range of measuremnt of the radar [km]
+! radards: radial resolution of the radar space [m]
+! radii_ddist: radii (km) at which arc resolution is the same as minimum ddist (same for all radars)
+! em_ray: type of propagation of em ray
+!    1: 4/3 Ref 
+! eloption: type of ellipsoide to use
+!    1: 'GRS80 / WGS84  (NAD83)'
+!        a = 6378137.d0
+!        f = 1.d0/298.25722210088d0
+!    2: 'Clarke 1866    (NAD27)'
+!        a = 6378206.4d0
+!        f = 1.d0/294.9786982138d0
+! e_angle: amount of angle beams (horizontal) in the radar space [computed a 2*pi*radii_ddist / (min(ddist))
+! e_azimuth: amount of azimuth angles (vertical) in the radar space (same for all radars)
+! azimuths: azimuth angles
+!   IF azimuths(1) == -1; aximuths are internally computed from Nazimuth, by regular intervals 
+!     30. / (e_azimuth-1)
+! e_dist: amount of distances (horizontal) in the radar space [computed as 2.*max(distmax) / min(ddist)]
+! lutfilen: name of the netCDF file with the look-up-tables for a given miscrophysics of the 
+!   polymetries obntained via the T-matrix derived
+! doppler_scheme: mtehod to use to retrieve the radial velocities after LUT
+!   0: Reflectivity weighted terminal velocity
+!   1:  Get PSD integrated backscattering cross section int = v S/S [not implemented]
+! ngrid_radar: maximum amount of radar cells in a WRF grid
+!! Compressed dimensions
+! nrnn = nradar*ngrid_radar
+! nrcoord = nradar*2
+! nrnncoord = nradar*ngrid_radar*2
+! nncoord = ngrid_radar*2
+! nr4coord = nradar*4
 
 ! timedbg: frecuency in minutes of time-debugging
 ! londbg: longitude in degrees of grid-point debugging (-999., not used)
