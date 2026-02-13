@@ -103,9 +103,11 @@ MODULE module_driver_constants
 
    INTEGER , PARAMETER :: max_extdomains = 5
    
+#ifdef SIMRADAR   
 ! L. Fita simrad.AR
    !  The maximum amunt of surface radars
-   INTEGER , PARAMETER                                   :: max_nradar
+   INTEGER , PARAMETER                                   :: max_nradar = 20
+#endif
 
    !  2. Following related to driver level data structures for DM_PARALLEL communications
 
