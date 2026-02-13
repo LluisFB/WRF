@@ -32,6 +32,7 @@ MODULE module_simradar
                       missing_value,                                                                  &
 
                       ! Output
+!                     iqvm, iqcm, iqrm, iqim, iqsm, iqgm, iqhm, iuam, ivam, iwam, itam, ipressm,       &
                       zh_rain, zdr_rain, kdp_rain,                                                    &
                       zh_snow, zdr_snow, kdp_snow,                                                    &
                       zh_grau, zdr_grau, kdp_grau,                                                    &
@@ -160,6 +161,18 @@ MODULE module_simradar
 
 ! Output
 !-------
+! iqvm: 3-dimensional radar variable of water vapour mixing ratio [kgkg-1]
+! iqcm: 3-dimensional radar variable of cloud mixing ratio [kgkg-1]
+! iqrm: 3-dimensional radar variable of rain mixing ratio [kgkg-1]
+! iqim: 3-dimensional radar variable of ice mixing ratio [kgkg-1]
+! iqsm: 3-dimensional radar variable of snow mixing ratio [kgkg-1]
+! iqgm: 3-dimensional radar variable of graupel mixing ratio [kgkg-1]
+! iqhm: 3-dimensional radar variable of hail mixing ratio [kgkg-1]
+! iuam: 3-dimensional radar variable of eastward wind speed [ms-1]
+! ivam: 3-dimensional radar variable of northward wind speed [ms-1]
+! iwam: 3-dimensional radar variable of vertical wind speed [ms-1]
+! itam: 3-dimensional radar variable of air temperature [K]
+! ipressm: 3-dimensional radar variable of air pressure [Pa]
 ! zh_rain: Reflectivity for Rain [dBZ]
 ! zdr_rain: ZDR for Rain [dBz]
 ! kdp_rain: KDP for Rain [degree/km]
@@ -252,6 +265,10 @@ MODULE module_simradar
     TYPE(lut_vars), INTENT(in)                           :: lutgrid
 
     ! Output
+!    REAL, DIMENSION(e_angle,e_azimiuth,e_dist,nradar), INTENT(out)                                    &
+!                                                        :: iqvm, iqcm, iqrm, iqim, iqsm, iqgm, iqhm,  &
+!      iuam, ivam, iwam, itam, ipressm
+
     REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_rain, zdr_rain, kdp_rain
     REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_snow, zdr_snow, kdp_snow
     REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_grau, zdr_grau, kdp_grau
@@ -287,16 +304,31 @@ MODULE module_simradar
     INTEGER, DIMENSION(kms:kme)                          :: ijkngridradar
     INTEGER, DIMENSION(kms:kme, 3, ngrid3_radar)         :: ijkgridradar
     INTEGER, DIMENSION(kms:kme, 27, ngrid3_radar)        :: wghts
-
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_snow_NOc, zdr_snow_NOc, kdp_snow_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_grau_NOc, zdr_grau_NOc, kdp_grau_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_ice_NOc, zdr_ice_NOc, kdp_ice_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_hail_NOc, zdr_hail_NOc, kdp_hail_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_total_NOc, zdr_total_NOc, kdp_total_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_rain_NOc, tv_snow_NOc, tv_grau_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_ice_NOc, tv_hail_NOc
-    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_wgt_NOc, vr_NOc
+    
+    INTEGER                                              :: ii1, ii2, ii3, ic
+    INTEGER                                              :: ei1, ei2, ei3
+    INTEGER                                              :: i123
+    REAL, DIMENSION(27,12)                               :: cvals
+    
+    REAL                                                 :: iqv, iqc, iqr, iqi, iqs, iqg, iqh, iua,   &
+      iva, iwa, ita, ipress
+    REAL(kind=rr8)                                       :: dqv, dqc, dqr, dqi, dqs, dqg, dqh, dua,   &
+      dva, dwa, dta, dpress
+    REAL(kind=rr8)                                       :: dZh_q, dZdr_q, dKDP_q
+    REAL                                                 :: zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc
+    REAL                                                 :: zh_snow_NOc, zdr_snow_NOc, kdp_snow_NOc
+    REAL                                                 :: zh_grau_NOc, zdr_grau_NOc, kdp_grau_NOc
+    REAL                                                 :: zh_ice_NOc, zdr_ice_NOc, kdp_ice_NOc
+    REAL                                                 :: zh_hail_NOc, zdr_hail_NOc, kdp_hail_NOc
+    REAL                                                 :: zh_total_NOc, zdr_total_NOc, kdp_total_NOc
+    REAL(kind=rr8)                                       :: dvt_rain, dvt_snow, dvt_grau, dvt_ice,    &
+      dvt_hail
+    REAL                                                 :: tv_rain_NOc, tv_snow_NOc, tv_grau_NOc
+    REAL                                                 :: tv_ice_NOc, tv_hail_NOc
+    REAL(kind=rr8)                                       :: cos_el, sin_el, cos_an, sin_an
+    REAL(kind=rr8)                                       :: denom
+    REAL(kind=rr8)                                       :: dwt, dvr
+    REAL                                                 :: tv_wgt_NOc, vr_NOc
 
     fname = 'simradar_calc'
 
@@ -420,11 +452,12 @@ MODULE module_simradar
                     cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
                     cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
                     cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = qh(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
                     i123 = i123 + 1
                   END DO
                 END DO
@@ -439,11 +472,12 @@ MODULE module_simradar
                     cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
                     cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
                     cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = qh(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
                     i123 = i123 + 1
                   END DO
                 END DO    
@@ -458,11 +492,12 @@ MODULE module_simradar
                     cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
                     cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
                     cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = qh(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
                     i123 = i123 + 1
                   END DO
                 END DO
@@ -471,7 +506,7 @@ MODULE module_simradar
           
             ! Removing too small values...
             DO ii1=1, 27
-              DO ii2=1, 11
+              DO ii2=1, 12
                 IF (cvals(ii1,ii2) < eps) cvals(ii1,ii2) = 0. 
               END DO
             END DO
@@ -492,187 +527,250 @@ MODULE module_simradar
               !DO ijk=1,acoords3
               !  ijkvals(i,j,k,ic) = ijkvals(i,j,k,ic) + cvals(ijk)*wghts(i,j,k,ic,ijk)
               !END DO
-              iqv(iy,iz,ix) = SUM(cvals(:,1)*wghts(k,ic,:))
-              iqc(iy,iz,ix) = SUM(cvals(:,2)*wghts(k,ic,:))
-              iqr(iy,iz,ix) = SUM(cvals(:,3)*wghts(k,ic,:))
-              iqi(iy,iz,ix) = SUM(cvals(:,4)*wghts(k,ic,:))
-              iqs(iy,iz,ix) = SUM(cvals(:,5)*wghts(k,ic,:))
-              iqg(iy,iz,ix) = SUM(cvals(:,6)*wghts(k,ic,:))
-              iua(iy,iz,ix) = SUM(cvals(:,7)*wghts(k,ic,:))
-              iva(iy,iz,ix) = SUM(cvals(:,8)*wghts(k,ic,:))
-              iwa(iy,iz,ix) = SUM(cvals(:,9)*wghts(k,ic,:))
-              ita(iy,iz,ix) = SUM(cvals(:,10)*wghts(k,ic,:))
-              ipress(iy,iz,ix) = SUM(cvals(:,11)*wghts(k,ic,:))
-           
+              
+              ! Let's be memory constrained (might be ofered for output checks?)
+              iqv = SUM(cvals(:,1)*wghts(k,ic,:))
+              iqc = SUM(cvals(:,2)*wghts(k,ic,:))
+              iqr = SUM(cvals(:,3)*wghts(k,ic,:))
+              iqi = SUM(cvals(:,4)*wghts(k,ic,:))
+              iqs = SUM(cvals(:,5)*wghts(k,ic,:))
+              iqg = SUM(cvals(:,6)*wghts(k,ic,:))
+              iqh = SUM(cvals(:,7)*wghts(k,ic,:))
+              iua = SUM(cvals(:,8)*wghts(k,ic,:))
+              iva = SUM(cvals(:,9)*wghts(k,ic,:))
+              iwa = SUM(cvals(:,10)*wghts(k,ic,:))
+              ita = SUM(cvals(:,11)*wghts(k,ic,:))
+              ipress = SUM(cvals(:,12)*wghts(k,ic,:))
+          
+!              iqvm(iy,iz,ix) = iqv
+!              iqcm(iy,iz,ix) = iqc
+!              iqrm(iy,iz,ix) = iqr
+!              iqim(iy,iz,ix) = iqi
+!              iqsm(iy,iz,ix) = iqs
+!              iqgm(iy,iz,ix) = iqg
+!              iqhm(iy,iz,ix) = iqh
+!              iuam(iy,iz,ix) = iua
+!              ivam(iy,iz,ix) = iva
+!              iwam(iy,iz,ix) = iwa
+!              itam(iy,iz,ix) = ita
+!              ipressm(iy,iz,ix) = ipress
+
               IF (printdbg ) PRINT *, '       27values: ', cvals(:,1), ' 27wghts: ', wghts(k,ic,:),   &
-                ' int. value: ', iqv(iy,iz,ix)
-  
-            END DO loop_ptsijk
-          END DO loop_z
-
-    DO ia=ida, eda
-      DO ih=idh, edh
-        DO id=idd, edd
-          printdbg = .FALSE.
-          IF (dbg .AND. MOD(ia+ih+id, 10) == 0 .AND. ahdfound < 10) THEN
-            ahdfound = ahdfound + 1
-            printdbg = .TRUE.
-          END IF
-
-          ! Avoiding masked values
-          IF (qv(ia,ih,id) > 0.9*fillValueR) CYCLE
+                ' int. value: ', iqv
+                
+              !! Computing radar diagnostics
+              ! Avoiding masked values
+              IF (iqv > 0.9*fillValueR) CYCLE
           
-          ! Filtering to 0.
-          dqv = qv(ia,ih,id)*1.d0
-          IF (qc(ia,ih,id) < qwater_constants%q_clou_min) THEN
-            dqc = 0.d0
-          ELSE
-            dqc = qc(ia,ih,id)*1.d0
-          END IF
-          IF (qr(ia,ih,id) < qwater_constants%q_rain_min) THEN
-            dqr = 0.d0
-          ELSE
-            dqr = qr(ia,ih,id)*1.d0
-          END IF
-          
-          IF (qci(ia,ih,id) < qwater_constants%q_ice_min) THEN
-            dqci = 0.d0
-          ELSE
-            dqci = qci(ia,ih,id)*1.d0
-          END IF
-          
-          IF (qs(ia,ih,id) < qwater_constants%q_snow_min) THEN
-            dqs = 0.d0
-          ELSE
-            dqs = qs(ia,ih,id)*1.d0
-          END IF
-          
-          IF (qg(ia,ih,id) < qwater_constants%q_grau_min) THEN
-            dqg = 0.d0
-          ELSE
-            dqg = qg(ia,ih,id)*1.d0
-          END IF
-          
-          ! Avoiding wasting time
-          IF (dqr*dqs*dqg == 0.d0) THEN
-            Zh_r_out(ia,ih,id,1:3) = 0.
-            Zdr_r_out(ia,ih,id,1:3) = 0.
-            KDP_r_out(ia,ih,id,1:3) = 0.
-            Zh_s_out(ia,ih,id,1:3) = 0.
-            Zdr_s_out(ia,ih,id,1:3) = 0.
-            KDP_s_out(ia,ih,id,1:3) = 0.
-            Zh_g_out(ia,ih,id,1:3) = 0.
-            Zdr_g_out(ia,ih,id,1:3) = 0.
-            KDP_g_out(ia,ih,id,1:3) = 0.
-            Zh_i_out(ia,ih,id,1:3) = 0.
-            Zdr_i_out(ia,ih,id,1:3) = 0.
-            KDP_i_out(ia,ih,id,1:3) = 0.
-            vt_rain(ia,ih,id) = 0.
-            vt_snow(ia,ih,id) = 0.
-            vt_grau(ia,ih,id) = 0.
-            wt(ia,ih,id,1:3) = 0.
-            vr(ia,ih,id,1:3) = 0.
-            CYCLE
-          END IF
-          du = u(ia,ih,id)*1.d0
-          dv = v(ia,ih,id)*1.d0
-          dw = w(ia,ih,id)*1.d0
-          dt = t(ia,ih,id)*1.d0
-          dp = p(ia,ih,id)*1.d0
-          
-          IF (printdbg) THEN
-            PRINT *,'    ' // TRIM(fname) // ": ia,ih,id:", ia,ih,id
-            PRINT *,'      qv: ', qv(ia,ih,id), ' qc: ', qc(ia,ih,id), ' qr: ', qr(ia,ih,id),         &
-              ' qci: ', qci(ia,ih,id), ' qs: ', qs(ia,ih,id), ' qg: ', qg(ia,ih,id)
-            PRINT *,'      ta: ', t(ia,ih,id), ' p: ', p(ia,ih,id), ' ua: ', u(ia,ih,id), ' va: ',    &
-              v(ia,ih,id), ' wa: ', w(ia,ih,id)
-          END IF
-          
-          ! Polarimetrics_fromLUT_1D(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,      &
-          !    KDP_x, Zh_out, Zdr_out, KDP_out)
-          CALL Polarimetrics_fromLUT_1D(dqr, ih, qwater_constants%dimv, q_rain_vec, Nbands, Nlutelevs,&
-            Nlutfreqs, Zh_RAIN, Zdr_RAIN, KDP_RAIN, dZh_q_out, dZdr_q_out, dKDP_q_out)
-          Zh_r_out(ia,ih,id,1:3) = REAL(dZh_q_out)
-          Zdr_r_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
-          KDP_r_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
-          CALL Polarimetrics_fromLUT_1D(dqs, ih, qwater_constants%dimv, q_snow_vec, Nbands, Nlutelevs,&
-            Nlutfreqs, Zh_SNOW, Zdr_SNOW, KDP_SNOW, dZh_q_out, dZdr_q_out, dKDP_q_out)
-          Zh_s_out(ia,ih,id,1:3) = REAL(dZh_q_out)
-          Zdr_s_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
-          KDP_s_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
-          CALL Polarimetrics_fromLUT_1D(dqg, ih, qwater_constants%dimv, q_grau_vec, Nbands, Nlutelevs,&
-            Nlutfreqs, Zh_GRAU, Zdr_GRAU, KDP_GRAU, dZh_q_out, dZdr_q_out, dKDP_q_out)
-          Zh_g_out(ia,ih,id,1:3) = REAL(dZh_q_out)
-          Zdr_g_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
-          KDP_g_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
-          CALL Polarimetrics_fromLUT_1D(dqci, ih, qwater_constants%dimv, q_ice_vec, Nbands, Nlutelevs,&
-            Nlutfreqs, Zh_ICE, Zdr_ICE, KDP_ICE, dZh_q_out, dZdr_q_out, dKDP_q_out)
-          Zh_i_out(ia,ih,id,1:3) = REAL(dZh_q_out)
-          Zdr_i_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
-          KDP_i_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
-
-          IF (printdbg) THEN
-            DO ibnd=1, Nbands
-              PRINT *, '    ibnd:', ibnd, ' RAIN Zh:', Zh_r_out(ia,ih,id,ibnd), ' Zdr: ',             &
-                Zdr_r_out(ia,ih,id,ibnd), ' KDP: ', KDP_r_out(ia,ih,id,ibnd)
-            END DO
-          END IF
-          
-          ! Terminal velocities          
-          CALL calc_tvelocities_1D(dqr, dqs, dqg, dp, dt, dvt_rain, dvt_snow, dvt_grau)
-          vt_rain(ia,ih,id) = REAL(dvt_rain)
-          vt_snow(ia,ih,id) = REAL(dvt_snow)
-          vt_grau(ia,ih,id) = REAL(dvt_grau)
-          IF (printdbg) PRINT *, '    terminal velocities rain:', vt_rain(ia,ih,id), ' snow: ',       &
-            vt_snow(ia,ih,id), ' graupel: ', vt_grau(ia,ih,id)
-          
-          ! Calcualte radial velocities ... (not full spectrum)
-          ! The average radial velocity vrad is the power-weighted sum of the projections of 
-          ! U (eastward wind component), V (northward wind component), W (vertical wind component), 
-          ! and vt, the hydrometeor terminal velocity, onto the axis of the radar beam defined by 
-          ! angle and azimuth
-          dwt = 0.D0
-          dvr = 0.D0
-          IF (doppler_scheme == 0) THEN
-            doppler_scheme_name = 'massweightedmeanvt'
-            
-            !  Reflectivity weighted terminal velocity
-            !    'Same approximation as wrf2radar'
-            ! Radial velocity (calculated geometrically)
-            cos_el = DCOS(razimuths1D(ih))
-            sin_el = DSIN(razimuths1D(ih))
-            sin_an = DSIN(rangles1D(ia))
-            cos_an = DCOS(rangles1D(ia))
-            DO ibnd=1, Nbands
-              denom = Zh_r_out(ia,ih,id,ibnd) + Zh_s_out(ia,ih,id,ibnd) + Zh_g_out(ia,ih,id,ibnd) 
-              IF (denom /= 0.D0) THEN
-                dwt = (dvt_rain*Zh_r_out(ia,ih,id,ibnd) + dvt_snow*Zh_s_out(ia,ih,id,ibnd) +          &
-                  dvt_grau*Zh_g_out(ia,ih,id,ibnd)) / denom
-                wt(ia,ih,id,ibnd) = REAL(dwt)
+              ! Filtering to 0.
+              dqv = iqv*1.d0
+              IF (qc < lutgrid%q_clou_min) THEN
+                dqc = 0.d0
+              ELSE
+                dqc = qc*1.d0
               END IF
- 
-              ! Radial velocity
-              dvr = du*cos_el*sin_an + dv*cos_el*cos_an + (dw-wt(ia,ih,id,ibnd))*sin_el
-              vr(ia,ih,id,ibnd) = REAL(dvr)
-            END DO
-            
-            IF (printdbg) THEN
-              PRINT *, '    wt:', wt(ia,ih,id,:)
-              PRINT *, '    radial terminal velocity:', vr(ia,ih,id,:)
-            END IF
-            
-          ELSE IF (doppler_scheme == 1) THEN
-            ! Get PSD integrated backscattering cross section int = v S/S
-            CALL ErrMsg('Still need to add this functionality. Get the backscattering cross ' //      &
-              'section for everygrid point', fname, -1)
-          END IF
-        END DO
-      END DO
-    END DO
+              IF (qr < lutgrid%q_rain_min) THEN
+                dqr = 0.d0
+              ELSE
+                dqr = qr*1.d0
+              END IF
           
+              IF (qci < lutgrid%q_ice_min) THEN
+                dqci = 0.d0
+              ELSE
+                dqci = qci*1.d0
+              END IF
           
+              IF (qs < lutgrid%q_snow_min) THEN
+                dqs = 0.d0
+              ELSE
+                dqs = qs*1.d0
+              END IF
           
-            
+              IF (qg < lutgrid%q_grau_min) THEN
+                dqg = 0.d0
+              ELSE
+                dqg = qg*1.d0
+              END IF
+                    
+              IF (qh < lutgrid%q_hail_min) THEN
+                dqh = 0.d0
+              ELSE
+                dqh = qh*1.d0
+              END IF
+
+              ! Avoiding wasting time
+              IF (dqr+dqs+dqg+dqh == 0.d0) THEN
+                zh_rain_NOc = 0.
+                zdr_rain_NOc = 0.
+                kdp_rain_NOc = 0.               
+                zh_snow_NOc = 0.
+                zdr_snow_NOc = 0.
+                kdp_snow_NOc = 0.
+                zh_grau_NOc = 0.
+                zdr_grau_NOc = 0.
+                kdp_grau_NOc = 0.
+                zh_ice_NOc = 0.
+                zdr_ice_NOc = 0.
+                kdp_ice_NOc = 0.
+                zh_hail_NOc = 0.
+                zdr_hail_NOc = 0.
+                kdp_hail_NOc = 0.
+                zh_total_NOc = 0.
+                zdr_total_NOc = 0.
+                kdp_total_NOc = 0.
+                vt_rain_NOc = 0.
+                vt_snow_NOc = 0.
+                vt_grau_NOc = 0.
+                wt_NOc = 0.
+                vr_NOc = 0.
+                CYCLE
+              END IF
+              dua = iua*1.d0
+              dva = iva*1.d0
+              dwa = iwa*1.d0
+              dta = ita*1.d0
+              dpress = ipress*1.d0
+              
+              IF (printdbg) THEN
+                PRINT *,'    ' // TRIM(fname) // " radar space: ia,ih,id:", iy,iz,ix
+                PRINT *,'      qv: ', iqv, ' qc: ', iqc ' qr: ', iqr, ' qci: ', iqci, ' qs: ', iqs,   &
+                  ' qg: ', iqg, ' qh: ', iqh
+                PRINT *,'      ta: ',ita, ' press: ', ipress, ' ua: ', iua, ' va: ', iva, ' wa: ', iwa
+              END IF
+              
+              ! Polarimetrics_fromLUT_1D(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,    &
+              !    KDP_x, Zh_out, Zdr_out, KDP_out)
+              ! Rain
+              CALL Polarimetrics_fromLUT_1D(dqr, iz, ibnd, lutgrid%dimv, lutgrid%q_rain_vec, Nbands,  &
+                Nlutelevs, Nlutfreqs, lutgrid%Zh_RAIN, lutgrid%Zdr_RAIN, lutgrid%KDP_RAIN, Zh_q,      &
+                dZdr_q, dKDP_q)
+              zh_rain_NOc = REAL(dZh_q)
+              zdr_rain_NOc = REAL(dZdr_q)
+              kdp_rain_NOc = REAL(dKDP_q)
+
+              ! Snow
+              CALL Polarimetrics_fromLUT_1D(dqr, iz, ibnd, lutgrid%dimv, lutgrid%q_snow_vec, Nbands,  &
+                Nlutelevs, Nlutfreqs, lutgrid%Zh_SNOW, lutgrid%Zdr_SNOW, lutgrid%KDP_SNOW, Zh_q,      &
+                dZdr_q, dKDP_q)
+              zh_snow_NOc = REAL(dZh_q)
+              zdr_snow_NOc = REAL(dZdr_q)
+              kdp_snow_NOc = REAL(dKDP_q)
+
+              ! Graupel
+              CALL Polarimetrics_fromLUT_1D(dqr, iz, ibnd, lutgrid%dimv, lutgrid%q_grau_vec, Nbands,  &
+                Nlutelevs, Nlutfreqs, lutgrid%Zh_GRAU, lutgrid%Zdr_GRAU, lutgrid%KDP_GRAU, Zh_q,      &
+                dZdr_q, dKDP_q)
+              zh_grau_NOc = REAL(dZh_q)
+              zdr_grau_NOc = REAL(dZdr_q)
+              kdp_grau_NOc = REAL(dKDP_q)
+
+              ! Cloud ice
+              CALL Polarimetrics_fromLUT_1D(dqr, iz, ibnd, lutgrid%dimv, lutgrid%q_ice_vec, Nbands,   &
+                Nlutelevs, Nlutfreqs, lutgrid%Zh_ICE, lutgrid%Zdr_ICE, lutgrid%KDP_ICE, Zh_q,         &
+                dZdr_q, dKDP_q)
+              zh_ice_NOc = REAL(dZh_q)
+              zdr_ice_NOc = REAL(dZdr_q)
+              kdp_ice_NOc = REAL(dKDP_q)
+
+              ! Hail
+              CALL Polarimetrics_fromLUT_1D(dqr, iz, ibnd, lutgrid%dimv, lutgrid%q_hail_vec, Nbands,  &
+                Nlutelevs, Nlutfreqs, lutgrid%Zh_HAIL, lutgrid%Zdr_HAIL, lutgrid%KDP_HAIL, Zh_q,      &
+                dZdr_q, dKDP_q)
+              zh_hail_NOc = REAL(dZh_q)
+              zdr_hail_NOc = REAL(dZdr_q)
+              kdp_hail_NOc = REAL(dKDP_q)
+
+              IF (printdbg) THEN
+                PRINT *, '    ibnd:', ibnd, ' RAIN Zh:', zh_rain_NOc, ' Zdr: ', zdr_rain_NOc,         &
+                  ' KDP: ', kdp_rain_NOc
+              END IF
+          
+              ! Terminal velocities          
+              CALL calc_tvelocities_1D(dqr, dqs, dqg, qqh, dp, dt, dvt_rain, dvt_snow, dvt_grau,      &
+                dvt_hail)
+              vt_rain_NOc = REAL(dvt_rain)
+              vt_snow_NOc = REAL(dvt_snow)
+              vt_grau_NOc = REAL(dvt_grau)
+              vt_hail_NOc = REAL(dvt_hail)
+              IF (printdbg) PRINT *, '    terminal velocities rain:', vt_rain_NOc, ' snow: ',         &
+                vt_snow_NOc, ' graupel: ', vt_grau_NOc, ' hail: ', vt_hail_NOc
+              
+              ! Calcualte radial velocities ... (not full spectrum)
+              ! The average radial velocity vrad is the power-weighted sum of the projections of 
+              ! U (eastward wind component), V (northward wind component), W (vertical wind component), 
+              ! and vt, the hydrometeor terminal velocity, onto the axis of the radar beam defined by 
+              ! angle and azimuth
+              dwt = 0.D0
+              dvr = 0.D0
+              IF (doppler_scheme == 0) THEN
+                doppler_scheme_name = 'massweightedmeanvt'
+                
+                !  Reflectivity weighted terminal velocity
+                !    'Same approximation as wrf2radar'
+                ! Radial velocity (calculated geometrically)
+                cos_el = DCOS(razimuths1D(iz))
+                sin_el = DSIN(razimuths1D(iz))
+                sin_an = DSIN(rangles1D(iy))
+                cos_an = DCOS(rangles1D(iy))
+                denom = zh_rain_NOc + zh_snow_NOc + zh_grau_NOc + zh_hail_NOc
+                IF (denom /= 0.D0) THEN
+                  dwt = (dvt_rain*zh_rain_NOc + dvt_snow*zh_snow_NOc + dvt_grau*zh_grau_NOc +       &
+                    dvt_hail*zh_hail_NOc) / denom
+                  wt_NOc = REAL(dwt)
+                END IF
+     
+                ! Radial velocity
+                dvr = dua*cos_el*sin_an + dva*cos_el*cos_an + (dwa-wt_NOc)*sin_el
+                vr(ia,ih,id,ibnd) = REAL(dvr)
+                
+                IF (printdbg) THEN
+                  PRINT *, '    wt:', wt_NOc
+                  PRINT *, '    radial terminal velocity:', vr_NOc
+                END IF
+                
+              ELSE IF (doppler_scheme == 1) THEN
+                ! Get PSD integrated backscattering cross section int = v S/S
+                CALL ErrMsg('Still need to add this functionality. Get the backscattering cross ' //  &
+                  'section for everygrid point', fname, -1)
+              END IF
+              
+              ! Compressing
+              inrd = (ir-1)*e_dist + ix
+              zh_rain(iy,iz,inrd) = zh_rain_NOc
+              zdr_rain(iy,iz,inrd) = zdr_rain_NOc
+              kdp_rain(iy,iz,inrd) = kdp_rain_NOc
+              
+              zh_snow(iy,iz,inrd) = zh_snow_NOc
+              zdr_snow(iy,iz,inrd) = zdr_snow_NOc
+              kdp_snow(iy,iz,inrd) = kdp_snow_NOc
+
+              zh_grau(iy,iz,inrd) = zh_grau_NOc
+              zdr_grau(iy,iz,inrd) = zdr_grau_NOc
+              kdp_grau(iy,iz,inrd) = kdp_grau_NOc
+
+              zh_ice(iy,iz,inrd) = zh_ice_NOc
+              zdr_ice(iy,iz,inrd) = zdr_ice_NOc
+              kdp_ice(iy,iz,inrd) = kdp_ice_NOc
+
+              zh_total(iy,iz,inrd) = zh_rain_NOc + zh_snow_NOc + zh_grau_NOc + zh_ice_NOc + zh_hail_NOc
+              zdr_total(iy,iz,inrd) = zdr_rain_NOc + zdr_snow_NOc + zdr_grau_NOc + zdr_ice_NOc +      &
+                zdr_hail_NOc
+              kdp_total(iy,iz,inrd) = kdp_rain_NOc + kdp_snow_NOc + kdp_grau_NOc + kdp_ice_NOc +      &
+                kdp_hail_NOc
+
+              vt_rain(iy,iz,inrd) = vt_rain_NOc
+              vt_snow(iy,iz,inrd) = vt_snow_NOc
+              vt_grau(iy,iz,inrd) = vt_grau_NOc
+              vt_ice(iy,iz,inrd) = vt_ice_NOc
+              vt_hail(iy,iz,inrd) = vt_hail_NOc
+
+              wt(iy,iz,inrd) = wt_NOc
+              vr(iy,iz,inrd) = vr_NOc
+
+            END DO loop_ptsijk
+          END DO loop_z      
+          
           IF (dbg_level >= 75 .AND. ijdbg .AND. tdbg==0) THEN
             WRITE(msg,*) '  ' // TRIM(fname) // ' ',i,' ,',j,' : final checks _______' 
             CALL wrf_debug(75,msg)
