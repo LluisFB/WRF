@@ -119,7 +119,7 @@ MODULE module_simradar_tools
 
   CONTAINS
      
-  SUBROUTINE CALL read_lut(filen, lutgrid, idbg)
+  SUBROUTINE read_lut(filen, lutgrid, idbg)
   ! Subroutine to read the T-MATRIX look-up-table (LUT) from an specific microphysics from a netCDF 
   !   file
   
