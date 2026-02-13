@@ -11,17 +11,19 @@ MODULE module_simradar
                       londbg, latdbg,                                                                 &
                       idbg, jdbg,                                                                     &
 
-                     ! Input
+                      ! Input
                       lon, lat,                                                                       &
                       qv, qc, qr, qs, qi, qg, qh,                                                     &
-                      mu, mub,                                                                        &
+                      mu, mub, th300,                                                                 &
                       ph, phb, rho,                                                                   &
                       nradar, nrnn, nrnncoord, nrcoord, nr4coord,                                     &
                       e_angle, e_azimuth, e_dist,                                                     &
-                      gatelon, gatelat, gatehgt, gateband                                             &
+                      ngrid_radar, ngrid3_radar,                                                      &
+                      gatename, gatelon, gatelat, gatehgt, gateband                                   &
                       radarlons, radarlats, radardist, radarhgts, radarlhgts,                         &
                       azimuths,                                                                       &
                       ijdbg,                                                                          &
+                      a, f, elipsn,                                                                   &
                       gatehdist, inradar, radnum,                                                     &
                       radarlons, radarlats, radardist, radarhgts, radarlhgts,                         &
                       radarlons_bnds, radarlat_bnds, radarhgt_bnds,                                   &
@@ -30,61 +32,28 @@ MODULE module_simradar
                       missing_value,                                                                  &
 
                       ! Output
-                      vr,                                                                             &
+                      zh_rain, zdr_rain, kdp_rain,                                                    &
+                      zh_snow, zdr_snow, kdp_snow,                                                    &
+                      zh_grau, zdr_grau, kdp_grau,                                                    &
+                      zh_ice, zdr_ice, kdp_ice,                                                       &
+                      zh_hail, zdr_hail, kdp_hail,                                                    &
+                      zh_total, zdr_total, kdp_total,                                                 &
+                      tv_rain, tv_snow, tv_grau,                                                      &
+                      tv_ice, tv_hail,                                                                &
+                      tv_wgt, vr,                                                                     &
 
-                     !! S-band
-                     aihtot_s,                                                                        &
-                     aih_rain_s, aih_snow_s,                                                          &
-                     aih_grau_s, aih_hail_s,                                                          &
-                     kdptot_s,                                                                        &
-                     kdp_rain_s, kdp_snow_s,                                                          &
-                     kdp_grau_s, kdp_hail_s,                                                          &
-                     zdrtot_s,                                                                        &
-                     zdr_rain_s, zdr_snow_s,                                                          &
-                     zdr_grau_s, zdr_hail_s,                                                          &
-                     zhtot_s,                                                                         &
-                     zh_rain_s, zh_snow_s,                                                            &
-                     zh_grau_s, zh_hail_s,                                                            &
-
-                     !! C-band
-                     aihtot_c,                                                                        &
-                     aih_rain_c, aih_cnow_c,                                                          &
-                     aih_grau_c, aih_hail_c,                                                          &
-                     kdptot_c,                                                                        &
-                     kdp_rain_c, kdp_cnow_c,                                                          &
-                     kdp_grau_c, kdp_hail_c,                                                          &
-                     zdrtot_c,                                                                        &
-                     zdr_rain_c, zdr_cnow_c,                                                          &
-                     zdr_grau_c, zdr_hail_c,                                                          &
-                     zhtot_c,                                                                         &
-                     zh_rain_c, zh_cnow_c,                                                            &
-                     zh_grau_c, zh_hail_c,                                                            &
-
-                     !! X-band
-                     aihtot_x,                                                                        &
-                     aih_rain_x, aih_xnow_x,                                                          &
-                     aih_grau_x, aih_hail_x,                                                          &
-                     kdptot_x,                                                                        &
-                     kdp_rain_x, kdp_xnow_x,                                                          &
-                     kdp_grau_x, kdp_hail_x,                                                          &
-                     zdrtot_x,                                                                        &
-                     zdr_rain_x, zdr_xnow_x,                                                          &
-                     zdr_grau_x, zdr_hail_x,                                                          &
-                     zhtot_x,                                                                         &
-                     zh_rain_x, zh_xnow_x,                                                            &
-                     zh_grau_x, zh_hail_x,                                                            &
-
-                     ids,ide, jds,jde, kds,kde,                                                       &
-                     ims,ime, jms,jme, kms,kme,                                                       &
-                     ips,ipe, jps,jpe, kps,kpe,                                                       & ! patch  dims
-                     i_start,i_end,j_start,j_end,kts,kte,num_tiles                                    &
+                      ids,ide, jds,jde, kds,kde,                                                      &
+                      ims,ime, jms,jme, kms,kme,                                                      &
+                      ips,ipe, jps,jpe, kps,kpe,                                                      & ! patch  dims
+                      i_start,i_end,j_start,j_end,kts,kte,num_tiles                                   &
                     )
 
 !----------------------------------------------------------------------
-! Main subroutine to compute CORDEX required variables
+! Main subroutine to compute simrad.AR variables
 
     USE module_dm, ONLY: wrf_dm_sum_real, wrf_dm_maxval
     USE module_configure 
+    USE module_simradar_tools
     USE module_diagvar_simradar
 
     IMPLICIT NONE
@@ -138,6 +107,7 @@ MODULE module_simradar
 ! qi: ice mixing ratio [kgkg-1]
 ! qg: graupel mixing ratio [kgkg-1]
 ! qh: hail mixing ratio [kgkg-1]
+! th300: potential air temperature -300. [K]
 ! mu: perturbation dry air mass in column [Pa]
 ! mub: base dry air mass in column [Pa]
 ! sina: local sine of map rotation [1]
@@ -148,6 +118,7 @@ MODULE module_simradar
 
 !! Radar variables
 ! nradar: amount of radars
+! gatename: name of the radar
 ! gatelon: longitude of the radar location
 ! gatelat: latitude of the radar location
 ! gatehgt: height of the radar location [m]
@@ -189,73 +160,31 @@ MODULE module_simradar
 
 ! Output
 !-------
-! vr: ground radar Doppler Velocity [ms-1]
-
-!! S-band
-! aihtot_s: S-band ground radar total attenuation [dB/km]
-! aih_rain_s: S-band ground radar rain attenuation [dB/km]
-! aih_snow_s: S-band ground radar snow attenuation [dB/km]
-! aih_grau_s: S-band ground radar graupel attenuation [dB/km]
-! aih_hail_s: S-band ground radar hail attenuation [dB/km]
-! kdptot_s: S-band ground radar total specific differential phase [deg/km]
-! kdp_rain_s: S-band ground radar rain specific differential phase [deg/km]
-! kdp_snow_s: S-band ground radar snow specific differential phase [deg/km]
-! kdp_grau_s: S-band ground radar graupel specific differential phase [deg/km]
-! kdp_hail_s: S-band ground radar hail specific differential phase [deg/km]
-! zdrtot_s: S-band ground radar total differential reflectivity [dBz]
-! zdr_rain_s: S-band ground radar rain differential reflectivity [dBz]
-! zdr_snow_s: S-band ground radar snow differential reflectivity [dBz]
-! zdr_grau_s: S-band ground radar graupel differential reflectivity [dBz]
-! zdr_hail_s: S-band ground radar hail differential reflectivity [dBz]
-! zhtot_s: S-band ground radar total horizontal reflectivity [dBz]
-! zh_rain_s: S-band ground radar rain horizontal reflectivity [dBz]
-! zh_snow_s: S-band ground radar snow horizontal reflectivity [dBz]
-! zh_grau_s: S-band ground radar graupel horizontal reflectivity [dBz]
-! zh_hail_s: S-band ground radar hail horizontal reflectivity [dBz]
-
-!! C-band
-! aihtot_c: C-band ground radar total attenuation [dB/km]
-! aih_rain_c: C-band ground radar rain attenuation [dB/km]
-! aih_cnow_c: C-band ground radar snow attenuation [dB/km]
-! aih_grau_c: C-band ground radar graupel attenuation [dB/km]
-! aih_hail_c: C-band ground radar hail attenuation [dB/km]
-! kdptot_c: C-band ground radar total specific differential phase [deg/km]
-! kdp_rain_c: C-band ground radar rain specific differential phase [deg/km]
-! kdp_cnow_c: C-band ground radar snow specific differential phase [deg/km]
-! kdp_grau_c: C-band ground radar graupel specific differential phase [deg/km]
-! kdp_hail_c: C-band ground radar hail specific differential phase [deg/km]
-! zdrtot_c: C-band ground radar total differential reflectivity [dBz]
-! zdr_rain_c: C-band ground radar rain differential reflectivity [dBz]
-! zdr_cnow_c: C-band ground radar snow differential reflectivity [dBz]
-! zdr_grau_c: C-band ground radar graupel differential reflectivity [dBz]
-! zdr_hail_c: C-band ground radar hail differential reflectivity [dBz]
-! zhtot_c: C-band ground radar total horizontal reflectivity [dBz]
-! zh_rain_c: C-band ground radar rain horizontal reflectivity [dBz]
-! zh_cnow_c: C-band ground radar snow horizontal reflectivity [dBz]
-! zh_grau_c: C-band ground radar graupel horizontal reflectivity [dBz]
-! zh_hail_c: C-band ground radar hail horizontal reflectivity [dBz]
-
-!! X-band
-! aihtot_x: X-band ground radar total attenuation [dB/km]
-! aih_rain_x: X-band ground radar rain attenuation [dB/km]
-! aih_xnow_x: X-band ground radar snow attenuation [dB/km]
-! aih_grau_x: X-band ground radar graupel attenuation [dB/km]
-! aih_hail_x: X-band ground radar hail attenuation [dB/km]
-! kdptot_x: X-band ground radar total specific differential phase [deg/km]
-! kdp_rain_x: X-band ground radar rain specific differential phase [deg/km]
-! kdp_xnow_x: X-band ground radar snow specific differential phase [deg/km]
-! kdp_grau_x: X-band ground radar graupel specific differential phase [deg/km]
-! kdp_hail_x: X-band ground radar hail specific differential phase [deg/km]
-! zdrtot_x: X-band ground radar total differential reflectivity [dBz]
-! zdr_rain_x: X-band ground radar rain differential reflectivity [dBz]
-! zdr_xnow_x: X-band ground radar snow differential reflectivity [dBz]
-! zdr_grau_x: X-band ground radar graupel differential reflectivity [dBz]
-! zdr_hail_x: X-band ground radar hail differential reflectivity [dBz]
-! zhtot_x: X-band ground radar total horizontal reflectivity [dBz]
-! zh_rain_x: X-band ground radar rain horizontal reflectivity [dBz]
-! zh_xnow_x: X-band ground radar snow horizontal reflectivity [dBz]
-! zh_grau_x: X-band ground radar graupel horizontal reflectivity [dBz]
-! zh_hail_x: X-band ground radar hail horizontal reflectivity [dBz]
+! zh_rain: Reflectivity for Rain [dBZ]
+! zdr_rain: ZDR for Rain [dBz]
+! kdp_rain: KDP for Rain [degree/km]
+! zh_snow: Reflectivity for Snow [dBZ]
+! zdr_snow: ZDR for Snow [dBz]
+! kdp_snow: KDP for Snow [degree/km]
+! zh_grau: Reflectivity for Graupel [dBZ]
+! zdr_grau: ZDR for Graupel [dBz]
+! kdp_grau: KDP for Graupel [degree/km]
+! zh_ice: Reflectivity for cloud Ice [dBZ]
+! zdr_ice: ZDR for cloud Ice [dBz]
+! kdp_ice: KDP for cloud Ice [degree/km]
+! zh_hail: Reflectivity for Hail [dBZ]
+! zdr_hail: ZDR for Hail [dBz]
+! kdp_hail: KDP for Hail [degree/km]
+! zh_total: Reflectivity for all species [dBZ]
+! zdr_total: ZDR for all species [dBz]
+! kdp_total: KDP for all species [degree/km]
+! tv_rain: terminal velocity for Rain [ms-1]
+! tv_snow: terminal velocity for Snow [ms-1]
+! tv_grau: terminal velocity for Graupel [ms-1]
+! tv_ice: terminal velocity for cloud Ice [ms-1]
+! tv_hail: terminal velocity for Hail [ms-1]
+! tv_wgt: weighted terminal velocity [ms-1]
+! vr: Doppler velocity [ms-1]
 
 !======================================================================
 
@@ -287,63 +216,59 @@ MODULE module_simradar
     INTEGER, INTENT(inout)                               :: nsteps
   
 ! Specific Radar variables
-    INTEGER, INTENT(in)                                  :: nrad, e_rlon, e_rlat, e_rhgt, e_rnz
-    INTEGER, INTENT(in)                                  :: radinterp
-    REAL, INTENT(in)                                     :: radards, missing_value
-    REAL, DIMENSION(nrad), INTENT(in)                    :: gatelon, gatelat, gatehgt
-    REAL, DIMENSION(e_rnz,ims:ime,jms:jme), INTENT(in)   :: gatehwght, gatehdist
-    INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(in)      :: inradar, radarnum
-  
-    REAL,DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)     :: vr
+    INTEGER, INTENT(in)                                  :: nradar, ngrid_radar
+    INTEGER, INTENT(in)                                  :: e_azimuth, eloption
+    INTEGER, INTENT(in)                                  :: e_angle, e_dist
+    REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
+      heightmax, radards
+!    INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
+    INTEGER, DIMENSION(nradar), INTENT(in)               :: em_ray
+    REAL, INTENT(in)                                     :: radii_ddist
+    REAL, INTENT(in)                                     :: missing_value
+    REAL, DIMENSION(e_azimuth), INTENT(inout)            :: azimuths
+    REAL(kind=rr8)                                       :: a, f
+    CHARACTER(len=30)                                    :: elips
+    ! Compressed dimensions
+    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord 
+    INTEGER, INTENT(in)                                  :: ngrid_radar, ngrid3_radar
+    INTEGER, DIMENSION(2), INTENT(in)                    :: ijdbg
+    REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                        &
+      INTENT(int)                                        :: gatehdist
+    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(in)     :: inradar
+    INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
+      INTENT(in)                                         :: radnum
+    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(in)  :: radarlons, radarlats, radardist,          &
+    REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(in)  :: radarhgts, radarlhgts
+    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(in)  :: radarlons_bnds, radarlat_bnds,            &
+    REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(in)                                            &
+                                                         :: radarhgt_bnds
+    INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
+      INTENT(in)                                         :: ngridradar
+    INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                  &
+      INTENT(in)                                         :: ijgridradar
+    REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(in)  :: ijdistgridradar
+    
+    ! LUT space
+    TYPE(lut_vars), INTENT(in)                           :: lutgrid
 
-    ! S-band
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_s 
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_s, aih_snow_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_s, aih_hail_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_s, kdp_snow_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_s, kdp_hail_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_s, zdr_snow_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_s, zdr_hail_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_s, zh_snow_s
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_s, zh_hail_s
-
-    ! C-band
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_c 
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_c, aih_cnow_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_c, aih_hail_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_c, kdp_cnow_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_c, kdp_hail_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_c, zdr_cnow_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_c, zdr_hail_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_c, zh_cnow_c
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_c, zh_hail_c
-
-    ! X-band
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aihtot_x 
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_rain_x, aih_xnow_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: aih_grau_x, aih_hail_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdptot_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_rain_x, kdp_xnow_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: kdp_grau_x, kdp_hail_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdrtot_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_rain_x, zdr_xnow_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zdr_grau_x, zdr_hail_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zhtot_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_rain_x, zh_xnow_x
-    REAL, DIMENSION(e_rnx,e_rlat,e_rlon), INTENT(out)    :: zh_grau_x, zh_hail_x
-
+    ! Output
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_rain, zdr_rain, kdp_rain
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_snow, zdr_snow, kdp_snow
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_grau, zdr_grau, kdp_grau
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_ice, zdr_ice, kdp_ice
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_hail, zdr_hail, kdp_hail
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: zh_total, zdr_total, kdp_total
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: tv_rain, tv_snow, tv_grau
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: tv_ice, tv_hail
+    REAL, DIMENSION(e_angle, e_azimuth, nrd)             :: tv_wgt, vr
+    
     ! LOCAL  VAR
-
     INTEGER                                              :: i, j, k, m, its, ite, jts, jte, ij
     INTEGER                                              :: idp, jdp, dimz, dimz1, dz1
     INTEGER                                              :: i1, i_1, j1, j_1, k2, tdbg
     INTEGER, DIMENSION(num_tiles)                        :: i2, j2
+    INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
+      inr4coord
 
     REAL                                                 :: xtimep
     REAL                                                 :: prv
@@ -353,6 +278,26 @@ MODULE module_simradar
     LOGICAL                                              :: ijdbg, cdone
     INTEGER                                              :: dbg_level
  
+    INTEGER                                              :: ir, ia, ih, id, iband
+    INTEGER, DIMENSION(ngrid_radar, coord2)              :: ijgridradar_NOc
+    REAL, DIMENSION(ngrid_radar, nradar)                 :: ijdistgridradar_NOc
+
+    ! radar 3-dimensional
+    INTEGER                                              :: ijkNtot
+    INTEGER, DIMENSION(kms:kme)                          :: ijkngridradar
+    INTEGER, DIMENSION(kms:kme, 3, ngrid3_radar)         :: ijkgridradar
+    INTEGER, DIMENSION(kms:kme, 27, ngrid3_radar)        :: wghts
+
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_snow_NOc, zdr_snow_NOc, kdp_snow_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_grau_NOc, zdr_grau_NOc, kdp_grau_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_ice_NOc, zdr_ice_NOc, kdp_ice_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_hail_NOc, zdr_hail_NOc, kdp_hail_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: zh_total_NOc, zdr_total_NOc, kdp_total_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_rain_NOc, tv_snow_NOc, tv_grau_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_ice_NOc, tv_hail_NOc
+    REAL, DIMENSION(e_angle, e_azimuth, e_dist)          :: tv_wgt_NOc, vr_NOc
+
     fname = 'simradar_calc'
 
     ! Showing version of the module
@@ -403,16 +348,330 @@ MODULE module_simradar
 
     ! Computing variables 
     ijdbg = .FALSE.
-    !$OMP PARALLEL DO   &
-    !$OMP PRIVATE ( ij )
-    DO ij = 1 , num_tiles
-      DO i = i_start(ij), i_end(ij)
-        DO j = j_start(ij), j_end(ij)
-          IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
-          i1 = MIN(i+1,i_end(ij))
-          i_1 = MAX(i-1,i_start(ij))
-          j1 = MIN(j+1,j_end(ij))
-          j_1 = MAX(j-1,j_start(ij))
+
+    !! Looping for all radars
+    DO ir=1, nradar   
+    
+      !$OMP PARALLEL DO   &
+      !$OMP PRIVATE ( ij )
+      DO ij = 1 , num_tiles
+        DO i = i_start(ij), i_end(ij)
+          DO j = j_start(ij), j_end(ij)
+            IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
+            i1 = MIN(i+1,i_end(ij))
+            i_1 = MAX(i-1,i_start(ij))
+            j1 = MIN(j+1,j_end(ij))
+            j_1 = MAX(j-1,j_start(ij))
+          
+            IF (ij21Ncoords(i,j) == 0) CYCLE
+        
+            ii1 = i1-1
+            ei1 = i1+1
+            ij1 = j1-1
+            ej1 = j1+1
+            IF (i == ims) ii1 = i
+            IF (i == ime) ei1 = i
+            IF (j == jms) ij1 = j
+            IF (j == jme) ej1 = j
+
+            ! Decompressing
+            DO n=1, ngridradar(i,j,ir)
+              inrnn = (ir-1)*ngrid_radar + n
+              ijdistgridradar_NOc(n) = ijdistgridradar(i,j,inrnn)
+              DO l=1, 2
+                inrnncoord = (ir-1)*ngrid_radar*2 + (n-1)*2 + l
+                ijgridradar_NOc(n,l) = ijgridradar(i,j,inrnncoord)
+              END DO
+            END DO
+
+            ! Computing 27 weights around each WRF i,j,k for all radar cells
+            CALL weights_hcoordsR27around_polar_ellipsoide_1D(i, j, ii1, ei1, ij1, ej1, kms, kme, a,    &
+              f, elipsn, lon(ii1:ei1,ij1:ej1), lat(ii1:ei1,ij1:ej1), zg(ii1:ei1,kms:kme,ij1:ej1),       &
+              missing_value, ngridradar(i,j,ir), ngridradar(i,j,ir), 2, ijgridradar_NOc, 9, 1, e_dist,  &
+              1, e_angle, 1, e_azimuth, radarlons(:,:,ir), radarlats(:,:,ir), radarhgts(:,:,ir),        &
+              missing_value, ngrid3_radar, ijkngridradar, 3, ijkgridradar, ijkNtot, 27, wghts, dbg)
+           
+            loop_z: DO k=kms, kme
+            IF (ijkngridradar(k) == 0) CYCLE
+
+            printdbg = .FALSE.
+            IF (dbg) THEN
+              IF (MOD(i+j+k,10) == 0 .AND. ijkfound < 10) THEN
+                IF (ijkfound < 10) THEN
+                  printdbg = .TRUE.
+                 ijkfound = ijkfound + 1
+                END IF
+              END IF
+            END IF
+  
+            IF (printdbg) PRINT *,'  ' // TRIM(fname) // ": ", ijkfound, ' i,j,k ', i,j,k,            &
+              ' amount of radar cells:', ijkngridradar(k)
+
+            ! 27 values around reference space at i,j,k
+            i123 = 1
+            cvals = 0.
+            IF (k==kms) THEN
+              DO ii1=-1,1
+                DO ii2=-1,1
+                  DO ii3=0,1
+                    cvals(i123,1) = qv(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,2) = qc(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,3) = qr(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    i123 = i123 + 1
+                  END DO
+                END DO
+              END DO
+            ELSE IF (k1==kme) THEN
+              DO ii1=-1,1
+                DO ii2=-1,1
+                  DO ii3=-1,0
+                    cvals(i123,1) = qv(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,2) = qc(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,3) = qr(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    i123 = i123 + 1
+                  END DO
+                END DO    
+              END DO
+            ELSE
+              DO ii1=-1,1
+                DO ii2=-1,1
+                  DO ii3=-1,1
+                    cvals(i123,1) = qv(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,2) = qc(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,3) = qr(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,4) = qi(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,5) = qs(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,6) = qg(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,7) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,8) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = wa(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = press(i+ii1,k+ii3,j+ii2)
+                    i123 = i123 + 1
+                  END DO
+                END DO
+              END DO
+            END IF
+          
+            ! Removing too small values...
+            DO ii1=1, 27
+              DO ii2=1, 11
+                IF (cvals(ii1,ii2) < eps) cvals(ii1,ii2) = 0. 
+              END DO
+            END DO
+  
+            loop_ptsijk: DO ic= 1, ijkngridradar(k)
+              !! Angle
+              iy = ijkgridradar(k,ic,1)
+              !! Dist
+              ix = ijkgridradar(k,ic,2)
+              !! Azimuth
+              iz = ijkgridradar(k,ic,3)
+              
+              IF (printdbg) PRINT *,'    cell: ', ic, ' coords; ', ijkgridradar(k,ic,:), ' || lon: ', &
+                radarlons(iy,ix,ir), ' lat: ', radarlats(iy,ix,ir), ' hgt: ', radarhgts(iz,ix,ir),    &
+                ' amount of values: ', i123
+              ! Need to filter Nan and missing values ?
+              !ijkvals(i,j,k,ic) = 0.
+              !DO ijk=1,acoords3
+              !  ijkvals(i,j,k,ic) = ijkvals(i,j,k,ic) + cvals(ijk)*wghts(i,j,k,ic,ijk)
+              !END DO
+              iqv(iy,iz,ix) = SUM(cvals(:,1)*wghts(k,ic,:))
+              iqc(iy,iz,ix) = SUM(cvals(:,2)*wghts(k,ic,:))
+              iqr(iy,iz,ix) = SUM(cvals(:,3)*wghts(k,ic,:))
+              iqi(iy,iz,ix) = SUM(cvals(:,4)*wghts(k,ic,:))
+              iqs(iy,iz,ix) = SUM(cvals(:,5)*wghts(k,ic,:))
+              iqg(iy,iz,ix) = SUM(cvals(:,6)*wghts(k,ic,:))
+              iua(iy,iz,ix) = SUM(cvals(:,7)*wghts(k,ic,:))
+              iva(iy,iz,ix) = SUM(cvals(:,8)*wghts(k,ic,:))
+              iwa(iy,iz,ix) = SUM(cvals(:,9)*wghts(k,ic,:))
+              ita(iy,iz,ix) = SUM(cvals(:,10)*wghts(k,ic,:))
+              ipress(iy,iz,ix) = SUM(cvals(:,11)*wghts(k,ic,:))
+           
+              IF (printdbg ) PRINT *, '       27values: ', cvals(:,1), ' 27wghts: ', wghts(k,ic,:),   &
+                ' int. value: ', iqv(iy,iz,ix)
+  
+            END DO loop_ptsijk
+          END DO loop_z
+
+    DO ia=ida, eda
+      DO ih=idh, edh
+        DO id=idd, edd
+          printdbg = .FALSE.
+          IF (dbg .AND. MOD(ia+ih+id, 10) == 0 .AND. ahdfound < 10) THEN
+            ahdfound = ahdfound + 1
+            printdbg = .TRUE.
+          END IF
+
+          ! Avoiding masked values
+          IF (qv(ia,ih,id) > 0.9*fillValueR) CYCLE
+          
+          ! Filtering to 0.
+          dqv = qv(ia,ih,id)*1.d0
+          IF (qc(ia,ih,id) < qwater_constants%q_clou_min) THEN
+            dqc = 0.d0
+          ELSE
+            dqc = qc(ia,ih,id)*1.d0
+          END IF
+          IF (qr(ia,ih,id) < qwater_constants%q_rain_min) THEN
+            dqr = 0.d0
+          ELSE
+            dqr = qr(ia,ih,id)*1.d0
+          END IF
+          
+          IF (qci(ia,ih,id) < qwater_constants%q_ice_min) THEN
+            dqci = 0.d0
+          ELSE
+            dqci = qci(ia,ih,id)*1.d0
+          END IF
+          
+          IF (qs(ia,ih,id) < qwater_constants%q_snow_min) THEN
+            dqs = 0.d0
+          ELSE
+            dqs = qs(ia,ih,id)*1.d0
+          END IF
+          
+          IF (qg(ia,ih,id) < qwater_constants%q_grau_min) THEN
+            dqg = 0.d0
+          ELSE
+            dqg = qg(ia,ih,id)*1.d0
+          END IF
+          
+          ! Avoiding wasting time
+          IF (dqr*dqs*dqg == 0.d0) THEN
+            Zh_r_out(ia,ih,id,1:3) = 0.
+            Zdr_r_out(ia,ih,id,1:3) = 0.
+            KDP_r_out(ia,ih,id,1:3) = 0.
+            Zh_s_out(ia,ih,id,1:3) = 0.
+            Zdr_s_out(ia,ih,id,1:3) = 0.
+            KDP_s_out(ia,ih,id,1:3) = 0.
+            Zh_g_out(ia,ih,id,1:3) = 0.
+            Zdr_g_out(ia,ih,id,1:3) = 0.
+            KDP_g_out(ia,ih,id,1:3) = 0.
+            Zh_i_out(ia,ih,id,1:3) = 0.
+            Zdr_i_out(ia,ih,id,1:3) = 0.
+            KDP_i_out(ia,ih,id,1:3) = 0.
+            vt_rain(ia,ih,id) = 0.
+            vt_snow(ia,ih,id) = 0.
+            vt_grau(ia,ih,id) = 0.
+            wt(ia,ih,id,1:3) = 0.
+            vr(ia,ih,id,1:3) = 0.
+            CYCLE
+          END IF
+          du = u(ia,ih,id)*1.d0
+          dv = v(ia,ih,id)*1.d0
+          dw = w(ia,ih,id)*1.d0
+          dt = t(ia,ih,id)*1.d0
+          dp = p(ia,ih,id)*1.d0
+          
+          IF (printdbg) THEN
+            PRINT *,'    ' // TRIM(fname) // ": ia,ih,id:", ia,ih,id
+            PRINT *,'      qv: ', qv(ia,ih,id), ' qc: ', qc(ia,ih,id), ' qr: ', qr(ia,ih,id),         &
+              ' qci: ', qci(ia,ih,id), ' qs: ', qs(ia,ih,id), ' qg: ', qg(ia,ih,id)
+            PRINT *,'      ta: ', t(ia,ih,id), ' p: ', p(ia,ih,id), ' ua: ', u(ia,ih,id), ' va: ',    &
+              v(ia,ih,id), ' wa: ', w(ia,ih,id)
+          END IF
+          
+          ! Polarimetrics_fromLUT_1D(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,      &
+          !    KDP_x, Zh_out, Zdr_out, KDP_out)
+          CALL Polarimetrics_fromLUT_1D(dqr, ih, qwater_constants%dimv, q_rain_vec, Nbands, Nlutelevs,&
+            Nlutfreqs, Zh_RAIN, Zdr_RAIN, KDP_RAIN, dZh_q_out, dZdr_q_out, dKDP_q_out)
+          Zh_r_out(ia,ih,id,1:3) = REAL(dZh_q_out)
+          Zdr_r_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
+          KDP_r_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
+          CALL Polarimetrics_fromLUT_1D(dqs, ih, qwater_constants%dimv, q_snow_vec, Nbands, Nlutelevs,&
+            Nlutfreqs, Zh_SNOW, Zdr_SNOW, KDP_SNOW, dZh_q_out, dZdr_q_out, dKDP_q_out)
+          Zh_s_out(ia,ih,id,1:3) = REAL(dZh_q_out)
+          Zdr_s_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
+          KDP_s_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
+          CALL Polarimetrics_fromLUT_1D(dqg, ih, qwater_constants%dimv, q_grau_vec, Nbands, Nlutelevs,&
+            Nlutfreqs, Zh_GRAU, Zdr_GRAU, KDP_GRAU, dZh_q_out, dZdr_q_out, dKDP_q_out)
+          Zh_g_out(ia,ih,id,1:3) = REAL(dZh_q_out)
+          Zdr_g_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
+          KDP_g_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
+          CALL Polarimetrics_fromLUT_1D(dqci, ih, qwater_constants%dimv, q_ice_vec, Nbands, Nlutelevs,&
+            Nlutfreqs, Zh_ICE, Zdr_ICE, KDP_ICE, dZh_q_out, dZdr_q_out, dKDP_q_out)
+          Zh_i_out(ia,ih,id,1:3) = REAL(dZh_q_out)
+          Zdr_i_out(ia,ih,id,1:3) = REAL(dZdr_q_out)
+          KDP_i_out(ia,ih,id,1:3) = REAL(dKDP_q_out)
+
+          IF (printdbg) THEN
+            DO ibnd=1, Nbands
+              PRINT *, '    ibnd:', ibnd, ' RAIN Zh:', Zh_r_out(ia,ih,id,ibnd), ' Zdr: ',             &
+                Zdr_r_out(ia,ih,id,ibnd), ' KDP: ', KDP_r_out(ia,ih,id,ibnd)
+            END DO
+          END IF
+          
+          ! Terminal velocities          
+          CALL calc_tvelocities_1D(dqr, dqs, dqg, dp, dt, dvt_rain, dvt_snow, dvt_grau)
+          vt_rain(ia,ih,id) = REAL(dvt_rain)
+          vt_snow(ia,ih,id) = REAL(dvt_snow)
+          vt_grau(ia,ih,id) = REAL(dvt_grau)
+          IF (printdbg) PRINT *, '    terminal velocities rain:', vt_rain(ia,ih,id), ' snow: ',       &
+            vt_snow(ia,ih,id), ' graupel: ', vt_grau(ia,ih,id)
+          
+          ! Calcualte radial velocities ... (not full spectrum)
+          ! The average radial velocity vrad is the power-weighted sum of the projections of 
+          ! U (eastward wind component), V (northward wind component), W (vertical wind component), 
+          ! and vt, the hydrometeor terminal velocity, onto the axis of the radar beam defined by 
+          ! angle and azimuth
+          dwt = 0.D0
+          dvr = 0.D0
+          IF (doppler_scheme == 0) THEN
+            doppler_scheme_name = 'massweightedmeanvt'
+            
+            !  Reflectivity weighted terminal velocity
+            !    'Same approximation as wrf2radar'
+            ! Radial velocity (calculated geometrically)
+            cos_el = DCOS(razimuths1D(ih))
+            sin_el = DSIN(razimuths1D(ih))
+            sin_an = DSIN(rangles1D(ia))
+            cos_an = DCOS(rangles1D(ia))
+            DO ibnd=1, Nbands
+              denom = Zh_r_out(ia,ih,id,ibnd) + Zh_s_out(ia,ih,id,ibnd) + Zh_g_out(ia,ih,id,ibnd) 
+              IF (denom /= 0.D0) THEN
+                dwt = (dvt_rain*Zh_r_out(ia,ih,id,ibnd) + dvt_snow*Zh_s_out(ia,ih,id,ibnd) +          &
+                  dvt_grau*Zh_g_out(ia,ih,id,ibnd)) / denom
+                wt(ia,ih,id,ibnd) = REAL(dwt)
+              END IF
+ 
+              ! Radial velocity
+              dvr = du*cos_el*sin_an + dv*cos_el*cos_an + (dw-wt(ia,ih,id,ibnd))*sin_el
+              vr(ia,ih,id,ibnd) = REAL(dvr)
+            END DO
+            
+            IF (printdbg) THEN
+              PRINT *, '    wt:', wt(ia,ih,id,:)
+              PRINT *, '    radial terminal velocity:', vr(ia,ih,id,:)
+            END IF
+            
+          ELSE IF (doppler_scheme == 1) THEN
+            ! Get PSD integrated backscattering cross section int = v S/S
+            CALL ErrMsg('Still need to add this functionality. Get the backscattering cross ' //      &
+              'section for everygrid point', fname, -1)
+          END IF
+        END DO
+      END DO
+    END DO
+          
+          
+          
             
           IF (dbg_level >= 75 .AND. ijdbg .AND. tdbg==0) THEN
             WRITE(msg,*) '  ' // TRIM(fname) // ' ',i,' ,',j,' : final checks _______' 
