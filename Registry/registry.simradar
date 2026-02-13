@@ -15,7 +15,7 @@ dimspec    nrnn       2     namelist=nradar_ngrid            c     nradar_ngrid
 dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     c     nradar_ngrid_coord2
 dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
 dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
-dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
+#dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
 
 # simrad.AR package namelist options
@@ -34,7 +34,7 @@ rconfig   integer  nradar_dist   namelist,simradar     1             1600     rh
 rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
 rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
 rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
-rconfig   string   radar_band    namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
+rconfig   character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
 rconfig   integer  radar_scan    namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "radar_scan" "type of scan 1:"      ""
 rconfig   real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar"  "km"
 rconfig   real     radar_hgtmax  namelist,simradar     max_nradar    (/20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20./) rh{11}    "radar_hgtmax"           "maximum height from radar"  "km"
@@ -73,13 +73,16 @@ rconfig   real     latdbg        namelist,simradar     1             -999.    rh
 ##
 
 # All bands variables
-state    integer inradar   ij                 misc        1       -     r         "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
+state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
 state    integer radarnum  ij{rn}             misc        1       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
 state    real  RADARLONS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlons"         "ground radar gate longitude"                              "degree_east"
 state    real  RADARLATS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlats"         "ground radar gate latitude"                               "degree_north"
 state    real  RADARHGTS   {rk}{ri}{rn}       misc        1       -     rh{11}    "radarhgts"         "ground radar gate height"                                 "m"
 state    real  RADARLHGTS  {rk}{ri}{rn}       misc        1       -     rh{11}    "radarlhgts"        "ground radar gate local height"                           "m"
 state    real  RADARDIST   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
+state    real  RADARLON_BNDS {rj}{ri}{nr4coord} misc      1       -     rh{11}    "radarlon_bnds"     "ground radar gate longitude bounds"                       "degree_east"
+state    real  RADARLAT_BNDS {rj}{ri}{nr4coord} misc      1       -     rh{11}    "radarlat_bnds"     "ground radar gate latitude bounds"                        "degree_north"
+state    real  RADARLON_HGTS {rk}{ri}{nr4coord} misc      1       -     rh{11}    "radarhgt_bnds"     "ground radar gate height bounds"                          "m"
 state    real  NGRIDRADAR  ij{rn}             misc        1       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
 state    real  IJGRIDRADAR ij{nrnncoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
 
