@@ -2,131 +2,111 @@
 #  V. Galligani, L. Fita (CIMA-IFAECI), Argentina. November 2025
 
 ## L. Fita. This should work, but WRF is not prepared for 4D output variables like this
-dimspec    ri      2     namelist=e_radlon                 c     radar_lon
-dimspec    rj      2     namelist=e_radlat                 c     radar_lat
-dimspec    rz      2     namelist=e_radhgt                 c     radar_hgt
-dimspec    rn      2     namelist=nradar                   c     radar_num
-dimpsec    rng     2     namelist=ngrid_radar              c     ngrid_radar
-dimspec    rns     2     namelist=nradar_s                 c     radar_s_num
-dimspec    rnc     2     namelist=nradar_c                 c     radar_c_num
-dimspec    rnx     2     namelist=nradar_x                 c     radar_x_num
-dimspec    coord   2     constant=2                        z     coord
+dimspec    ri         2     namelist=e_dist                  c     e_dist
+dimspec    rj         2     namelist=e_angle                 c     e_angle
+dimspec    rz         2     namelist=e_azimuth               c     e_azimuth
+dimspec    rn         2     namelist=nradar                  c     nradar
+dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
+dimspec    cii        2     constant=2                       z     coord2
+dimspec    civ        2     constant=4                       z     coord4
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
-dimspec    rnz     2     namelist=e_radnz                  c     radar_numhgt
-dimpsec    rnngg   2     namelist=nradgrid_radar           c     nradgrid_radar
-dimspec    rnsz    2     namelist=e_radnsz                 c     radars_numhgt
-dimspec    rncz    2     namelist=e_radncz                 c     radarc_numhgt
-dimspec    rnxz    2     namelist=e_radnxz                 c     radarx_numhgt
-dimspec    rnggcoord 2   namelist=rnggcoord                c     rnggcoord
+dimspec    nrnn       2     namelist=nradar_ngrid            c     nradar_ngrid
+dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     c     nradar_ngrid_coord2
+dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
+dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
+dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
+dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
 
 # simrad.AR package namelist options
 rconfig   integer  nradar        namelist,simradar     1              1       rh{11}    "nradar"            "amount of surface radar"                                ""
+rconfig   integer  e_dist        namelist,simradar     1              800     rh{11}    "e_dist"            "radar grid points along the radii"                      ""
+rconfig   integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
+rconfig   integer  e_azimuth     namelist,simradar     1               15     rh{11}    "e_azimuth"         "radar amount of azimuths"                               ""
+rconfig   integer  ngrid_radar   namelist,simradar     1             1500     rh{11}    "ngrid_radar"       "amount of radar cells into a given WRF grid point"      ""
+rconfig   integer  nradar_ngrid  namelist,simradar     1            30000     rh{11}    "nradar_ngrid"      "nradar*ngrid_radar"                                     ""
+rconfig   integer  nradar_ngrid_coord2  namelist,simradar 1         60000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
+rconfig   integer  nradar_coord2 namelist,simradar     1               40     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
+rconfig   integer  nradar_coord4 namelist,simradar     1              160     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
+rconfig   integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
+rconfig   integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
+
 rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
 rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
 rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
 rconfig   string   radar_band    namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
 rconfig   integer  radar_scan    namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "radar_scan" "type of scan 1:"      ""
-rconfig   real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar in km"  ""
-rconfig   real     radar_hgtmax  namelist,simradar     max_nradar    (/20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20./) rh{11}    "radar_hgtmax"           "maximum height from radar in km"  ""
+rconfig   real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar"  "km"
+rconfig   real     radar_hgtmax  namelist,simradar     max_nradar    (/20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20./) rh{11}    "radar_hgtmax"           "maximum height from radar"  "km"
 rconfig   integer  em_ray        namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "em_ray"     "type of propagation of em ray. 1: 4/3 Ref"                                          ""
 rconfig   real     radards       namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./)    rh{11}    "radards"           "nominal horizontal resolution of radar values in m"     ""
-
-rconfig   integer  e_radlon      namelist,simradar     1             1000     rh{11}    "e_radlon"          "radar grid points on the x-axis"                        ""
-rconfig   integer  e_radlat      namelist,simradar     1             1000     rh{11}    "e_radlat"          "radar grid points on the y-axis"                        ""
-rconfig   integer  e_radhgt      namelist,simradar     1               80     rh{11}    "e_radhgt"          "radar grid points on the z-axis"                        ""
-rconfig   integer  e_radnz       namelist,simradar     1             1600     rh{11}    "e_radnz"           "amount and height extent of radars (nradar)*(e_radhgt)" ""
-rconfig   integer  ngrid_radar   namelist,simradar     1              100     rh{11}    "ngrid_radar"       "amount of radar grid points into a given WRF grid point" ""
-rconfig   integer  nradgrid_radar namelist,simradar    1             2000     rh{11}    "nradgrid_radar"    "amount of rdaras and radar grid points into a given WRF grid point" ""
-rconfig   integer  rnggcoord     namelist,simradar     1             4000     rh{11}    "ngrid_radar"       "amount of rdaras and radar grid points and its coordinates of radar grid points into a given WRF grid point" ""
-rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
 rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
-rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency in minutes of time-debugging"                 ""
-rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude in degrees of grid-point debugging (-999., not used)"  ""
-rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude in degrees of grid-point debugging (-999., not used)"   ""
+rconfig   real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
+rconfig   integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
+rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
+
+
+rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
+rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
+rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
 
 ##
-# NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into the dimension {nzr}, therefore outputs will be
-#      GATELON(Time,radarnheight,gatelon,gatelat), therefore it will be needed to decompress the radarn,height dimensions
-#      GATELON(Time,radarnheight,gatelon,gatelat) --> GATELON(Time,radar,gateheight,gatelon,gatelat)
+# NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into different dimensions, therefore outputs will be
+#      IJDISTGRIDRADAR(e_we,e_sn,nradar_ngrid,Time) therefore it will be needed to decompress the nradar, ngrid_radar dimensions IJDISTGRIDRADAR(e_we,e_sn,ngrid_radar,nradar,Time)
+#      IJGRIDRADAR(e_we,e_sn,nradar_ngrid_coord2,Time) --> IJGRIDRADAR(e_we,e_sn,ngrid_radar,coord2,nradar,Time)
+#      RADARLON_BNDS(e_angle,e_dist,nradar_coord4,Time) --> RADARLON_BNDS(e_angle,e_dist,coord4,nradar,Time)
+#      RADARLAT_BNDS(e_angle,e_dist,nradar_coord4,Time) --> RADARLAT_BNDS(e_angle,e_dist,coord4,nradar,Time)
+#      RADARHGT_BNDS(e_azimuth,e_dist,nradar_coord4,Time) --> RADARHGT_BNDS(e_azimuth,e_dist,coord4,nradar,Time)
+#      ZH_RAIN(e_angle,e_azimuth,nradar_dist,Time) --> RADARHGT_BNDS(e_angle,e_azimuth,e_dist,nradar,Time)
+#
+#  For example:
+#  DO ia=1, e_angle
+#    DO id=1, e_dist
+#      DO ir=1, nradar
+#        DO j=1, coord4
+#          irj = (ir-1)*coord4 + j
+#          radarlon_bnds(ia,id,irj) = lon_bnds(ia,id,j,ir)
+#        END DO
+#      END DO
+#    END DO
+#  END DO
 ##
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     r         "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
 state    integer radarnum  ij{rn}             misc        1       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
-state    real  GATELON     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatelon"           "ground radar gate longitude"                              "degree_east"
-state    real  GATELAT     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatelat"           "ground radar gate latitude"                               "degree_north"
-state    real  GATEHGT     {ri}{rj}{rnz}      misc        1       -     rh{11}    "gatehgt"           "ground radar gate height"                                 "m"
-state    real  GATEHDIST   {ri}{rj}{rn}       misc        1       -     rh{11}    "gatehdist"         "ground radar horizontal distance of the grid point"       "m"
-state    real  NGRIDRADAR  ij{rngg}           misc        1       -     rh{11}    "ngridradar"        "amount of radar grid points inside the grid point"        "1"
-state    real  IJGRIDRADAR ij{rnggcoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar grid points inside the grid point"   "-"
-state    real  GATEHWGHT   ij{rngg}           misc        1       -     rh{11}    "gatehwght"         "ground radar horizontal weights for interpolation"        "1"
+state    real  RADARLONS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlons"         "ground radar gate longitude"                              "degree_east"
+state    real  RADARLATS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlats"         "ground radar gate latitude"                               "degree_north"
+state    real  RADARHGTS   {rk}{ri}{rn}       misc        1       -     rh{11}    "radarhgts"         "ground radar gate height"                                 "m"
+state    real  RADARLHGTS  {rk}{ri}{rn}       misc        1       -     rh{11}    "radarlhgts"        "ground radar gate local height"                           "m"
+state    real  RADARDIST   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
+state    real  NGRIDRADAR  ij{rn}             misc        1       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
+state    real  IJGRIDRADAR ij{rnnrcoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
 
-# S-band
-state    real  VRS         {rnsz}{ri}{rj}     misc        1       -     rh{11}    "vrs"               "ground S-band radar Doppler Velocity"                     "ms-1"
-state    real  AIHTOT_S    {rnsz}{ri}{rj}     misc        1       -      h{11}    "aihtot_s"          "S-band ground radar total attenuation"                    "dB/km"
-state    real  AIH_RAIN_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "aih_rain_s"        "S-band ground radar rain attenuation"                     "dB/km"
-state    real  AIH_SNOW_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "aih_snow_s"        "S-band ground radar snow attenuation"                     "dB/km"
-state    real  AIH_GRAU_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "aih_grau_s"        "S-band ground radar graupel attenuation"                  "dB/km"
-state    real  AIH_HAIL_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "aih_hail_s"        "S-band ground radar hail attenuation"                     "dB/km"
-state    real  KDPTOT_S    {rnsz}{ri}{rj}     misc        1       -      h{11}    "kdptot_s"          "S-band ground radar total specific differential phase"    "deg/km"
-state    real  KDP_RAIN_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "kdp_rain_s"        "S-band ground radar rain specific differential phase"     "deg/km"
-state    real  KDP_SNOW_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "kdp_snow_s"        "S-band ground radar snow specific differential phase"     "deg/km"
-state    real  KDP_GRAU_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "kdp_grau_s"        "S-band ground radar graupel specific differential phase"  "deg/km"
-state    real  KDP_HAIL_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "kdp_hail_s"        "S-band ground radar hail specific differential phase"     "deg/km"
-state    real  ZDRTOT_S    {rnsz}{ri}{rj}     misc        1       -      h{11}    "zdrtot_s"          "S-band ground radar total differential reflectivity"      "dBz"
-state    real  ZDR_RAIN_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "zdr_rain_s"        "S-band ground radar rain differential reflectivity"       "dBz"
-state    real  ZDR_SNOW_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "zdr_snow_s"        "S-band ground radar snow differential reflectivity"       "dBz"
-state    real  ZDR_GRAU_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "zdr_grau_s"        "S-band ground radar graupel differential reflectivity"    "dBz"
-state    real  ZDR_HAIL_S  {rnsz}{ri}{rj}     misc        1       -      h{11}    "zdr_hail_s"        "S-band ground radar hail differential reflectivity"       "dBz"
-state    real  ZHTOT_S     {rnsz}{ri}{rj}     misc        1       -      h{11}    "zhtot_s"           "S-band ground radar total horizontal reflectivity"        "dBz"
-state    real  ZH_RAIN_S   {rnsz}{ri}{rj}     misc        1       -      h{11}    "zh_rain_s"         "S-band ground radar rain horizontal reflectivity"         "dBz"
-state    real  ZH_SNOW_S   {rnsz}{ri}{rj}     misc        1       -      h{11}    "zh_snow_s"         "S-band ground radar snow horizontal reflectivity"         "dBz"
-state    real  ZH_GRAU_S   {rnsz}{ri}{rj}     misc        1       -      h{11}    "zh_grau_s"         "S-band ground radar graupel horizontal reflectivity"      "dBz"
-state    real  ZH_HAIL_S   {rnsz}{ri}{rj}     misc        1       -      h{11}    "zh_hail_s"         "S-band ground radar hail horizontal reflectivity"         "dBz"
+# radar band values
+state    real  ZH_RAIN     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
+state    real  ZDR_RAIN    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_RAIN"          "ZDR for Rain"                                             "dBz"
+state    real  KDP_RAIN    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_RAIN"          "KDP for Rain"                                             "degree/km"
+state    real  ZH_SNOW     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_SNOW"           "Reflectivity for Snow"                                    "dBZ"
+state    real  ZDR_SNOW    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_SNOW"          "ZDR for Snow"                                             "dBz"
+state    real  KDP_SNOW    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_SNOW"          "KDP for Snow"                                             "degree/km"
+state    real  ZH_GRAU     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_GRAU"           "Reflectivity for Graupel"                                 "dBZ"
+state    real  ZDR_GRAU    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_GRAU"          "ZDR for Graupel"                                          "dBz"
+state    real  KDP_GRAU    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_GRAU"          "KDP for Graupel"                                          "degree/km"
+state    real  ZH_ICE      {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_ICE"            "Reflectivity for cloud Ice"                               "dBZ"
+state    real  ZDR_ICE     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_ICE"           "ZDR for cloud Ice"                                        "dBz"
+state    real  KDP_ICE     {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_ICE"           "KDP for cloud Ice"                                        "degree/km"
+state    real  ZH_HAIL     {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_HAIL"           "Reflectivity for Hail"                                    "dBZ"
+state    real  ZDR_HAIL    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_HAIL"          "ZDR for Hail"                                             "dBz"
+state    real  KDP_HAIL    {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_HAIL"          "KDP for Hail"                                             "degree/km"
+state    real  ZH_TOTAL    {rj}{rk}{rnd}      misc        1       -      h{11}    "ZH_TOTAL"          "Reflectivity for all species"                             "dBZ"
+state    real  ZDR_TOTAL   {rj}{rk}{rnd}      misc        1       -      h{11}    "ZDR_TOTAL"         "ZDR for all species"                                      "dBz"
+state    real  KDP_TOTAL   {rj}{rk}{rnd}      misc        1       -      h{11}    "KDP_TOTAL"         "KDP for all species"                                      "degree/km"
 
-# C-band
-state    real  VRC         {rncz}{ri}{rj}     misc        1       -     rh{11}    "vrc"               "ground C-band radar Doppler Velocity"                     "ms-1"
-state    real  AIHTOT_C    {rncz}{ri}{rj}     misc        1       -      h{11}    "aihtot_c"          "C-band ground radar total attenuation"                    "dB/km"
-state    real  AIH_RAIN_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "aih_rain_c"        "C-band ground radar rain attenuation"                     "dB/km"
-state    real  AIH_CNOW_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "aih_cnow_c"        "C-band ground radar snow attenuation"                     "dB/km"
-state    real  AIH_GRAU_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "aih_grau_c"        "C-band ground radar graupel attenuation"                  "dB/km"
-state    real  AIH_HAIL_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "aih_hail_c"        "C-band ground radar hail attenuation"                     "dB/km"
-state    real  KDPTOT_C    {rncz}{ri}{rj}     misc        1       -      h{11}    "kdptot_c"          "C-band ground radar total specific differential phase"    "deg/km"
-state    real  KDP_RAIN_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "kdp_rain_c"        "C-band ground radar rain specific differential phase"     "deg/km"
-state    real  KDP_CNOW_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "kdp_cnow_c"        "C-band ground radar snow specific differential phase"     "deg/km"
-state    real  KDP_GRAU_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "kdp_grau_c"        "C-band ground radar graupel specific differential phase"  "deg/km"
-state    real  KDP_HAIL_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "kdp_hail_c"        "C-band ground radar hail specific differential phase"     "deg/km"
-state    real  ZDRTOT_C    {rncz}{ri}{rj}     misc        1       -      h{11}    "zdrtot_c"          "C-band ground radar total differential reflectivity"      "dBz"
-state    real  ZDR_RAIN_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "zdr_rain_c"        "C-band ground radar rain differential reflectivity"       "dBz"
-state    real  ZDR_CNOW_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "zdr_cnow_c"        "C-band ground radar snow differential reflectivity"       "dBz"
-state    real  ZDR_GRAU_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "zdr_grau_c"        "C-band ground radar graupel differential reflectivity"    "dBz"
-state    real  ZDR_HAIL_C  {rncz}{ri}{rj}     misc        1       -      h{11}    "zdr_hail_c"        "C-band ground radar hail differential reflectivity"       "dBz"
-state    real  ZHTOT_C     {rncz}{ri}{rj}     misc        1       -      h{11}    "zhtot_c"           "C-band ground radar total horizontal reflectivity"        "dBz"
-state    real  ZH_RAIN_C   {rncz}{ri}{rj}     misc        1       -      h{11}    "zh_rain_c"         "C-band ground radar rain horizontal reflectivity"         "dBz"
-state    real  ZH_CNOW_C   {rncz}{ri}{rj}     misc        1       -      h{11}    "zh_cnow_c"         "C-band ground radar snow horizontal reflectivity"         "dBz"
-state    real  ZH_GRAU_C   {rncz}{ri}{rj}     misc        1       -      h{11}    "zh_grau_c"         "C-band ground radar graupel horizontal reflectivity"      "dBz"
-state    real  ZH_HAIL_C   {rncz}{ri}{rj}     misc        1       -      h{11}    "zh_hail_c"         "C-band ground radar hail horizontal reflectivity"         "dBz"
-
-# X-band
-state    real  VRX         {rnxz}{ri}{rj}     misc        1       -     rh{11}    "vrx"               "ground X-band radar Doppler Velocity"                     "ms-1"
-state    real  AIHTOT_X    {rnxz}{ri}{rj}     misc        1       -      h{11}    "aihtot_x"          "X-band ground radar total attenuation"                    "dB/km"
-state    real  AIH_RAIN_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "aih_rain_x"        "X-band ground radar rain attenuation"                     "dB/km"
-state    real  AIH_XNOW_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "aih_xnow_x"        "X-band ground radar snow attenuation"                     "dB/km"
-state    real  AIH_GRAU_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "aih_grau_x"        "X-band ground radar graupel attenuation"                  "dB/km"
-state    real  AIH_HAIL_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "aih_hail_x"        "X-band ground radar hail attenuation"                     "dB/km"
-state    real  KDPTOT_X    {rnxz}{ri}{rj}     misc        1       -      h{11}    "kdptot_x"          "X-band ground radar total specific differential phase"    "deg/km"
-state    real  KDP_RAIN_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "kdp_rain_x"        "X-band ground radar rain specific differential phase"     "deg/km"
-state    real  KDP_XNOW_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "kdp_xnow_x"        "X-band ground radar snow specific differential phase"     "deg/km"
-state    real  KDP_GRAU_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "kdp_grau_x"        "X-band ground radar graupel specific differential phase"  "deg/km"
-state    real  KDP_HAIL_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "kdp_hail_x"        "X-band ground radar hail specific differential phase"     "deg/km"
-state    real  ZDRTOT_X    {rnxz}{ri}{rj}     misc        1       -      h{11}    "zdrtot_x"          "X-band ground radar total differential reflectivity"      "dBz"
-state    real  ZDR_RAIN_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "zdr_rain_x"        "X-band ground radar rain differential reflectivity"       "dBz"
-state    real  ZDR_XNOW_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "zdr_xnow_x"        "X-band ground radar snow differential reflectivity"       "dBz"
-state    real  ZDR_GRAU_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "zdr_grau_x"        "X-band ground radar graupel differential reflectivity"    "dBz"
-state    real  ZDR_HAIL_X  {rnxz}{ri}{rj}     misc        1       -      h{11}    "zdr_hail_x"        "X-band ground radar hail differential reflectivity"       "dBz"
-state    real  ZHTOT_X     {rnxz}{ri}{rj}     misc        1       -      h{11}    "zhtot_x"           "X-band ground radar total horizontal reflectivity"        "dBz"
-state    real  ZH_RAIN_X   {rnxz}{ri}{rj}     misc        1       -      h{11}    "zh_rain_x"         "X-band ground radar rain horizontal reflectivity"         "dBz"
-state    real  ZH_XNOW_X   {rnxz}{ri}{rj}     misc        1       -      h{11}    "zh_xnow_x"         "X-band ground radar snow horizontal reflectivity"         "dBz"
-state    real  ZH_GRAU_X   {rnxz}{ri}{rj}     misc        1       -      h{11}    "zh_grau_x"         "X-band ground radar graupel horizontal reflectivity"      "dBz"
-state    real  ZH_HAIL_X   {rnxz}{ri}{rj}     misc        1       -      h{11}    "zh_hail_x"         "X-band ground radar hail horizontal reflectivity"         "dBz"
+state    real  TV_RAIN     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_RAIN"           "terminal velocity for Rain"                               "ms-1"
+state    real  TV_SNOW     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_SNOW"           "terminal velocity for Snow"                               "ms-1"
+state    real  TV_GRAU     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_GRAU"           "terminal velocity for Graupel"                            "ms-1"
+state    real  TV_ICE      {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_ICE"            "terminal velocity for cloud Ice"                          "ms-1"
+state    real  TV_HAIL     {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_HAIL"           "terminal velocity for Hail"                               "ms-1"
+state    real  TV_WGT      {rj}{rk}{rnd}      misc        1       -      h{11}    "TV_WGT"            "weighted terminal velocity"                               "ms-1"
+state    real  VR          {rj}{rk}{rnd}      misc        1       -      h{11}    "VR"                "Doppler velocity"                                         "ms-1"
 
