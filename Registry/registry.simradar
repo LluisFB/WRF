@@ -24,6 +24,7 @@ rconfig   integer  e_dist        namelist,simradar     1              800     rh
 rconfig   integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
 rconfig   integer  e_azimuth     namelist,simradar     1               15     rh{11}    "e_azimuth"         "radar amount of azimuths"                               ""
 rconfig   integer  ngrid_radar   namelist,simradar     1             1500     rh{11}    "ngrid_radar"       "amount of radar cells into a given WRF grid point"      ""
+rconfig   integer  ngrid3_radar  namelist,simradar     1            25000     rh{11}    "ngrid3_radar"      "amount of vertical radar cells into a given WRF grid point"      ""
 rconfig   integer  nradar_ngrid  namelist,simradar     1            30000     rh{11}    "nradar_ngrid"      "nradar*ngrid_radar"                                     ""
 rconfig   integer  nradar_ngrid_coord2  namelist,simradar 1         60000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
 rconfig   integer  nradar_coord2 namelist,simradar     1               40     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
@@ -31,6 +32,7 @@ rconfig   integer  nradar_coord4 namelist,simradar     1              160     rh
 rconfig   integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
 rconfig   integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
 
+rconfig   character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
 rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
 rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
 rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
@@ -43,7 +45,7 @@ rconfig   real     radards       namelist,simradar     max_nradar    (/250.,250.
 rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
 rconfig   real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
 rconfig   integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
-rconfig   real     missing_value namelist,simradar     1           1.e210     rh{11}    "missing_value"     "missing value"                                          ""
+rconfig   real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
 
 
 rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
