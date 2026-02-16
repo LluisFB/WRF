@@ -6,6 +6,8 @@ MODULE module_simradar_tools
   USE module_wrf_error
 
 !!!!!!! Subroutines / functions
+! compute_radar_lonlat_radial: Subroutine to copmute lon, lat, hgt coordinates in the radar matrix 
+!   following polar coordinates
 ! distance_between_points: Subroutine tro compute the coordinates at a given distance and angle from a 
 !   given point
 ! DIRCT1: Solution of the geodetic direct problem after T. Vincenty
@@ -26,6 +28,8 @@ MODULE module_simradar_tools
 ! ErrMsg: Subroutine to stop execution and provide an error message
 ! ErrMsg[I/R/S]Avail: Subroutine to stop execution by non exsitent Integer/Real/String value from 
 !   available ones and provide an error message
+! FileExist: Checks if a file exists
+! freeunit: provides the number of a free unit in which open a file
 ! [I/R]toS: Function to transform an Integer/Real to String
 ! set_dbg: Function to setup debug value
 ! Sto[I/R/L]: Function to transform a String to an Integer/Real/Boolean
@@ -51,8 +55,11 @@ MODULE module_simradar_tools
   ! REal 16 bytes 
   INTEGER, PARAMETER                                     :: rr8 = SELECTED_REAL_KIND(8)
   
-  REAL(kind=rr8), PARAMETER                              :: pi = 4.d0*DATAN(1.d0)
-  REAL(kind=rr8), PARAMETER                              :: rad = 180.d0/pi
+  REAL, PARAMETER                                        :: pict = ACOS(-1.)  
+  REAL, PARAMETER                                        :: DegRad = 180./pict
+  ! double  Real
+  REAL(kind=rr8), PARAMETER                              :: dpict = 4.d0*DATAN(1.d0)
+  REAL(kind=rr8), PARAMETER                              :: drad = 180.d0/dpict
 
   ! 16 charcater String
   INTEGER, PARAMETER                                     :: S16 = 16
@@ -71,7 +78,29 @@ MODULE module_simradar_tools
   ! 1024 character String
   INTEGER, PARAMETER                                     :: S1024 = 1024
   
+  ! Fill values
+  !  !! 'B', NF_BYTE
+  !  BYTE, PARAMETER                                      :: fillValueB = 255
+  !! 'C', NF_CHAR
+  CHARACTER(len=1), PARAMETER                            :: fillValueC = '-' 
+  !! 'I', NF_SHORT
+  INTEGER, PARAMETER                                     :: fillValueI = -9999
+  !!! 'I16', NF_INT
+  !INTEGER(kind=ii4), PARAMETER                           :: fillValueID = fI4
+  !! 'R', NF_FLOAT
+  REAL, PARAMETER                                        :: fillValueR = 1.e20
+  !! 'D', NF_DOUBLE 
+  REAL(kind=rr8), PARAMETER                              :: fillValueD = 1.d20
+  
   CHARACTER(len=33)                                      :: errormsg = 'ERROR -- error -- ERROR -- error'
+
+  ! error tolerance
+  REAL(kind=rr8), PARAMETER                              :: tol=1.d-14
+  ! Epsilon
+  REAL(kind=rr8), PARAMETER                              :: eps=1.d-15
+
+  ! Maximum rank of a Frotran variable
+  INTEGER, PARAMETER                                     :: maxfrank = 7
   
   ! Derived type with all the ranges for all water species for LUT
   TYPE lut_vars
@@ -110,6 +139,27 @@ MODULE module_simradar_tools
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aiv_ICE
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: KDP_ICE
     
+    REAL                                                 :: q_rain_min
+    REAL                                                 :: q_rain_max
+    REAL                                                 :: qn_rain_min
+    REAL                                                 :: qn_rain_max
+    REAL                                                 :: q_snow_min
+    REAL                                                 :: q_snow_max
+    REAL                                                 :: qn_snow_min
+    REAL                                                 :: qn_snow_max
+    REAL                                                 :: q_grau_min
+    REAL                                                 :: q_grau_max
+    REAL                                                 :: qn_grau_min
+    REAL                                                 :: qn_grau_max
+    REAL                                                 :: q_ice_min
+    REAL                                                 :: q_ice_max
+    REAL                                                 :: qn_ice_min
+    REAL                                                 :: qn_ice_max
+    REAL                                                 :: q_clou_min
+    REAL                                                 :: q_clou_max
+    INTEGER                                              :: dim_ice
+    INTEGER                                              :: dimv
+
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_rain_vec
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_snow_vec
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_grau_vec
@@ -118,24 +168,221 @@ MODULE module_simradar_tools
   END TYPE lut_vars
 
   CONTAINS
+
+  SUBROUTINE compute_radar_lonlat_radial(Nangle, Nazimuth, Ndist, lon_pt, lat_pt, hgt_pt, ddist,      &
+    max_dist, max_hgt, azimuths, a, f, elips, angle1d, dist1d, azimuth1d, lons, lats, hgts, lhgts,    &
+    lon_bnds, lat_bnds, hgt_bnds, idbg)
+  ! Subroutine to copmute lon, lat, hgt coordinates in the radar matrix following polar coordinates
+    
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: Nangle, Nazimuth, Ndist
+    REAL, INTENT(in)                                     :: lon_pt, lat_pt, hgt_pt, ddist, max_dist,  &
+      max_hgt
+    REAL, DIMENSION(Nazimuth), INTENT(in)                :: azimuths
+    REAL(kind=rr8), INTENT(in)                           :: a, f
+    CHARACTER(len=S32), INTENT(in)                       :: elips
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL, DIMENSION(Nangle), INTENT(out)                 :: angle1d
+    REAL, DIMENSION(Ndist), INTENT(out)                  :: dist1d
+    REAL, DIMENSION(Nazimuth), INTENT(out)               :: azimuth1d
+    REAL, DIMENSION(Nangle,Ndist), INTENT(out)           :: lons, lats
+    REAL, DIMENSION(Nazimuth,Ndist), INTENT(out)         :: hgts
+    REAL, DIMENSION(Nazimuth,Ndist), INTENT(out)         :: lhgts
+    REAL, DIMENSION(Nangle,Ndist,4),INTENT(out)          :: lon_bnds, lat_bnds
+    REAL, DIMENSION(Nazimuth,Ndist,4),INTENT(out)        :: hgt_bnds
+        
+    ! Local
+    INTEGER                                              :: i, j, k, ijfound
+    REAL                                                 :: dangle, ddist2
+    REAL                                                 :: angle, dist, azimuth, hgt, lhgt
+    REAL                                                 :: lonv, latv
+    REAL, DIMENSION(Nazimuth)                            :: radazimuths, dhgt, dhgt2
+    LOGICAL                                              :: printdbg
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!! Test inverse distance
+    REAL                                                 :: faz, s
+    
+    !!!!!!! Variables
+    ! Nangle, Nazimuth, Ndist: dimension of the radar space
+    ! lon_pt, lat_pt, hgt_pt: location of the radar
+    ! ddist: horizontal resolution [m]
+    ! max_dist: maximum distance of the radar [km]
+    ! max_hgt: maximum height of the radar [km]
+    ! azimuths: angles of the azimuths [degree]
+    ! a, f: axis / semi-axis of the ellipsoide
+    ! offset: offset to apply to the radar array
+    ! iis, jjs, kks: indices of the radar array
+    ! hdists: horizontal distances of the radar 
+    ! zdists: vertical distances of the radar 
+    ! lons, lats, hgts: coordinates of the radar array
+    ! lon_bnds, lat_bnds, hgt_bnds: vertices of the grids of the radar array
+    fname = 'compute_radar_lonlat_radial'
+    
+    dbg = set_dbg(idbg)
+    
+    ! Initializing
+    angle1d = fillValueR
+    dist1d = fillValueR
+    azimuth1d = azimuths
+    lhgts = fillValueR
+    lons = fillValueR
+    lats = fillValueR
+    hgts = fillValueR
+    lat_bnds = fillValueR
+    lon_bnds = fillValueR
+    hgt_bnds = fillValueR
+    
+    ijfound = 0
+    ! Angle at the center of the ray
+    dangle = 360. / (Nangle)
+    ! Angle at the center of the ray
+    radazimuths = azimuths / DegRad
+    dhgt = 0.
+    dhgt(1:Nazimuth-1) = radazimuths(2:Nazimuth) - radazimuths(1:Nazimuth-1)
+    dhgt(Nazimuth) = dhgt(Nazimuth-1)
+    
+    ddist2 = ddist / 2.
+    dhgt2 = dhgt / 2.
+    
+    angl: DO i=1, Nangle
+      angle = dangle*(i-1)
+      angle1d(i) = angle
+            
+      DO j=1, Ndist
+        printdbg = .FALSE.
+        IF (dbg) THEN
+          IF (MOD(i+j,10) == 0) THEN
+            ijfound = ijfound + 1
+            IF (ijfound < 10) printdbg = .TRUE.
+          END IF
+        END IF
+
+        ! Centering at half distance
+        dist = ddist*(j-1) + ddist2
+        IF (i == 1) dist1d(j) = dist
+
+        ! Vertices
+        ! Cell boundaries
+        ! SW
+        dist = ddist*(j-1.)
+        angle = dangle*(i-1.-0.5)
+        CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonv, latv)
+        lon_bnds(i,j,1) = lonv
+        lat_bnds(i,j,1) = latv
+          
+        ! SE
+        dist = ddist*(j+1.)
+        angle = dangle*(i-1.-0.5)
+        CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonv, latv)
+        lon_bnds(i,j,2) = lonv
+        lat_bnds(i,j,2) = latv
+        
+        ! NE
+        dist = ddist*(j+1.)
+        angle = dangle*(i-1.+0.5)
+        CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonv, latv)
+        lon_bnds(i,j,3) = lonv
+        lat_bnds(i,j,3) = latv
+  
+        ! NW
+        dist = ddist*(j-1.)
+        angle = dangle*(i-1.+0.5)
+        CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonv, latv)
+        lon_bnds(i,j,4) = lonv
+        lat_bnds(i,j,4) = latv
+
+        ! Getting the distance at the center of the radar cell for height computations
+        dist = ddist*(j-1) + ddist2
+        CALL position_from_point(lon_pt, lat_pt, a, f, elips, dist, angle, lonv, latv)
+        
+        lons(i,j) = lonv
+        lats(i,j) = latv
+
+        IF (printdbg) PRINT *, '    ' // TRIM(fname), ' i,j ',  i, j, ' <> distance ', dist,          &
+          ' angle ', angle, ' lon: ', lons(i,j), ' lat: ', lats(i,j)
+                            
+        DO k=1, Nazimuth
+          ! Centered at half angle
+          azimuth = radazimuths(k)
+
+          CALL beam_height(hgt_pt, a, angle, azimuth, dist, hgt, lhgt)
+          IF (hgt > max_hgt) CYCLE
+          
+          hgts(k,j) = hgt
+          lhgts(k,j) = lhgt
+          
+          IF (printdbg) PRINT *, '      ', i, j, k, ' angle:', angle, ' dist:', dist, ' azimuth: ',   &
+            azimuth, ' height: ', hgt
+
+          ! Only to be computed at first angle
+          IF (i == 1 ) THEN
      
-  SUBROUTINE read_lut(filen, lutgrid, idbg)
+            ! Vertices
+            ! Cell boundaries
+            ! bottomW
+            CALL beam_height(hgt_pt, a, angle, azimuth-dhgt2(k), dist-ddist2, hgt, lhgt)
+            hgt_bnds(k,j,1) = hgt
+          
+            ! bottomE
+            CALL beam_height(hgt_pt, a, angle, azimuth-dhgt2(k), dist+ddist2, hgt, lhgt)
+            hgt_bnds(k,j,2) = hgt
+
+            ! topE
+            CALL beam_height(hgt_pt, a, angle, azimuth+dhgt2(k), dist+ddist2, hgt, lhgt)
+            hgt_bnds(k,j,3) = hgt
+
+            ! topW
+            CALL beam_height(hgt_pt, a, angle, azimuth+dhgt2(k), dist-ddist2, hgt, lhgt)
+            hgt_bnds(k,j,4) = hgt
+            
+          END IF
+
+        END DO
+      END DO
+      
+      ! debugging at N, W, S, E axes 
+      IF (i== 1 .OR. i == Nangle/4 .OR. i == Nangle/2 .OR. i == 3*Nangle/4 .OR. i == Nangle) THEN
+        PRINT *, '  ' // TRIM(fname) // ": values at major AXIS N;E;S;W angle = ", angle, ' _______'
+        PRINT *, '  lon first:', lons(i,1), ' last: ', lons(i,Ndist)
+        PRINT *, '  lat first:', lats(i,1), ' last: ', lats(i,Ndist)
+        PRINT *, '  hgt at first:', hgts(1,1), ' top: ', hgts(Nazimuth,1)
+        PRINT *, '  hgt at last:', hgts(1,Ndist), ' top: ', hgts(Nazimuth,Ndist)        
+        PRINT *, '      values idist dist lon lat invangle invdist _______'
+        DO j=1, Ndist, Ndist/10
+          CALL distance_between_points(lon_pt, lat_pt, lons(i,j), lats(i,j), a, f, elips, s, faz)
+          PRINT *,'      ',  j, ddist*(j-1) + ddist2, lons(i,j), lats(i,j), faz, s
+        
+        END DO
+      END IF
+
+    END DO angl
+        
+    RETURN
+
+  END SUBROUTINE compute_radar_lonlat_radial
+     
+  SUBROUTINE read_lut(lutfilen, lutgrid, idbg)
   ! Subroutine to read the T-MATRIX look-up-table (LUT) from an specific microphysics from a netCDF 
   !   file
   
     IMPLICIT NONE
   
-    CHARACTER(len=S256), INTENT(in)                      :: filen
+    CHARACTER(len=S256), INTENT(in)                      :: lutfilen
     LOGICAL, OPTIONAL                                    :: idbg
     TYPE(lut_vars), INTENT(out)                          :: lutgrid
     
     ! Local
-    INTEGER                                              :: ncid, ierr
+    INTEGER                                              :: lutid, ierr
+    INTEGER                                              :: Nlutdims, Nlutvars
+    INTEGER                                              :: Nbnds, Nlevs, Nqbins
     CHARACTER(len=S16)                                   :: S16a
     CHARACTER(len=S32)                                   :: S32a
     CHARACTER(len=S256)                                  :: S256a
     LOGICAL                                              :: dbg
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! lutfilen: name of the netCDF file with the values
@@ -145,7 +392,7 @@ MODULE module_simradar_tools
     
     dbg = set_dbg(idbg)
     
-    CALL open_NCfile(filen, ncid, dbg)
+    CALL open_NCfile(lutfilen, lutid, dbg)
 
     CALL get_Ndims_ncid(lutid, Nlutdims)
     CALL get_Nvars_ncid(lutid, Nlutvars)
@@ -153,196 +400,202 @@ MODULE module_simradar_tools
       "' Ndims: ", Nlutdims, ' Nvars: ', Nlutvars
 
     S32a = 'WRF_mp_physics'
-    CALL get_varS0D_ncid(ncid, 256, S32a, S256a, dbg)
+    CALL get_varS0D_ncid(lutid, 256, S32a, S256a, dbg)
     S16a = TRIM(S256a)
     lutgrid%mp_scheme = S16a
     
     ! LUT space
     S32a = 'elevation'
-    CALL get_dimlength_ncid(ncid, S32a, lutgrid%Nlutelevs)
+    CALL get_dimlength_ncid(lutid, S32a, Nlevs)
     S32a = 'radar_band'
-    CALL get_dimlength_ncid(ncid, S32a, lutgrid%Nbands)
+    CALL get_dimlength_ncid(lutid, S32a, Nbnds)
     S32a = 'qxbin'
-    CALL get_dimlength_ncid(ncid, S32a, lutgrid%Nlutqxbins)
+    CALL get_dimlength_ncid(lutid, S32a, Nqbins)
+
+    ! I do think it makes the code more readable
+    lutgrid%Nlutelevs = Nlevs
+    lutgrid%Nbands = Nbnds
+    lutgrid%Nlutqxbins = Nqbins
     
     !! Variables
     !!! RAIN
     IF (ALLOCATED(lutgrid%Zh_RAIN)) DEALLOCATE(lutgrid%Zh_RAIN)
-    ALLOCATE(lutgrid%Zh_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zh_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zh_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zh_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zh_RAIN, dbg)
     IF (ALLOCATED(lutgrid%Zdr_RAIN)) DEALLOCATE(lutgrid%Zdr_RAIN)
-    ALLOCATE(lutgrid%Zdr_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zdr_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zdr_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zdr_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zdr_RAIN, dbg)
     IF (ALLOCATED(lutgrid%LDR_RAIN)) DEALLOCATE(lutgrid%LDR_RAIN)
-    ALLOCATE(lutgrid%LDR_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%LDR_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'LDR_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%LDR_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%LDR_RAIN, dbg)
     IF (ALLOCATED(lutgrid%Aih_RAIN)) DEALLOCATE(lutgrid%Aih_RAIN)
-    ALLOCATE(lutgrid%Aih_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aih_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aih_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aih_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aih_RAIN, dbg)
     IF (ALLOCATED(lutgrid%Aiv_RAIN)) DEALLOCATE(lutgrid%Aiv_RAIN)
-    ALLOCATE(lutgrid%Aiv_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aiv_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aiv_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aiv_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aiv_RAIN, dbg)
     IF (ALLOCATED(lutgrid%KDP_RAIN)) DEALLOCATE(lutgrid%KDP_RAIN)
-    ALLOCATE(lutgrid%KDP_RAIN(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_RAIN', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%KDP_RAIN(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_RAIN', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'KDP_RAIN'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%KDP_RAIN, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%KDP_RAIN, dbg)
 
     !!! SNOW
     IF (ALLOCATED(lutgrid%Zh_SNOW)) DEALLOCATE(lutgrid%Zh_SNOW)
-    ALLOCATE(lutgrid%Zh_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zh_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zh_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zh_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zh_SNOW, dbg)
     IF (ALLOCATED(lutgrid%Zdr_SNOW)) DEALLOCATE(lutgrid%Zdr_SNOW)
-    ALLOCATE(lutgrid%Zdr_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zdr_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zdr_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zdr_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zdr_SNOW, dbg)
     IF (ALLOCATED(lutgrid%LDR_SNOW)) DEALLOCATE(lutgrid%LDR_SNOW)
-    ALLOCATE(lutgrid%LDR_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%LDR_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'LDR_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%LDR_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%LDR_SNOW, dbg)
     IF (ALLOCATED(lutgrid%Aih_SNOW)) DEALLOCATE(lutgrid%Aih_SNOW)
-    ALLOCATE(lutgrid%Aih_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aih_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aih_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aih_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aih_SNOW, dbg)
     IF (ALLOCATED(lutgrid%Aiv_SNOW)) DEALLOCATE(lutgrid%Aiv_SNOW)
-    ALLOCATE(lutgrid%Aiv_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aiv_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aiv_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aiv_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aiv_SNOW, dbg)
     IF (ALLOCATED(lutgrid%KDP_SNOW)) DEALLOCATE(lutgrid%KDP_SNOW)
-    ALLOCATE(lutgrid%KDP_SNOW(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_SNOW', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%KDP_SNOW(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_SNOW', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'KDP_SNOW'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%KDP_SNOW, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%KDP_SNOW, dbg)
 
     !!! GRAU
     IF (ALLOCATED(lutgrid%Zh_GRAU)) DEALLOCATE(lutgrid%Zh_GRAU)
-    ALLOCATE(lutgrid%Zh_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zh_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zh_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zh_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zh_GRAU, dbg)
     IF (ALLOCATED(lutgrid%Zdr_GRAU)) DEALLOCATE(lutgrid%Zdr_GRAU)
-    ALLOCATE(lutgrid%Zdr_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zdr_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zdr_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zdr_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zdr_GRAU, dbg)
     IF (ALLOCATED(lutgrid%LDR_GRAU)) DEALLOCATE(lutgrid%LDR_GRAU)
-    ALLOCATE(lutgrid%LDR_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%LDR_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'LDR_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%LDR_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%LDR_GRAU, dbg)
     IF (ALLOCATED(lutgrid%Aih_GRAU)) DEALLOCATE(lutgrid%Aih_GRAU)
-    ALLOCATE(lutgrid%Aih_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aih_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aih_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aih_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aih_GRAU, dbg)
     IF (ALLOCATED(lutgrid%Aiv_GRAU)) DEALLOCATE(lutgrid%Aiv_GRAU)
-    ALLOCATE(lutgrid%Aiv_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aiv_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aiv_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aiv_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aiv_GRAU, dbg)
     IF (ALLOCATED(lutgrid%KDP_GRAU)) DEALLOCATE(lutgrid%KDP_GRAU)
-    ALLOCATE(lutgrid%KDP_GRAU(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_GRAU', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%KDP_GRAU(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_GRAU', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'KDP_GRAU'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%KDP_GRAU, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%KDP_GRAU, dbg)
 
     !!! ICE
     IF (ALLOCATED(lutgrid%Zh_ICE)) DEALLOCATE(lutgrid%Zh_ICE)
-    ALLOCATE(lutgrid%Zh_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zh_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zh_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zh_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zh_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zh_ICE, dbg)
     IF (ALLOCATED(lutgrid%Zdr_ICE)) DEALLOCATE(lutgrid%Zdr_ICE)
-    ALLOCATE(lutgrid%Zdr_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Zdr_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Zdr_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Zdr_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Zdr_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Zdr_ICE, dbg)
     IF (ALLOCATED(lutgrid%LDR_ICE)) DEALLOCATE(lutgrid%LDR_ICE)
-    ALLOCATE(lutgrid%LDR_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%LDR_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'LDR_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'LDR_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%LDR_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%LDR_ICE, dbg)
     IF (ALLOCATED(lutgrid%Aih_ICE)) DEALLOCATE(lutgrid%Aih_ICE)
-    ALLOCATE(lutgrid%Aih_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aih_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aih_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aih_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aih_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aih_ICE, dbg)
     IF (ALLOCATED(lutgrid%Aiv_ICE)) DEALLOCATE(lutgrid%Aiv_ICE)
-    ALLOCATE(lutgrid%Aiv_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%Aiv_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'Aiv_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'Aiv_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%Aiv_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%Aiv_ICE, dbg)
     IF (ALLOCATED(lutgrid%KDP_ICE)) DEALLOCATE(lutgrid%KDP_ICE)
-    ALLOCATE(lutgrid%KDP_ICE(Nbands,Nlutelevs,Nlutqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_ICE', 3, (/Nbands,Nlutelevs,Nlutqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%KDP_ICE(Nbnds,Nlevs,Nqbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'KDP_ICE', 3, (/Nbnds,Nlevs,Nqbins/), fname, ierr)
     S32a = 'KDP_ICE'
-    CALL get_varD3D_ncid(ncid, 1, 1, 1, Nbands, Nlutelevs, Nlutqxbins, S32a, lutgrid%KDP_ICE, dbg)
+    CALL get_varD3D_ncid(lutid, 1, 1, 1, Nbnds, Nlevs, Nqbins, S32a, lutgrid%KDP_ICE, dbg)
 
+! From namelist or from file?
 !    S32a = 'q_rain_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_rain_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_rain_min, dbg)
 !    S32a = 'q_rain_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_rain_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_rain_max, dbg)
 !    S32a = 'qn_rain_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_rain_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_rain_min, dbg)
 !    S32a = 'qn_rain_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_rain_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_rain_max, dbg)
 !    S32a = 'q_snow_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_snow_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_snow_min, dbg)
 !    S32a = 'q_snow_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_snow_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_snow_max, dbg)
 !    S32a = 'qn_snow_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_snow_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_snow_min, dbg)
 !    S32a = 'qn_snow_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_snow_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_snow_max, dbg)
 !    S32a = 'q_grau_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_grau_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_grau_min, dbg)
 !    S32a = 'q_grau_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_grau_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_grau_max, dbg)
 !    S32a = 'qn_grau_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_grau_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_grau_min, dbg)
 !    S32a = 'qn_grau_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_grau_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_grau_max, dbg)
 !    S32a = 'q_ice_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_ice_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_ice_min, dbg)
 !    S32a = 'q_ice_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_ice_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_ice_max, dbg)
 !    S32a = 'qn_ice_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_ice_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_ice_min, dbg)
 !    S32a = 'qn_ice_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%qn_ice_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%qn_ice_max, dbg)
 !    S32a = 'q_clou_min'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_clou_min, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_clou_min, dbg)
 !    S32a = 'q_clou_max'
-!    CALL get_varR0D_ncid(ncid, S32a, lutgrid%q_clou_max, dbg)
+!    CALL get_varR0D_ncid(lutid, S32a, lutgrid%q_clou_max, dbg)
 !    S32a = 'dim_ice'
-!    CALL get_varN0D_ncid(ncid, S32a, lutgrid%dim_ice, dbg)
+!    CALL get_varN0D_ncid(lutid, S32a, lutgrid%dim_ice, dbg)
 !    S32a = 'dimv'
-!    CALL get_varN0D_ncid(ncid, S32a, lutgrid%dimv, dbg)
+!    CALL get_varN0D_ncid(lutid, S32a, lutgrid%dimv, dbg)
 
     IF (ALLOCATED(lutgrid%elevations)) DEALLOCATE(lutgrid%elevations)
-    ALLOCATE(lutgrid%elevations(lutgrid%Nlutelevs), ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'elevations', 1, (/lutgrid%Nlutelevs/), fname, ierr)
+    ALLOCATE(lutgrid%elevations(Nlevs), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'elevations', 1, (/Nlevs/), fname, ierr)
 
     S32a = 'elevation'
-    CALL get_varR1D_ncid(ncid, 1, Nlutelevs, S32a, lutgrid%elevations, dbg)
+    CALL get_varR1D_ncid(lutid, 1, Nlevs, S32a, lutgrid%elevations, dbg)
 
-    CALL close_NCfile(filen, ncid, dbg)
+    CALL close_NCfile(lutfilen, lutid, dbg)
 
     RETURN
  
@@ -442,7 +695,7 @@ MODULE module_simradar_tools
     REAL(kind=rr8)                                       :: beta1, sinu1, cosu1
     REAL(kind=rr8)                                       :: beta2, sinu2, cosu2
     LOGICAL                                              :: converged, keeplooping
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
        
     fname = 'inverse'
 
@@ -1107,8 +1360,8 @@ MODULE module_simradar_tools
     ! avail: available values
 
     WRITE (diag_message , * ) &
-      "ERROR -- error -- ERROR -- error:   " // TRIM(funcn) // ": " // TRIM(msg) //                   &
-      ' not ready !!  Available ones: ' // (TRIM(ItoS(avail)) // ', ', i=1, Navail)
+      TRIM(errormsg) // ":   " // TRIM(funcn) // ": " // TRIM(msg) //                                 &
+      ' not ready !!  Available ones: ', (TRIM(ItoS(avail(i))) // ', ', i=1, Navail)
       CALL wrf_error_fatal ( diag_message )
 
     RETURN
@@ -1136,8 +1389,8 @@ MODULE module_simradar_tools
     ! avail: available values
 
     WRITE (diag_message , * ) &
-      "ERROR -- error -- ERROR -- error:   " // TRIM(funcn) // ": " // TRIM(msg) //                   &
-      ' not ready !!  Available ones: ' // "'" // (TRIM(avail)) // "', ", i=1, Navail)
+      TRIM(errormsg) // ":   " // TRIM(funcn) // ": " // TRIM(msg) //                                 &
+      ' not ready !!  Available ones: ', ("'" // TRIM(avail(i)) // "', ", i=1, Navail)
       CALL wrf_error_fatal ( diag_message )
 
     RETURN
@@ -1163,12 +1416,11 @@ MODULE module_simradar_tools
     ! shapev: shape of the array to allocate
     ! funcn: name of the funciton, section to localize the error
     ! errN: number of the error provided for a given FORTRAN function
-    emsg = 'ERORR -- error -- ERROR -- error'
 
     IF (errN /= 0) THEN
       WRITE (diag_message , * ) &
-      "ERROR -- error -- ERROR -- error:   " // TRIM(funcn) // ": " // TRIM(msg) //                   &
-      ' Problem allocating : ' // "'" // TRIM(arrayn)) // "' (", (TRIM(ItoS(shapev(i))) // ', ',i=1,  &
+      TRIM(errormsg) // ":   " // TRIM(funcn) // ": " // TRIM(msg) //                                 &
+      ' Problem allocating : ' // "'" // TRIM(arrayn) // "' (", (TRIM(ItoS(shapev(i))) // ', ',i=1,   &
         rank), " )' !!"
       CALL wrf_error_fatal ( diag_message )
     END IF
@@ -1187,14 +1439,13 @@ MODULE module_simradar_tools
     INTEGER, INTENT(in)                                  :: errN
 
     ! Local
+    CHARACTER (LEN=1000)                                 :: diag_message
     CHARACTER(LEN=50)                                    :: emsg
 
     !!!!!!! Variables
     ! msg: message to print with the error
     ! funcn: name of the funciton, section to localize the error
     ! errN: number of the error provided for a given FORTRAN function
-
-    emsg = 'ERORR -- error -- ERROR -- error'
 
     IF (errN /= 0) THEN
       PRINT *,TRiM(emsg)
@@ -1203,7 +1454,7 @@ MODULE module_simradar_tools
       STOP
 
       WRITE (diag_message , * ) &
-      "ERROR -- error -- ERROR -- error:   " // TRIM(funcn) // ": " // TRIM(msg) // ' !!'
+      TRIM(errormsg) // ":   " // TRIM(funcn) // ": " // TRIM(msg) // ' !!'
       CALL wrf_error_fatal ( diag_message )
     END IF
 
@@ -1216,7 +1467,7 @@ MODULE module_simradar_tools
 
     IMPLICIT NONE
 
-    REAL(r_k), INTENT(IN)                                :: Rval
+    REAL, INTENT(IN)                                     :: Rval
 
     WRITE(RtoS,'(F21.10)')Rval
 
@@ -1284,6 +1535,37 @@ MODULE module_simradar_tools
 
   END FUNCTION StoL
 
+  LOGICAL FUNCTION FileExist(filen)
+  ! Checks if a file exists
+
+    IMPLICIT NONE
+
+    CHARACTER(len=*), INTENT(in)                         :: filen
+
+    FileExist = .FALSE.
+    INQUIRE(file=TRIM(filen), exist=FileExist)
+
+    RETURN
+
+  END FUNCTION FileExist
+
+  INTEGER FUNCTION freeunit()
+  ! provides the number of a free unit in which open a file
+
+    IMPLICIT NONE
+
+    LOGICAL                                              :: is_used
+
+    is_used = .true.
+    DO freeunit=10,100
+      INQUIRE(unit=freeunit, opened=is_used)
+      IF (.not. is_used) EXIT
+    END DO
+
+    RETURN
+
+  END FUNCTION freeunit
+
 !!!! netCDF
 
   SUBROUTINE open_NCfile(filename, ncid, idbg)
@@ -1303,7 +1585,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: rcode
     LOGICAL                                              :: fexist
     LOGICAL                                              :: dbg
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! filename: name of the file to create
@@ -1339,7 +1621,7 @@ MODULE module_simradar_tools
     ! Local
     INTEGER                                              :: idd
     INTEGER                                              :: rcode
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! ncid: netCDF open object
@@ -1365,7 +1647,7 @@ MODULE module_simradar_tools
     ! Local
     INTEGER                                              :: idd
     INTEGER                                              :: rcode
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! ncid: netCDF open object
@@ -1435,7 +1717,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: vid, Ndims, Nvars
     INTEGER                                              :: iv, id, rcode
     CHARACTER(len=S16)                                   :: diminfile
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     !!!!!!! Variables
     ! nid: number of the open netCDF
@@ -1482,7 +1764,7 @@ MODULE module_simradar_tools
     CHARACTER(len=S32), DIMENSION(:), ALLOCATABLE        :: dimns
     INTEGER                                              :: rcode
     LOGICAL                                              :: infile
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! ncid: netCDF open object
@@ -1536,7 +1818,7 @@ MODULE module_simradar_tools
     CHARACTER(len=S32), DIMENSION(:), ALLOCATABLE        :: invarns
     LOGICAL                                              :: infile
     LOGICAL                                              :: dbg
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     !!!!!!! Variables
     ! ncid: netCDF file identifier
@@ -1608,7 +1890,7 @@ MODULE module_simradar_tools
     CHARACTER(len=S32), DIMENSION(:), ALLOCATABLE        :: invarns
     LOGICAL                                              :: infile
     LOGICAL                                              :: dbg
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     !!!!!!! Variables
     ! ncid: netCDF file identifier

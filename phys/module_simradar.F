@@ -19,8 +19,7 @@ MODULE module_simradar
                       nradar, nrnn, nrnncoord, nrcoord, nr4coord,                                     &
                       e_angle, e_azimuth, e_dist,                                                     &
                       ngrid_radar, ngrid3_radar,                                                      &
-                      gatename, gatelon, gatelat, gatehgt, gateband                                   &
-                      radarlons, radarlats, radardist, radarhgts, radarlhgts,                         &
+                      gatename, gatelon, gatelat, gatehgt, gateband,                                  &
                       azimuths,                                                                       &
                       ijdbg,                                                                          &
                       a, f, elipsn,                                                                   &

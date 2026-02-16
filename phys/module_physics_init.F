@@ -17,6 +17,10 @@ MODULE module_physics_init
 #endif
    USE module_ra_clWRF_support
 
+#ifdef SIMRADAR
+   USE module_simradar_tools, ONLY: lut_vars
+#endif
+
 !  USE module_ssib_veg , ONLY : init_module_ssib_veg !fds (SSiB constants)
    !Local data for CAM's MG MP scheme
    integer  :: ixcldliq, ixcldice, ixnumliq, ixnumice
@@ -278,12 +282,14 @@ CONTAINS
 ! simrad.AR
                          ,nradar, e_angle, e_dist, nr4coord                       &
                          ,nrnncoord, nrnn                                         &
+                         ,londbg, latdbg                                          &
                          ,ijdbg                                                   &
+                         ,radars_dist, radars_angle, radars_azimuth               &
                          ,gatehdist, inradar, radnum                              &
                          ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
                          ,radarlons_bnds, radarlat_bnds, radarhgt_bnds            &
                          ,ngridradar, ijgridradar, ijdistgridradar                &              
-                         ,lutgrid
+                         ,lutgrid                                                 &
 #endif                         
                          )
 
@@ -926,15 +932,19 @@ CHARACTER(LEN=8) :: name
 ! simrad.AR
   INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, nr4coord,        &
     nrnncoord, nrnn
+  REAL, INTENT(in)                                       :: londbg, latdbg
   INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
   REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                          &
     INTENT(out)                                          :: gatehdist
   INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)      :: inradar
   INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                       &
     INTENT(out)                                          :: radnum
+  REAL, DIMENSION(e_dist, nradar),INTENT(out)            :: radars_dist
+  REAL, DIMENSION(e_angle, nradar),INTENT(out)           :: radars_angle
+  REAL, DIMENSION(e_azimuth, nradar),INTENT(out)         :: radars_azimuth
   REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist
   REAL, DIMENSION(e_azimuth, e_dist, nradar),INTENT(out) :: radarhgts, radarlhgts
-  REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlons_bnds, radarlat_bnds,            &
+  REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlons_bnds, radarlat_bnds
   REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                             &
                                                          :: radarhgt_bnds
   INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                        &
@@ -1777,33 +1787,31 @@ CHARACTER(LEN=8) :: name
 #endif
 
 #ifdef SIMRADAR
-     CALL simradar_init(
-       model_config_rec                                                                               &
+     CALL simradar_init(model_config_rec                                                              &
        ,xlong, xlat                                                                                   &
        ,xlong_u, xlat_u                                                                               &
        ,xlong_v, xlat_v                                                                               &
-       ,londbg, latdbg                                                                                &
        ,dbg                                                                                           &
-       ,ijdbg                                                                                         &
+       ,londbg, latdbg                                                                                &
        ,ids, ide, jds, jde, kds, kde                                                                  &
        ,ims, ime, jms, jme, kms, kme                                                                  &
-       ,its, ite, jts, jte, kts, kte                      
+       ,its, ite, jts, jte, kts, kte                                                                  &
 
-       ,model_config_rec%nradar,                                                                      &
-       ,model_config_rec%nradar, model_config_rec%nrnn, model_config_rec%nrnncoord                    &
-       ,model_config_rec%nrcoord, model_config_rec%nr4coord                                           &
+       ,model_config_rec%nradar                                                                       &
+       ,model_config_rec%nradar, model_config_rec%nradar_ngrid, model_config_rec%nradar_ngrid_coord2  &
+       ,model_config_rec%nradar_coord2, model_config_rec%nradar_coord4                                &
        ,model_config_rec%e_angle, model_config_rec%e_azimuth, model_config_rec%e_dist                 &
-       ,model_config_rec%gatelon, model_config_rec%gatelat, model_config_rec%gatehgt                  & 
-       ,model_config_rec%distmax, model_config_rec%heightmax, model_config_rec%radards                &
+       ,model_config_rec%radar_clon, model_config_rec%radar_clat, model_config_rec%radar_chgt         & 
+       ,model_config_rec%radar_distmax, model_config_rec%radar_hgtmax, model_config_rec%radards       &
 
        ! output
-       ,azimuths                                                                                      &
        ,ijdbg                                                                                         &
+       ,radars_dist, radars_angle, radars_azimuth                                                     &
        ,gatehdist, inradar, radnum                                                                    &
        ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                        &
        ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                  &
        ,ngridradar, ijgridradar, ijdistgridradar                                                      &
-       ,lutgrid
+       ,lutgrid                                                                                       &
        )
 #endif
 
@@ -5816,15 +5824,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
   END SUBROUTINE shalwater_init
 
 #ifdef SIMRADAR
-  SUBROUTINE simradar_init(
-  
-    config_flags                                                                                      &
+  SUBROUTINE simradar_init(config_flags                                                               &
     ,xlong, xlat                                                                                      &
     ,xlong_u, xlat_u                                                                                  &
     ,xlong_v, xlat_v                                                                                  &
-    ,londbg, latdbg                                                                                   &
     ,dbg                                                                                              &
-    ,ijdbg                                                                                            &
+    ,londbg, latdbg                                                                                   &
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
@@ -5833,13 +5838,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,gatelon, gatelat, gatehgt, distmax, heightmax, radards                                           &
 
     ! output
-    ,azimuths                                                                                         &
     ,ijdbg                                                                                            &
+    ,radars_dist, radars_angle, radars_azimuth                                                        &
     ,gatehdist, inradar, radnum                                                                       &
     ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                           &
     ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                     &
     ,ngridradar, ijgridradar, ijdistgridradar                                                         &
-    ,lutgrid
+    ,lutgrid                                                                                          &
     )
     
     ! Subroutine to initialize the simrad.AR syntehtic surface radar 
@@ -5869,20 +5874,22 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(nradar), INTENT(in)               :: em_ray
     REAL, INTENT(in)                                     :: radii_ddist
     REAL, INTENT(in)                                     :: missing_value
-    REAL, DIMENSION(e_azimuth), INTENT(inout)            :: azimuths
     ! Compressed dimensions
     INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord 
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
+    REAL, DIMENSION(e_angle, nradar), INTENT(inout)      :: radars_angle
+    REAL, DIMENSION(e_azimuth, nradar), INTENT(inout)    :: radars_azimuth
+    REAL, DIMENSION(e_dist, nradar), INTENT(inout)       :: radars_dist
     REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                        &
       INTENT(out)                                        :: gatehdist
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
     INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
       INTENT(out)                                        :: radnum
-    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist,          &
+    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist
     REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(out) :: radarhgts, radarlhgts
-    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlons_bnds, radarlat_bnds,            &
+    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlons_bnds, radarlat_bnds
     REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
                                                          :: radarhgt_bnds
     INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
@@ -6024,83 +6031,83 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
     
-    IF ( e_rna /= nradar * e_angle) THEN
-      PRINT *, '  e_rna: ', e_rna, ' nradar: ', nradar, ' e_angle: ', e_rna
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle " //          &
-        "and e_rna do not coincide! e_rna = nradar*e_angle"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rna /= nradar * e_angle) THEN
+!      PRINT *, '  e_rna: ', e_rna, ' nradar: ', nradar, ' e_angle: ', e_rna
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle " //          &
+!        "and e_rna do not coincide! e_rna = nradar*e_angle"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
 
-    IF ( e_rnh /= nradar * e_azimuth) THEN
-      PRINT *, '  e_rnh: ', e_rnh, ' nradar: ', nradar, ' e_azimuth: ', e_azimuth
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth " //        &
-        "and e_rnh do not coincide! e_rnh = nradar*e_azimuth"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rnh /= nradar * e_azimuth) THEN
+!      PRINT *, '  e_rnh: ', e_rnh, ' nradar: ', nradar, ' e_azimuth: ', e_azimuth
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth " //        &
+!        "and e_rnh do not coincide! e_rnh = nradar*e_azimuth"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
     
-    IF ( e_rnd /= nradar * e_dist) THEN
-      PRINT *, '  e_rnd: ', e_rnd, ' nradar: ', nradar, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_dist " //           &
-        "and e_rnd do not coincide! e_rnd = nradar*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rnd /= nradar * e_dist) THEN
+!      PRINT *, '  e_rnd: ', e_rnd, ' nradar: ', nradar, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_dist " //           &
+!        "and e_rnd do not coincide! e_rnd = nradar*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
     
-    IF ( e_rnad /= nradar * e_angle * e_dist) THEN
-      PRINT *, '  e_rnad: ', e_rnad, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, e_dist " //  &
-        "and e_rnad do not coincide! e_rnad = nradar*e_angle*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rnad /= nradar * e_angle * e_dist) THEN
+!      PRINT *, '  e_rnad: ', e_rnad, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, e_dist " //  &
+!        "and e_rnad do not coincide! e_rnad = nradar*e_angle*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
     
-    IF ( e_rnhd /= nradar * e_azimuth * e_dist) THEN
-      PRINT *, '  e_rnhd: ', e_rnhd,' nradar: ', nradar,' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth, e_dist " //&
-        "and e_rnhd do not coincide! e_rnhd = nradar*e_azimuth*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rnhd /= nradar * e_azimuth * e_dist) THEN
+!      PRINT *, '  e_rnhd: ', e_rnhd,' nradar: ', nradar,' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth, e_dist " //&
+!        "and e_rnhd do not coincide! e_rnhd = nradar*e_azimuth*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
     
-    IF ( e_rnahd /= nradar * e_angle * e_azimuth * e_dist) THEN
-      PRINT *, '  e_rnhd: ', e_rnahd, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_azimuth: ',     &
-        e_azimuth, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, " //         &
-        "e_azimuth, e_dist and e_rnahd do not coincide! e_rnahd = nradar*e_angle*e_azimuth*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rnahd /= nradar * e_angle * e_azimuth * e_dist) THEN
+!      PRINT *, '  e_rnhd: ', e_rnahd, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_azimuth: ',     &
+!        e_azimuth, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, " //         &
+!        "e_azimuth, e_dist and e_rnahd do not coincide! e_rnahd = nradar*e_angle*e_azimuth*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
    
-    IF ( e_rad /= e_angle * e_dist) THEN
-      PRINT *, '  e_rad: ', e_rahd, ' e_angle: ', e_angle, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_dist " //          &
-        "and e_rad do not coincide! e_rad = e_angle*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rad /= e_angle * e_dist) THEN
+!      PRINT *, '  e_rad: ', e_rahd, ' e_angle: ', e_angle, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_dist " //          &
+!        "and e_rad do not coincide! e_rad = e_angle*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
    
-    IF ( e_rhd /= e_azimuth * e_dist) THEN
-      PRINT *, '  e_rhd: ', e_rhd, ' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_azimuth, e_dist " //        &
-        "and  e_rhd do not coincide! e_rhd = e_azimuth*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rhd /= e_azimuth * e_dist) THEN
+!      PRINT *, '  e_rhd: ', e_rhd, ' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_azimuth, e_dist " //        &
+!        "and  e_rhd do not coincide! e_rhd = e_azimuth*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
 
-    IF ( e_rahd /= e_angle * e_azimuth * e_dist) THEN
-      PRINT *, '  e_rahd: ', e_rahd, ' e_angle: ', e_angle, ' e_azimuth: ', e_azimuth, ' e_dist: ',   &
-        e_dist
-      WRITE (diag_message , * ) &
-        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_azimuth, " //      &
-        "e_dist and e_rahd do not coincide! e_rahd = e_angle*e_azimuth*e_dist"
-      CALL wrf_error_fatal ( diag_message )
-    END IF
+!    IF ( e_rahd /= e_angle * e_azimuth * e_dist) THEN
+!      PRINT *, '  e_rahd: ', e_rahd, ' e_angle: ', e_angle, ' e_azimuth: ', e_azimuth, ' e_dist: ',   &
+!        e_dist
+!      WRITE (diag_message , * ) &
+!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_azimuth, " //      &
+!        "e_dist and e_rahd do not coincide! e_rahd = e_angle*e_azimuth*e_dist"
+!      CALL wrf_error_fatal ( diag_message )
+!    END IF
 
     !! Maximum radar coverage
-    maxrdistmax = MAX(distmax(1:nradar)
-    minrds = MIN(radards(1:nradar)
+    maxrdistmax = MAXVAL(distmax(1:nradar))
+    minrds = MINVAL(radards(1:nradar))
 
     IF ( e_dist /= INT(2*maxrdistmax / minrds)) THEN
       PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
@@ -6110,7 +6117,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         "resolution (minimum radards)! e_dist = INT(2*maxrdistmax / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
-   
+
     IF ( e_angle /= INT(2.*pict*radii_ddist*1000./minrds)) THEN
       PRINT *, '  e_angle: ', e_angle, ' radii_ddist: ', radii_ddist, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
@@ -6173,17 +6180,17 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
     ! Boundaries of the cells
     ! SW
-    bnds_lon(ims:ime,jms:jme:,1) = xlong_u(ims:ime,jms:jme)
-    bnds_lat(ims:ime,jms:jme:,1) = xlatg_u(ims:ime,jms:jme)
+    bnds_lon(ims:ime,jms:jme,1) = xlong_u(ims:ime,jms:jme)
+    bnds_lat(ims:ime,jms:jme,1) = xlat_u(ims:ime,jms:jme)
     ! NW
-    bnds_lon(ims:ime,jms:jme:,2) = xlong_v(ims:ime,jms+1:jme+1)
-    bnds_lat(ims:ime,jms:jme:,2) = xlat_v(ims:ime,jms+1:jme+1)
+    bnds_lon(ims:ime,jms:jme,2) = xlong_v(ims:ime,jms+1:jme+1)
+    bnds_lat(ims:ime,jms:jme,2) = xlat_v(ims:ime,jms+1:jme+1)
     ! NE
-    bnds_lon(ims:ime,jms:jme:,3) = xlong_u(ims+1:ime+1,jms:jme)
-    bnds_lat(ims:ime,jms:jme:,3) = xlat_u(ims+1:ime+1,jms:jme)
+    bnds_lon(ims:ime,jms:jme,3) = xlong_u(ims+1:ime+1,jms:jme)
+    bnds_lat(ims:ime,jms:jme,3) = xlat_u(ims+1:ime+1,jms:jme)
     ! SW
-    bnds_lon(ims:ime,jms:jme:,4) = xlong_v(ims:ime,jms:jme)
-    bnds_lat(ims:ime,jms:jme:,4) = xlat_v(ims:ime,jms:jme)
+    bnds_lon(ims:ime,jms:jme,4) = xlong_v(ims:ime,jms:jme)
+    bnds_lat(ims:ime,jms:jme,4) = xlat_v(ims:ime,jms:jme)
     
     ! Getting borders of the tile
     lonSW = xlong(its,jts)
@@ -6245,14 +6252,14 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       ! Polar coordinates of the radar space
       !!
       CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rdist,           &
-        rdistx*1000., rhgtx*1000., azimuths, a, f, elipsn, angle(:,ir), distance(:,ir),               &
-        azimuth(:,ir), radarlons), radarlats(:,:,ir), radarhgts(:,:,ir), radarlhgts(:,:,ir),          &
-        radarlon_bnds_NOc, radarlat_bnds_NOc, radarhgt_bnds_NOc, dbg)     
+        rdistx*1000., rhgtx*1000., azimuths, a, f, elipsn, radars_angle(:,ir), radars_dist(:,ir),     &
+        radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir), radarhgts(:,:,ir),                &
+        radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc, radarhgt_bnds_NOc, dbg)     
 
       ! Checking pertinence of the radar into this tile
       CALL pertinence_polar(ims, ime, jms, jme, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
           e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx, missing_value,           &
-          ngrid_radar, gatehdist(:,:,ir), inradar, radarnum(:,:,ir), ngridradar(:,:,ir), 2,           &
+          ngrid_radar, gatehdist(:,:,ir), inradar, radnum(:,:,ir), ngridradar(:,:,ir), 2,             &
           ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
           
       ! Compressing results
@@ -6281,23 +6288,45 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !! Look-up tables space for T-matrix
     CALL read_lut(lutfilen, lutgrid, dbg)
     
-    ALLOCATE(lutgrid%q_rain_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_rain_vec', 1, (/config_flags%dimv/), fname, ierr)   
+    ! From namelist or from file?
+    lutgrid%q_rain_min = config_flags%q_rain_min
+    lutgrid%q_rain_max = config_flags%q_rain_max
+    lutgrid%qn_rain_min = config_flags%qn_rain_min
+    lutgrid%qn_rain_max = config_flags%qn_rain_min
+    lutgrid%q_snow_min = config_flags%q_snow_min
+    lutgrid%q_snow_max = config_flags%q_snow_min
+    lutgrid%qn_snow_min = config_flags%q_snow_min
+    lutgrid%qn_snow_max = config_flags%q_snow_min
+    lutgrid%q_grau_min = config_flags%q_grau_min
+    lutgrid%q_grau_max = config_flags%q_grau_min
+    lutgrid%qn_grau_min = config_flags%q_grau_min
+    lutgrid%qn_grau_max = config_flags%q_grau_min
+    lutgrid%q_ice_min = config_flags%q_ice_min
+    lutgrid%q_ice_max = config_flags%q_ice_min
+    lutgrid%qn_ice_min = config_flags%q_ice_min
+    lutgrid%qn_ice_max = config_flags%q_ice_min
+    lutgrid%q_clou_min = config_flags%q_clou_min
+    lutgrid%q_clou_max = config_flags%q_clou_min    
+    lutgrid%dim_ice = config_flags%dim_ice
+    lutgrid%dimv = config_flags%Nqxbins
+    
+    ALLOCATE(lutgrid%q_rain_vec(config_flags%Nqxbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_rain_vec', 1, (/config_flags%Nqxbins/), fname, ierr)   
     ALLOCATE(lutgrid%q_snow_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_snow_vec', 1, (/config_flags%dimv/), fname, ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_snow_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
     ALLOCATE(lutgrid%q_grau_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_grau_vec', 1, (/config_flags%dimv/), fname, ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_grau_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
     ALLOCATE(lutgrid%q_ice_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_ice_vec', 1, (/config_flags%dimv/), fname, ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_ice_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
         
     CALL create_logarithmic_scaled_vectorsD(config_flags%q_rain_min, config_flags%q_rain_max,         &
-      config_flags%dimv, lutgrid%q_rain_vec, dbg)
+      config_flags%Nqxbins, lutgrid%q_rain_vec, dbg)
     CALL create_logarithmic_scaled_vectorsD(config_flags%q_snow_min, config_flags%q_snow_max,         &
-      config_flags%dimv, lutgrid%q_snow_vec, .FALSE.)
+      config_flags%Nqxbins, lutgrid%q_snow_vec, .FALSE.)
     CALL create_logarithmic_scaled_vectorsD(config_flags%q_grau_min, config_flags%q_grau_max,         &
-      config_flags%dimv, lutgrid%q_grau_vec, .FALSE.)
+      config_flags%Nqxbins, lutgrid%q_grau_vec, .FALSE.)
     CALL create_logarithmic_scaled_vectorsD(config_flags%q_ice_min, config_flags%q_ice_max,           &
-      config_flags%dimv, lutgrid%q_ice_vec, .FALSE.)
+      config_flags%Nqxbins, lutgrid%q_ice_vec, .FALSE.)
 
     RETURN
 

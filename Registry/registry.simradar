@@ -8,6 +8,7 @@ dimspec    rj         2     namelist=e_angle                 c     e_angle
 dimspec    rk         2     namelist=e_azimuth               c     e_azimuth
 dimspec    rn         2     namelist=nradar                  c     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
+dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
 dimspec    cii        2     constant=2                       z     coord2
 dimspec    civ        2     constant=4                       z     coord4
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
@@ -52,6 +53,28 @@ rconfig   integer  timedbg       namelist,simradar     1              720     rh
 rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
 rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
 
+# LUT options (maybe from netCDF file!)
+rconfig   real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
+rconfig   real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
+rconfig   real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
+rconfig   real     qn_rain_max   namelist,simradar     1             2.6e6    rh{11}    "qn_rain_max"       "maximum amount of nuclii for rain to consider"        "#"
+rconfig   real     q_snow_min    namelist,simradar     1              1e-7    rh{11}    "q_snow_min"        "minimum snow mixing ratio to consider"                "kgkg-1"
+rconfig   real     q_snow_max    namelist,simradar     1             0.018    rh{11}    "q_snow_max"        "maximum snow mixing ratio to consider"                "kgkg-1"
+rconfig   real     qn_snow_min   namelist,simradar     1              1e-7    rh{11}    "qn_snow_min"       "minimum amount of nuclii for snow to consider"        "#"
+rconfig   real     qn_snow_max   namelist,simradar     1             2.6e6    rh{11}    "qn_snow_max"       "maximum amount of nuclii for snow to consider"        "#"
+rconfig   real     q_grau_min    namelist,simradar     1              1e-7    rh{11}    "q_grau_min"        "minimum grau mixing ratio to consider"                "kgkg-1"
+rconfig   real     q_grau_max    namelist,simradar     1             0.018    rh{11}    "q_grau_max"        "maximum grau mixing ratio to consider"                "kgkg-1"
+rconfig   real     qn_grau_min   namelist,simradar     1              1E-7    rh{11}    "qn_grau_min"       "minimum amount of nuclii for grau to consider"        "#"
+rconfig   real     qn_grau_max   namelist,simradar     1             2.6e6    rh{11}    "qn_grau_max"       "maximum amount of nuclii for grau to consider"        "#"
+rconfig   real     q_ice_min     namelist,simradar     1              1e-7    rh{11}    "q_ice_min"         "minimum ice mixing ratio to consider"                 "kgkg-1"
+rconfig   real     q_ice_max     namelist,simradar     1             0.001    rh{11}    "q_ice_max"         "maximum ice mixing ratio to consider"                 "kgkg-1"
+rconfig   real     qn_ice_min    namelist,simradar     1              1e-8    rh{11}    "qn_ice_min"        "minimum amount of nuclii for ice to consider"         "#"
+rconfig   real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for ice to consider"         "#"
+rconfig   real     q_clou_min    namelist,simradar     1             1e-10    rh{11}    "q_clou_min"        "minimum clou mixing ratio to consider"                "kgkg-1"
+rconfig   real     q_clou_max    namelist,simradar     1             0.013    rh{11}    "q_clou_max"        "maximum clou mixing ratio to consider"                "kgkg-1"
+rconfig   intger   dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
+rconfig   intger   Nqxins        namelist,simradar     1             50000    rh{11}    "Nqxbins"           "dimension for water species bins"                     "-"
+
 ##
 # NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into different dimensions, therefore outputs will be
 #      IJDISTGRIDRADAR(e_we,e_sn,nradar_ngrid,Time) therefore it will be needed to decompress the nradar, ngrid_radar dimensions IJDISTGRIDRADAR(e_we,e_sn,ngrid_radar,nradar,Time)
@@ -77,6 +100,9 @@ rconfig   real     latdbg        namelist,simradar     1             -999.    rh
 # All bands variables
 state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
 state    integer radarnum  ij{rn}             misc        1       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
+state    real  RADARS_DIST {ri}{rn}           misc        1       -     rh{11}    "radars_dist"       "ground radar gate distances to their center"              "m"
+state    real  RADARS_ANGLE {rj}{rn}          misc        1       -     rh{11}    "radars_angle"      "ground radar gate horizontal angles to emit beams"        "m"
+state    real  RADARS_AZIMUTH {rj}{rn}        misc        1       -     rh{11}    "radars_azimuth"    "ground radar gate vertical angles to emit beams"          "m"
 state    real  RADARLONS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlons"         "ground radar gate longitude"                              "degree_east"
 state    real  RADARLATS   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarlats"         "ground radar gate latitude"                               "degree_north"
 state    real  RADARHGTS   {rk}{ri}{rn}       misc        1       -     rh{11}    "radarhgts"         "ground radar gate height"                                 "m"
