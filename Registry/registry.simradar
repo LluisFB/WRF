@@ -72,8 +72,8 @@ rconfig   real     qn_ice_min    namelist,simradar     1              1e-8    rh
 rconfig   real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for ice to consider"         "#"
 rconfig   real     q_clou_min    namelist,simradar     1             1e-10    rh{11}    "q_clou_min"        "minimum clou mixing ratio to consider"                "kgkg-1"
 rconfig   real     q_clou_max    namelist,simradar     1             0.013    rh{11}    "q_clou_max"        "maximum clou mixing ratio to consider"                "kgkg-1"
-rconfig   intger   dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
-rconfig   intger   Nqxins        namelist,simradar     1             50000    rh{11}    "Nqxbins"           "dimension for water species bins"                     "-"
+rconfig   integer  dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
+rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh{11}    "Nqxbins"           "dimension for water species bins"                     "-"
 
 ##
 # NOTE: WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into different dimensions, therefore outputs will be
