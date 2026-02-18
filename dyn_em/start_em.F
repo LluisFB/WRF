@@ -1284,7 +1284,7 @@ endif
                       ,config_flags%nradar, config_flags%nradar_coord4                               &
                       ,config_flags%ngrid_radar, model_config_rec%nradar_coord2                      &
                       ,config_flags%londbg, config_flags%latdbg                                      &
-                      ,grid%ijdbg                                                                    &
+                      ,grid%ijraddbg                                                                 &
                       ,grid%radars_dist, grid%radars_angle, grid%radars_azimuth                      &
                       ,grid%gatehdist, grid%inradar, grid%radnum                                     &
                       ,grid%radarlons, grid%radarlats, grid%radardist                                & 

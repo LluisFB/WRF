@@ -11,6 +11,7 @@ dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
 dimspec    cii        2     constant=2                       z     coord2
 dimspec    civ        2     constant=4                       z     coord4
+dimspec    iit        2     constant=2                       z     iit
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
 dimspec    nrnn       2     namelist=nradar_ngrid            c     nradar_ngrid
 dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     c     nradar_ngrid_coord2
@@ -19,7 +20,6 @@ dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
-dimspec    iit        2     constant=2                       z     iit
 
 # simrad.AR package namelist options
 rconfig   integer  nradar        namelist,simradar     1                1     rh{11}    "nradar"            "amount of surface radar"                                ""
@@ -100,7 +100,7 @@ rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh
 #    END DO
 #  END DO
 ##
-integer  ijdbg             {iit}              misc        -       -     rh{11}    "ijdbg"             "i,j-grid points from londbg,latdbg for debugging"        "-"
+state    integer ijraddbg  {iit}              misc        -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
@@ -115,9 +115,11 @@ state    real  RADARLHGTS  {rk}{ri}{rn}       misc        1       -     rh{11}  
 state    real  RADARDIST   {rj}{ri}{rn}       misc        1       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
 state    real  RADARLON_BNDS {rj}{ri}{nr4coord} misc      1       -     rh{11}    "radarlon_bnds"     "ground radar gate longitude bounds"                       "degree_east"
 state    real  RADARLAT_BNDS {rj}{ri}{nr4coord} misc      1       -     rh{11}    "radarlat_bnds"     "ground radar gate latitude bounds"                        "degree_north"
-state    real  RADARLON_HGTS {rk}{ri}{nr4coord} misc      1       -     rh{11}    "radarhgt_bnds"     "ground radar gate height bounds"                          "m"
+state    real  RADARHGT_BNDS {rk}{ri}{nr4coord} misc      1       -     rh{11}    "radarhgt_bnds"     "ground radar gate height bounds"                          "m"
+state    real  GATEHDIST   ij{rn}             misc        1       -     rh{11}    "gatehdist"         "distacnce of the grid points to the position of the radar" "m"
 state    real  NGRIDRADAR  ij{rn}             misc        1       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
-state    real  IJGRIDRADAR ij{nrnncoord}      misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
+state    integer IJGRIDRADAR ij{nrnncoord}    misc        1       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
+state    real  IJDISTGRIDRADAR ij{nrnn}       misc        1       -     rh{11}    "ijdistgridradar"   "distance of radar cells inside the grid point to its center" "m"
 
 # radar band values
 state    real  ZH_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
