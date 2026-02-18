@@ -140,6 +140,9 @@
    REAL :: dt_s, dx_km
 
    REAL :: max_mf, max_rot_angle
+#ifdef SIMRADAR
+   TYPE(lut_vars)                                        :: lutgrid
+#endif
    CALL get_ijk_from_grid ( grid ,                              &
                            ids, ide, jds, jde, kds, kde,        &
                            ims, ime, jms, jme, kms, kme,        &
@@ -1281,15 +1284,15 @@ endif
                       ,grid%xlong_v, grid%xlat_u                                                     &
                       ,config_flags%nradar                                                           &
                       ,config_flags%e_angle, config_flags%e_azimuth, config_flags%e_dist             &
-                      ,config_flags%nradar, config_flags%nradar_coord4                               &
-                      ,config_flags%ngrid_radar, model_config_rec%nradar_coord2                      &
+                      ,config_flags%nradar_coord4, config_flags%nradar_ngrid_coord2                  &
+                      ,config_flags%nradar_ngrid, model_config_rec%ngrid_coord2                      &
                       ,config_flags%londbg, config_flags%latdbg                                      &
                       ,grid%ijraddbg                                                                 &
                       ,grid%radars_dist, grid%radars_angle, grid%radars_azimuth                      &
-                      ,grid%gatehdist, grid%inradar, grid%radnum                                     &
+                      ,grid%gatehdist, grid%inradar, grid%radarnum                                   &
                       ,grid%radarlons, grid%radarlats, grid%radardist                                & 
                       ,grid%radarhgts, grid%radarlhgts                                               &
-                      ,grid%radarlons_bnds, grid%radarlat_bnds, grid%radarhgt_bnds                   &
+                      ,grid%radarlon_bnds, grid%radarlat_bnds, grid%radarhgt_bnds                    &
                       ,grid%ngridradar, grid%ijgridradar, grid%ijdistgridradar                       &
                       ,lutgrid                                                                       &
 #endif
