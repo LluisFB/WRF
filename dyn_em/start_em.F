@@ -54,7 +54,7 @@
 
 #ifdef SIMRADAR
 ! simrad.AR
-   USE module_simradar_tools, ONLY lutgrid
+   USE module_simradar_tools, ONLY: lut_vars
 #endif
 
    IMPLICIT NONE
@@ -1278,15 +1278,20 @@ endif
                       ,grid%aeropcu,grid%EFCG,grid%EFCS,grid%EFIG,grid%EFIS,grid%EFSG,grid%EFSS      &
 #ifdef SIMRADAR
 ! simrad.AR
-                      ,config_flags%nradar, config_flags%e_angle, config_flags%e_dist                &
-                      ,config_flags%nr4coord, config_flags%nrnncoord, config_flags%nrnn              &
+                      ,grid%xlong_v, grid%xlat_u                                                     &
+                      ,config_flags%nradar                                                           &
+                      ,config_flags%e_angle, config_flags%e_azimuth, config_flags%e_dist             &
+                      ,config_flags%nradar, config_flags%nradar_coord4                               &
+                      ,config_flags%ngrid_radar, model_config_rec%nradar_coord2                      &
+                      ,config_flags%londbg, config_flags%latdbg                                      &
                       ,grid%ijdbg                                                                    &
+                      ,grid%radars_dist, grid%radars_angle, grid%radars_azimuth                      &
                       ,grid%gatehdist, grid%inradar, grid%radnum                                     &
                       ,grid%radarlons, grid%radarlats, grid%radardist                                & 
                       ,grid%radarhgts, grid%radarlhgts                                               &
                       ,grid%radarlons_bnds, grid%radarlat_bnds, grid%radarhgt_bnds                   &
                       ,grid%ngridradar, grid%ijgridradar, grid%ijdistgridradar                       &
-                      ,lutgrid
+                      ,lutgrid                                                                       &
 #endif
                       )
        ENDDO ! loop of tiles for phy_init

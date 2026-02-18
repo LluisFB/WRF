@@ -12,6 +12,7 @@ MODULE module_physics_init
    USE module_state_description
    USE module_model_constants
    USE module_configure, ONLY : grid_config_rec_type
+
 #if ( defined( DM_PARALLEL ) && ( ! defined( STUBMPI ) ) )
    USE module_dm, ONLY : wrf_dm_max_real
 #endif
@@ -280,14 +281,17 @@ CONTAINS
 
 #ifdef SIMRADAR
 ! simrad.AR
-                         ,nradar, e_angle, e_dist, nr4coord                       &
-                         ,nrnncoord, nrnn                                         &
+                         ,xlong_v, xlat_u                                         &
+                         ,nradar                                                  &
+                         ,e_angle, e_azimuth, e_dist                              &
+                         ,nr4coord, nrnncoord                                     &
+                         ,nrnn, nncoord                                           &
                          ,londbg, latdbg                                          &
                          ,ijdbg                                                   &
                          ,radars_dist, radars_angle, radars_azimuth               &
                          ,gatehdist, inradar, radnum                              &
                          ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
-                         ,radarlons_bnds, radarlat_bnds, radarhgt_bnds            &
+                         ,radarlon_bnds, radarlat_bnds, radarhgt_bnds             &
                          ,ngridradar, ijgridradar, ijdistgridradar                &              
                          ,lutgrid                                                 &
 #endif                         
@@ -930,9 +934,10 @@ CHARACTER(LEN=8) :: name
 
 #ifdef SIMRADAR
 ! simrad.AR
-  INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, nr4coord,        &
-    nrnncoord, nrnn
+  INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, e_azimuth,       &
+    nr4coord, nrnncoord, nrnn, nncoord 
   REAL, INTENT(in)                                       :: londbg, latdbg
+  REAL, DIMENSION(ims:ime, jms:jme), INTENT(in)          :: xlong_v, xlat_u
   INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
   REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                          &
     INTENT(out)                                          :: gatehdist
@@ -944,7 +949,7 @@ CHARACTER(LEN=8) :: name
   REAL, DIMENSION(e_azimuth, nradar),INTENT(out)         :: radars_azimuth
   REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist
   REAL, DIMENSION(e_azimuth, e_dist, nradar),INTENT(out) :: radarhgts, radarlhgts
-  REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlons_bnds, radarlat_bnds
+  REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlon_bnds, radarlat_bnds
   REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                             &
                                                          :: radarhgt_bnds
   INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                        &
@@ -1787,29 +1792,28 @@ CHARACTER(LEN=8) :: name
 #endif
 
 #ifdef SIMRADAR
-     CALL simradar_init(model_config_rec                                                              &
-       ,xlong, xlat                                                                                   &
+!     CALL simradar_init(model_config_rec                                                              &
+!       ,xlong_u, xlat_u                                                                               &
+     CALL simradar_init(xlong, xlat                                                                   &
        ,xlong_u, xlat_u                                                                               &
        ,xlong_v, xlat_v                                                                               &
-       ,dbg                                                                                           &
        ,londbg, latdbg                                                                                &
        ,ids, ide, jds, jde, kds, kde                                                                  &
        ,ims, ime, jms, jme, kms, kme                                                                  &
        ,its, ite, jts, jte, kts, kte                                                                  &
 
-       ,model_config_rec%nradar                                                                       &
-       ,model_config_rec%nradar, model_config_rec%nradar_ngrid, model_config_rec%nradar_ngrid_coord2  &
+       ,model_config_rec%nradar, model_config_rec%ngrid_radar                                         & 
+       ,model_config_rec%nradar_ngrid, model_config_rec%nradar_ngrid_coord2                           &
        ,model_config_rec%nradar_coord2, model_config_rec%nradar_coord4                                &
+       ,model_config_rec%ngrid_coord2                                                                 &
        ,model_config_rec%e_angle, model_config_rec%e_azimuth, model_config_rec%e_dist                 &
-       ,model_config_rec%radar_clon, model_config_rec%radar_clat, model_config_rec%radar_chgt         & 
-       ,model_config_rec%radar_distmax, model_config_rec%radar_hgtmax, model_config_rec%radards       &
 
        ! output
        ,ijdbg                                                                                         &
        ,radars_dist, radars_angle, radars_azimuth                                                     &
        ,gatehdist, inradar, radnum                                                                    &
        ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                        &
-       ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                  &
+       ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                   &
        ,ngridradar, ijgridradar, ijdistgridradar                                                      &
        ,lutgrid                                                                                       &
        )
@@ -5824,25 +5828,26 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
   END SUBROUTINE shalwater_init
 
 #ifdef SIMRADAR
-  SUBROUTINE simradar_init(config_flags                                                               &
-    ,xlong, xlat                                                                                      &
+  SUBROUTINE simradar_init(xlong, xlat                                                                &
     ,xlong_u, xlat_u                                                                                  &
     ,xlong_v, xlat_v                                                                                  &
-    ,dbg                                                                                              &
     ,londbg, latdbg                                                                                   &
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
-    ,nradar, nrnn, nrnncoord, nrcoord, nr4coord                                                       &
+    ,nradar, ngrid_radar                                                                              &
+    ,nrnn, nrnncoord                                                                                  &
+    ,nrcoord, nr4coord                                                                                &
+    ,nncoord                                                                                          &
     ,e_angle, e_azimuth, e_dist                                                                       &
-    ,gatelon, gatelat, gatehgt, distmax, heightmax, radards                                           &
+!    ,gatelon, gatelat, gatehgt, distmax, heightmax, radards                                           &
 
     ! output
     ,ijdbg                                                                                            &
     ,radars_dist, radars_angle, radars_azimuth                                                        &
     ,gatehdist, inradar, radnum                                                                       &
     ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                           &
-    ,radarlons_bnds, radarlat_bnds, radarhgt_bnds                                                     &
+    ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                      &
     ,ngridradar, ijgridradar, ijdistgridradar                                                         &
     ,lutgrid                                                                                          &
     )
@@ -5852,11 +5857,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !     dx: distance    dy: angle    dz: azimuth
     !     3Dvariables (dy,dz,dx),        lon,lats(dy,dx),        hgt(dx,dz)
 
+    USE module_configure, ONLY: model_config_rec
     USE module_simradar_tools
 
     IMPLICIT NONE
 
-    TYPE (grid_config_rec_type), INTENT(in)              :: config_flags   
+!    TYPE (model_config_rec), INTENT(in)                  :: model_config_rec
     INTEGER, INTENT(in)                                  :: ids, ide, jds, jde, kds, kde
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
     INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
@@ -5866,16 +5872,14 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, INTENT(in)                                     :: londbg, latdbg
     
     INTEGER, INTENT(in)                                  :: nradar, ngrid_radar
-    INTEGER, INTENT(in)                                  :: e_azimuth, eloption
-    INTEGER, INTENT(inout)                               :: e_angle, e_dist
-    REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
-      heightmax, radards
+    INTEGER, INTENT(in)                                  :: e_azimuth, e_angle, e_dist
+!    REAL, DIMENSION(nradar), INTENT(in)                  :: gatelon, gatelat, gatehgt, distmax,       &
+!      heightmax, radards
 !    INTEGER, DIMENSION(nradar), INTENT(in)               :: gatetype, gateband, radinterp, em_ray
-    INTEGER, DIMENSION(nradar), INTENT(in)               :: em_ray
-    REAL, INTENT(in)                                     :: radii_ddist
-    REAL, INTENT(in)                                     :: missing_value
+!    REAL, INTENT(in)                                     :: radii_ddist
+!    REAL, INTENT(in)                                     :: missing_value
     ! Compressed dimensions
-    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord 
+    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord, nncoord  
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
@@ -5889,7 +5893,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       INTENT(out)                                        :: radnum
     REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist
     REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(out) :: radarhgts, radarlhgts
-    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlons_bnds, radarlat_bnds
+    REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlon_bnds, radarlat_bnds
     REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
                                                          :: radarhgt_bnds
     INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
@@ -5913,10 +5917,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
-    REAL                                                 :: rlon, rlat, rhgt, rband, rtype, rddist,   &
-      rdistx, rhgtx
+    CHARACTER(len=256)                                   :: rband
+    REAL                                                 :: rlon, rlat, rhgt, rtype, rddist, rdistx,  &
+      rhgtx
     REAL(kind=rr8)                                       :: a, f
-    CHARACTER(len=30)                                    :: elips
+    CHARACTER(len=30)                                    :: elipsn
     REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
@@ -5927,7 +5932,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( ims:ime )                           :: distlon
     REAL, DIMENSION( jms:jme )                           :: distlat
-    REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlons_bnds_NOc, radarlat_bnds_NOc,    &
+    REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlon_bnds_NOc, radarlat_bnds_NOc,     &
       radarhgt_bnds_NOc
     INTEGER, DIMENSION(ims:ime, jms:jme, 2, ngrid_radar) :: ijgridradar_NOc
     REAL, DIMENSION(ims:ime, jms:jme, ngrid_radar)       :: ijdistgridradar_NOc
@@ -5961,12 +5966,14 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 !    2: 'Clarke 1866    (NAD27)'
 !        a = 6378206.4d0
 !        f = 1.d0/294.9786982138d0
-! e_angle: amount of angle beams (horizontal) in the radar space [computed a 2*pi*radii_ddist / (min(ddist))
+! e_angle: amount of angle beams (horizontal) in the radar space [computed as 
+!   2*pi*radii_ddist / (min(ddist))
 ! e_azimuth: amount of azimuth angles (vertical) in the radar space (same for all radars)
 ! azimuths: azimuth angles
 !   IF azimuths(1) == -1; aximuths are internally computed from Nazimuth, by regular intervals 
 !     30. / (e_azimuth-1)
-! e_dist: amount of distances (horizontal) in the radar space [computed as 2.*max(distmax) / min(ddist)]
+! e_dist: amount of distances (horizontal) in the radar space [computed as 
+!   2.*max(distmax) / min(ddist)]
 ! lutfilen: name of the netCDF file with the look-up-tables for a given miscrophysics of the 
 !   polymetries obntained via the T-matrix derived
 ! doppler_scheme: mtehod to use to retrieve the radial velocities after LUT
@@ -6106,8 +6113,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 !    END IF
 
     !! Maximum radar coverage
-    maxrdistmax = MAXVAL(distmax(1:nradar))
-    minrds = MINVAL(radards(1:nradar))
+    maxrdistmax = MAXVAL(model_config_rec%radar_distmax(1:nradar))
+    minrds = MINVAL(model_config_rec%radards(1:nradar))
 
     IF ( e_dist /= INT(2*maxrdistmax / minrds)) THEN
       PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
@@ -6118,12 +6125,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
 
-    IF ( e_angle /= INT(2.*pict*radii_ddist*1000./minrds)) THEN
-      PRINT *, '  e_angle: ', e_angle, ' radii_ddist: ', radii_ddist, ' minimum radards: ', minrds
+    IF ( e_angle /= INT(2.*pict*model_config_rec%radii_dist*1000./minrds)) THEN
+      PRINT *, '  e_angle: ', e_angle, ' radii_ddist: ', model_config_rec%radii_dist,                 &
+        ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: amount of range along radial-axis does not " // &
         "coincide with the radii at the same arc size as radial resolution (radii_dist) and the " //  &
-        "minimal  resolution (minimum radards)! e_angle = INT(2*pi*radii_ddist*1000. / minradards)"
+        "minimal  resolution (minimum radards)! e_angle = INT(2*pi*radii_dist*1000. / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
 
@@ -6150,10 +6158,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     mindist = MINVAL(dist)
     
     ! How to get True/False from namelist debug number?
-    dbg = TRUE
+    dbg = .TRUE.
     
     found = .FALSE.
-    WRITE(diag_message,*)'its,ite:', its,ite,' jts,jte:', jts,jte,'  mindist:', mindist, ' mindd:', mindd
+    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, ' mindist:', mindist, ' mindd:', &
+      mindd
     CALL wrf_debug(75,diag_message)
     IF (mindist < mindd) THEN
       DO i=its, ite
@@ -6221,11 +6230,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
   
     ! Getting projection details for the radar space
     ! Ellipsoide
-    IF (eloption == 1) THEN
+    IF (model_config_rec%eloption == 1) THEN
       a = 6378137.d0
       f = 1.d0/298.25722210088d0
       elipsn = 'GRS80 / WGS84  (NAD83)'
-    ELSE IF (eloption == 2) THEN
+    ELSE IF (model_config_rec%eloption == 2) THEN
       a = 6378206.4d0
       f = 1.d0/294.9786982138d0
       elipsn = 'Clarke 1866    (NAD27)'
@@ -6234,33 +6243,34 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ELSE
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: ellipsoide option eloption = " //               &
-          TRIM(StoI(eloption)) // " not ready !! Available ones: 1, 2"
+          TRIM(ItoS(model_config_rec%eloption)) // " not ready !! Available ones: 1, 2"
       CALL wrf_error_fatal ( diag_message )
     END IF
   
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
     
-      rlon = gatelon(ir)
-      rlat = gatelat(ir)
-      rhgt = gatehgt(ir)
-      rband = gateband(ir)
-      rtype = gatetype(ir)
-      rdist = ddist(ir)
-      rdistx = distmax(ir)
-      rhgtx = heightmax(ir)
+      rlon = model_config_rec%radar_clon(ir)
+      rlat = model_config_rec%radar_clat(ir)
+      rhgt = model_config_rec%radar_chgt(ir)
+      rband = model_config_rec%radar_band(ir)
+      rtype = model_config_rec%radar_scan(ir)
+      rddist = model_config_rec%radards(ir)
+      rdistx = model_config_rec%radar_distmax(ir)
+      rhgtx = model_config_rec%radar_hgtmax(ir)
       ! Polar coordinates of the radar space
       !!
-      CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rdist,           &
-        rdistx*1000., rhgtx*1000., azimuths, a, f, elipsn, radars_angle(:,ir), radars_dist(:,ir),     &
-        radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir), radarhgts(:,:,ir),                &
-        radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc, radarhgt_bnds_NOc, dbg)     
+      CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rddist,          &
+        rdistx*1000., rhgtx*1000., radars_azimuth(:,ir), a, f, elipsn, radars_angle(:,ir),            &
+        radars_dist(:,ir), radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir),                &
+        radarhgts(:,:,ir), radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc,                  &
+        radarhgt_bnds_NOc, dbg)     
 
       ! Checking pertinence of the radar into this tile
       CALL pertinence_polar(ims, ime, jms, jme, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
-          e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx, missing_value,           &
-          ngrid_radar, gatehdist(:,:,ir), inradar, radnum(:,:,ir), ngridradar(:,:,ir), 2,             &
-          ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
+          e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx,                          &
+          model_config_rec%missing_value, ngrid_radar, gatehdist(:,:,ir), inradar, radnum(:,:,ir),    &
+          ngridradar(:,:,ir), 2, ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
           
       ! Compressing results
       DO i=ims, ime
@@ -6286,47 +6296,48 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     END DO look_radar
     
     !! Look-up tables space for T-matrix
-    CALL read_lut(lutfilen, lutgrid, dbg)
+    CALL read_lut(model_config_rec%lutfilen, lutgrid, dbg)
     
-    ! From namelist or from file?
-    lutgrid%q_rain_min = config_flags%q_rain_min
-    lutgrid%q_rain_max = config_flags%q_rain_max
-    lutgrid%qn_rain_min = config_flags%qn_rain_min
-    lutgrid%qn_rain_max = config_flags%qn_rain_min
-    lutgrid%q_snow_min = config_flags%q_snow_min
-    lutgrid%q_snow_max = config_flags%q_snow_min
-    lutgrid%qn_snow_min = config_flags%q_snow_min
-    lutgrid%qn_snow_max = config_flags%q_snow_min
-    lutgrid%q_grau_min = config_flags%q_grau_min
-    lutgrid%q_grau_max = config_flags%q_grau_min
-    lutgrid%qn_grau_min = config_flags%q_grau_min
-    lutgrid%qn_grau_max = config_flags%q_grau_min
-    lutgrid%q_ice_min = config_flags%q_ice_min
-    lutgrid%q_ice_max = config_flags%q_ice_min
-    lutgrid%qn_ice_min = config_flags%q_ice_min
-    lutgrid%qn_ice_max = config_flags%q_ice_min
-    lutgrid%q_clou_min = config_flags%q_clou_min
-    lutgrid%q_clou_max = config_flags%q_clou_min    
-    lutgrid%dim_ice = config_flags%dim_ice
-    lutgrid%dimv = config_flags%Nqxbins
+    ! From namelist or from file? 
+    ! Let's put all into lutgrid for simplicity (but, duplicity)
+    lutgrid%q_rain_min = model_config_rec%q_rain_min
+    lutgrid%q_rain_max = model_config_rec%q_rain_max
+    lutgrid%qn_rain_min = model_config_rec%qn_rain_min
+    lutgrid%qn_rain_max = model_config_rec%qn_rain_min
+    lutgrid%q_snow_min = model_config_rec%q_snow_min
+    lutgrid%q_snow_max = model_config_rec%q_snow_min
+    lutgrid%qn_snow_min = model_config_rec%q_snow_min
+    lutgrid%qn_snow_max = model_config_rec%q_snow_min
+    lutgrid%q_grau_min = model_config_rec%q_grau_min
+    lutgrid%q_grau_max = model_config_rec%q_grau_min
+    lutgrid%qn_grau_min = model_config_rec%q_grau_min
+    lutgrid%qn_grau_max = model_config_rec%q_grau_min
+    lutgrid%q_ice_min = model_config_rec%q_ice_min
+    lutgrid%q_ice_max = model_config_rec%q_ice_min
+    lutgrid%qn_ice_min = model_config_rec%q_ice_min
+    lutgrid%qn_ice_max = model_config_rec%q_ice_min
+    lutgrid%q_clou_min = model_config_rec%q_clou_min
+    lutgrid%q_clou_max = model_config_rec%q_clou_min    
+    lutgrid%dim_ice = model_config_rec%dim_ice
+    lutgrid%dimv = model_config_rec%Nqxbins
     
-    ALLOCATE(lutgrid%q_rain_vec(config_flags%Nqxbins), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_rain_vec', 1, (/config_flags%Nqxbins/), fname, ierr)   
-    ALLOCATE(lutgrid%q_snow_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_snow_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
-    ALLOCATE(lutgrid%q_grau_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_grau_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
-    ALLOCATE(lutgrid%q_ice_vec(config_flags%dimv), STAT=ierr)
-    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_ice_vec', 1, (/config_flags%Nqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%q_rain_vec(model_config_rec%Nqxbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_rain_vec', 1, (/model_config_rec%Nqxbins/), fname, ierr)   
+    ALLOCATE(lutgrid%q_snow_vec(model_config_rec%Nqxbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_snow_vec', 1, (/model_config_rec%Nqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%q_grau_vec(model_config_rec%Nqxbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_grau_vec', 1, (/model_config_rec%Nqxbins/), fname, ierr)
+    ALLOCATE(lutgrid%q_ice_vec(model_config_rec%Nqxbins), STAT=ierr)
+    IF (ierr /= 0) CALL ErrMsgAlloc('', 'q_ice_vec', 1, (/model_config_rec%Nqxbins/), fname, ierr)
         
-    CALL create_logarithmic_scaled_vectorsD(config_flags%q_rain_min, config_flags%q_rain_max,         &
-      config_flags%Nqxbins, lutgrid%q_rain_vec, dbg)
-    CALL create_logarithmic_scaled_vectorsD(config_flags%q_snow_min, config_flags%q_snow_max,         &
-      config_flags%Nqxbins, lutgrid%q_snow_vec, .FALSE.)
-    CALL create_logarithmic_scaled_vectorsD(config_flags%q_grau_min, config_flags%q_grau_max,         &
-      config_flags%Nqxbins, lutgrid%q_grau_vec, .FALSE.)
-    CALL create_logarithmic_scaled_vectorsD(config_flags%q_ice_min, config_flags%q_ice_max,           &
-      config_flags%Nqxbins, lutgrid%q_ice_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(model_config_rec%q_rain_min, model_config_rec%q_rain_max, &
+      model_config_rec%Nqxbins, lutgrid%q_rain_vec, dbg)
+    CALL create_logarithmic_scaled_vectorsD(model_config_rec%q_snow_min, model_config_rec%q_snow_max, &
+      model_config_rec%Nqxbins, lutgrid%q_snow_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(model_config_rec%q_grau_min, model_config_rec%q_grau_max, &
+      model_config_rec%Nqxbins, lutgrid%q_grau_vec, .FALSE.)
+    CALL create_logarithmic_scaled_vectorsD(model_config_rec%q_ice_min, model_config_rec%q_ice_max,   &
+      model_config_rec%Nqxbins, lutgrid%q_ice_vec, .FALSE.)
 
     RETURN
 
@@ -6334,3 +6345,4 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 #endif
 
 END MODULE module_physics_init
+

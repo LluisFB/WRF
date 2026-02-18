@@ -16,11 +16,13 @@ dimspec    nrnn       2     namelist=nradar_ngrid            c     nradar_ngrid
 dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     c     nradar_ngrid_coord2
 dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
 dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
+dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
+dimspec    iit        2     constant=2                       z     iit
 
 # simrad.AR package namelist options
-rconfig   integer  nradar        namelist,simradar     1              1       rh{11}    "nradar"            "amount of surface radar"                                ""
+rconfig   integer  nradar        namelist,simradar     1                1     rh{11}    "nradar"            "amount of surface radar"                                ""
 rconfig   integer  e_dist        namelist,simradar     1              800     rh{11}    "e_dist"            "radar grid points along the radii"                      ""
 rconfig   integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
 rconfig   integer  e_azimuth     namelist,simradar     1               15     rh{11}    "e_azimuth"         "radar amount of azimuths"                               ""
@@ -30,6 +32,7 @@ rconfig   integer  nradar_ngrid  namelist,simradar     1            30000     rh
 rconfig   integer  nradar_ngrid_coord2  namelist,simradar 1         60000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
 rconfig   integer  nradar_coord2 namelist,simradar     1               40     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
 rconfig   integer  nradar_coord4 namelist,simradar     1              160     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
+rconfig   integer  ngrid_coord2  namelist,simradar     1            60000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
 rconfig   integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
 rconfig   integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
 
@@ -54,6 +57,7 @@ rconfig   real     londbg        namelist,simradar     1             -999.    rh
 rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
 
 # LUT options (maybe from netCDF file!)
+rconfig   character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc" rh{11}  "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
 rconfig   real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
@@ -96,6 +100,7 @@ rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh
 #    END DO
 #  END DO
 ##
+integer  ijdbg             {iit}              misc        -       -     rh{11}    "ijdbg"             "i,j-grid points from londbg,latdbg for debugging"        "-"
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
