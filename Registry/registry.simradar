@@ -70,10 +70,14 @@ rconfig   real     q_grau_min    namelist,simradar     1              1e-7    rh
 rconfig   real     q_grau_max    namelist,simradar     1             0.018    rh{11}    "q_grau_max"        "maximum grau mixing ratio to consider"                "kgkg-1"
 rconfig   real     qn_grau_min   namelist,simradar     1              1E-7    rh{11}    "qn_grau_min"       "minimum amount of nuclii for grau to consider"        "#"
 rconfig   real     qn_grau_max   namelist,simradar     1             2.6e6    rh{11}    "qn_grau_max"       "maximum amount of nuclii for grau to consider"        "#"
-rconfig   real     q_ice_min     namelist,simradar     1              1e-7    rh{11}    "q_ice_min"         "minimum ice mixing ratio to consider"                 "kgkg-1"
-rconfig   real     q_ice_max     namelist,simradar     1             0.001    rh{11}    "q_ice_max"         "maximum ice mixing ratio to consider"                 "kgkg-1"
-rconfig   real     qn_ice_min    namelist,simradar     1              1e-8    rh{11}    "qn_ice_min"        "minimum amount of nuclii for ice to consider"         "#"
-rconfig   real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for ice to consider"         "#"
+rconfig   real     q_ice_min     namelist,simradar     1              1e-7    rh{11}    "q_ice_min"         "minimum cloud ice mixing ratio to consider"           "kgkg-1"
+rconfig   real     q_ice_max     namelist,simradar     1             0.001    rh{11}    "q_ice_max"         "maximum cloud ice mixing ratio to consider"           "kgkg-1"
+rconfig   real     qn_ice_min    namelist,simradar     1              1e-8    rh{11}    "qn_ice_min"        "minimum amount of nuclii for cloud ice to consider"   "#"
+rconfig   real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for cloud ice to consider"   "#"
+rconfig   real     q_hail_min    namelist,simradar     1            -9999.    rh{11}    "q_hail_min"        "minimum hail mixing ratio to consider"                "kgkg-1"
+rconfig   real     q_hail_max    namelist,simradar     1            -9999.    rh{11}    "q_hail_max"        "maximum hail mixing ratio to consider"                "kgkg-1"
+rconfig   real     qn_hail_min   namelist,simradar     1            -9999.    rh{11}    "qn_hail_min"       "minimum amount of nuclii for hail to consider"        "#"
+rconfig   real     qn_hail_max   namelist,simradar     1            -9999.    rh{11}    "qn_hail_max"       "maximum amount of nuclii for hail to consider"        "#"
 rconfig   real     q_clou_min    namelist,simradar     1             1e-10    rh{11}    "q_clou_min"        "minimum clou mixing ratio to consider"                "kgkg-1"
 rconfig   real     q_clou_max    namelist,simradar     1             0.013    rh{11}    "q_clou_max"        "maximum clou mixing ratio to consider"                "kgkg-1"
 rconfig   integer  dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
@@ -148,4 +152,23 @@ state    real  TV_ICE      {rj}{rk}{nrd}      misc        1       -      h{11}  
 state    real  TV_HAIL     {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_HAIL"           "terminal velocity for Hail"                               "ms-1"
 state    real  TV_WGT      {rj}{rk}{nrd}      misc        1       -      h{11}    "TV_WGT"            "weighted terminal velocity"                               "ms-1"
 state    real  VR          {rj}{rk}{nrd}      misc        1       -      h{11}    "VR"                "Doppler velocity"                                         "ms-1"
+
+## OPTIONAL
+## 3.dimensional variables interpolated at the radar space. 
+##    1. Uncomment ##SIMRADARop##
+##    2. ./clean -a
+##    3. Modify accordingly phys/module_simradar.F and phys/module_diagnostics_driver.F
+##    4. Recompile
+##SIMRADARop##state    real  qvradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QVRADAR"           "water vapor mixing ratio at the radar space"              "kg kg-1"
+##SIMRADARop##state    real  qcradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QCRADAR"           "cloud mixing ratio at the radar space"                    "kg kg-1"
+##SIMRADARop##state    real  qrradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QRRADAR"           "rain mixing ratio at the radar space"                     "kg kg-1"
+##SIMRADARop##state    real  qsradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QSRADAR"           "snow mixing ratio at the radar space"                     "kg kg-1"
+##SIMRADARop##state    real  qiradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QIRADAR"           "cloud ice mixing ratio at the radar space"                "kg kg-1"
+##SIMRADARop##state    real  qgradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QGRADAR"           "graupel mixing ratio at the radar space"                  "kg kg-1"
+##SIMRADARop##state    real  qhradar     {rj}{rk}{nrd}      moist       1       -      h{11}    "QHRADAR"           "hail mixing ratio at the radar space"                     "kg kg-1"
+##SIMRADARop##state    real  uaradar     {rj}{rk}{nrd}      misc        1       -      h{11}    "UAERRADAR"         "eastward Earth rotated wind speed at the radar space"     "ms-1"
+##SIMRADARop##state    real  varadar     {rj}{rk}{nrd}      misc        1       -      h{11}    "VAERRADAR"         "northward Earth rotated wind speed at the radar space"    "ms-1"
+##SIMRADARop##state    real  waradar     {rj}{rk}{nrd}      misc        1       -      h{11}    "WAERRADAR"         "vertical wind speed at the radar space"                   "ms-1"
+##SIMRADARop##state    real  taradar     {rj}{rk}{nrd}      misc        1       -      h{11}    "TARADAR"           "air temperature mixing ratio at the radar space"          "K"
+##SIMRADARop##state    real  pressradar  {rj}{rk}{nrd}      misc        1       -      h{11}    "PRESSRADAR"        "air pressure at the radar space"                          "Pa"
 #endif
