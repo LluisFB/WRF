@@ -49,15 +49,18 @@ rconfig   real     radards       namelist,simradar     max_nradar    (/250.,250.
 rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
 rconfig   real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
 rconfig   integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
+rconfig   real     elips_a       namelist,simradar     1            -999.     rh{11}    "elips_a"           "semimajor axis equatorial"                              "m"
+rconfig   real     elips_f       namelist,simradar     1            -999.     rh{11}    "elips_f"           "flatteing"                                              "-"
+rconfig   character elips_name   namelist,simradar     1                -     rh{11}    "elips_name"        "name of the ellipsoide"                                 "-"
 rconfig   real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
-
+rconfig   integer  doppler_scheme namelist,simradar    1                1     rh{11}    "doppler_scheme"    "method to compute the doppler velocities"               ""
 
 rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
 rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
 rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
 
 # LUT options (maybe from netCDF file!)
-rconfig   character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc" rh{11}  "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
+rconfig   character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc"    -  "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
 rconfig   real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
