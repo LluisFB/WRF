@@ -6,6 +6,10 @@ MODULE module_simradar_tools
   USE module_wrf_error
 
 !!!!!!! Subroutines / functions
+! beam_height: Function to compute the height of the beam
+! calc_tvelocities_1D: Subroutine to compute terminal velocities for water species 1D version
+! calc_vt: Function to compute terminal velocity after a gamma function
+! com_gamma: Gamma function
 ! compute_radar_lonlat_radial: Subroutine to copmute lon, lat, hgt coordinates in the radar matrix 
 !   following polar coordinates
 ! distance_between_points: Subroutine tro compute the coordinates at a given distance and angle from a 
@@ -13,16 +17,24 @@ MODULE module_simradar_tools
 ! DIRCT1: Solution of the geodetic direct problem after T. Vincenty
 ! inverse: Subroutine to compute distance between 2 points
 ! is_inside: Subroutine to check if a tile gets a radar
+! lin_interpolate_1DD: Function to provide linear interpolation a double Real location on a given axis
 ! pertinence_polar: Subroutine to compute the 2-dimensional pertinence of a lonlat polar radial space 
 !   (r) into another regular lonlat (WRF)
+! Polarimetrics_fromLUT_1D: Subroutine to interpolate the polarimetic characteristics of a given water 
+!   specie following T-matrix
 ! position_from_point: Subroutine tro compute the coordinates at a given distance and angle from a 
 !   given point
 ! read_lut: Subroutine to read the T-MATRIX look-up-table (LUT) from an specific microphysics from a 
 !   netCDF file
 ! radar_inside: Subroutine to determine if a radar fells inside the tile
+! real_distances: Subroutine to compute the diferential of coordinattes of a distance from a given 
+!   point
 ! real_distances_ellipsoide: Subroutine to compute the diferential of coordinattes of a distance from 
 !   a given point on an ellipsoide
-
+! weights_hcoordsR27around_polar_ellipsoide_1D:  Subroutine to compute weights of the 27 around grid 
+!   points to 3-dimensional interpolate to a new space using the list of cells on the horizontal of 
+!   the targeted space that lay within each grid cell of the reference space with the values to 
+!   interpolate version on an ellipsoide
 
 ! basic: (from PyNCplot)
 ! ErrMsg: Subroutine to stop execution and provide an error message
@@ -30,7 +42,7 @@ MODULE module_simradar_tools
 !   available ones and provide an error message
 ! FileExist: Checks if a file exists
 ! freeunit: provides the number of a free unit in which open a file
-! [I/R]toS: Function to transform an Integer/Real to String
+! [I/R/D]toS: Function to transform an Integer/Real/double Real to String
 ! set_dbg: Function to setup debug value
 ! Sto[I/R/L]: Function to transform a String to an Integer/Real/Boolean
 
@@ -102,6 +114,9 @@ MODULE module_simradar_tools
   ! Maximum rank of a Frotran variable
   INTEGER, PARAMETER                                     :: maxfrank = 7
   
+  ! simrad.AR version
+  CHARACTER(len=S32)                                     :: simradARversion = '1.0'
+  
   ! Derived type with all the ranges for all water species for LUT
   TYPE lut_vars
     INTEGER                                              :: Nbands
@@ -138,6 +153,13 @@ MODULE module_simradar_tools
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aih_ICE
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aiv_ICE
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: KDP_ICE
+
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Zh_HAIL
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Zdr_HAIL
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: LDR_HAIL
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aih_HAIL
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aiv_HAIL
+    REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: KDP_HAIL    
     
     REAL                                                 :: q_rain_min
     REAL                                                 :: q_rain_max
@@ -155,6 +177,10 @@ MODULE module_simradar_tools
     REAL                                                 :: q_ice_max
     REAL                                                 :: qn_ice_min
     REAL                                                 :: qn_ice_max
+    REAL                                                 :: q_hail_min
+    REAL                                                 :: q_hail_max
+    REAL                                                 :: qn_hail_min
+    REAL                                                 :: qn_hail_max
     REAL                                                 :: q_clou_min
     REAL                                                 :: q_clou_max
     INTEGER                                              :: dim_ice
@@ -164,10 +190,605 @@ MODULE module_simradar_tools
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_snow_vec
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_grau_vec
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_ice_vec
+    REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_hail_vec
     
   END TYPE lut_vars
 
   CONTAINS
+  
+  REAL(kind=rr8) FUNCTION lin_interpolate_1DD(pt, Ndim, coords, vals)
+! If willing to manage error as function
+!  REAL(kind=rr8) FUNCTION lin_interpolate_1DD(pt, Ndim, coords, vals, statv)
+  ! Function to provide linear interpolation a double Real location on a given axis
+
+    IMPLICIT NONE
+   
+    INTEGER, INTENT(in)                                  :: Ndim
+    REAL(kind=rr8), INTENT(in)                           :: pt
+    REAL(kind=rr8), DIMENSION(Ndim), INTENT(in)          :: coords, vals
+    ! 0: no error; 1: error
+!    INTEGER, INTENT(out)                                 :: statv
+   
+    ! Local
+    INTEGER                                              :: icor
+    INTEGER                                              :: refi
+    REAL(kind=rr8)                                       :: minc, maxc
+    REAL(kind=rr8)                                       :: signv, a, b
+    REAL(kind=rr8), DIMENSION(Ndim)                      :: origsing
+    CHARACTER (LEN=1000)                                 :: diag_message
+    CHARACTER(len=Sl)                                    :: fname
+
+    !!!!!!! Variables
+    ! pt: pt to interpolate
+    ! coords: coordinates along the axis (incremental)
+    ! vals: values at the coordinates
+    fname = 'lin_interpolate_1DD'
+  
+    lin_interpolate_1DD = fillValueD  
+    ! Sign of the axis
+    origsing = DABS(coords(Ndim)-coords(1))/(coords(Ndim)-coords(1))
+  
+    minc = MINVAL(coords)
+    maxc = MAXVAL(coords)
+
+    a = fillValueR
+    refi = -1
+    IF (pt < minc) THEN
+      a = vals(1)
+      refi = 1
+      signv = -1.
+    ELSE IF (pt > maxc) THEN
+      a = vals(Ndim)
+      refi = Ndim-1
+      signv = 1.
+    ELSE IF (pt == minc) THEN
+      lin_interpolate_1DD = vals(1)
+      refi = 1
+      signv = 1.
+      
+      RETURN 
+    ELSE IF (pt == maxc) THEN
+      lin_interpolate_1DD = vals(Ndim)
+      refi = Ndim-1
+      signv = 1.
+
+      RETURN     
+    ELSE
+      DO icor=1, Ndim-1
+        IF (pt == coords(icor)) THEN
+          lin_interpolate_1DD = vals(icor)
+          RETURN
+        ELSE IF (pt >= coords(icor) .AND. pt < coords(icor+1)) THEN
+          a = vals(icor)
+          refi = icor
+          signv = 1.
+          EXIT
+        END IF
+      END DO
+    END IF
+
+!    statv = 0
+    IF (refi == -1) THEN
+      WRITE (diag_message , * ) &
+      TRIM(errormsg) // ":   " //TRIM(fname)// ": No interpolation found for: " // TRIM(DtoS(pt)) //  &
+        ' within range: [' // TRIM(DtoS(minc)) // ', ' // TRIM(DtoS(maxc))
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    b = DABS(pt-coords(refi))/(coords(refi+1)-coords(refi))
+    
+    lin_interpolate_1DD = a + signv*(vals(refi+1)-a)*b
+
+    RETURN
+
+  END FUNCTION lin_interpolate_1DD
+
+  SUBROUTINE com_gamma(x, ga)
+  ! GAMMA FUNCTION
+  !-----------------------------------------------------------------------
+  
+  !==================================================
+  !       Purpose: Compute the gamma function â(x)
+  !       Input :  x  --- Argument of â(x)
+  !                       ( x is not equal to 0,-1,-2,úúú )
+  !       Output:  GA --- â(x)
+  !==================================================
+  ! Proff. Jianming Jin
+  ! Department of Electrical and Computer Engineering
+  ! University of Illinois
+  
+    IMPLICIT NONE
+
+    REAL(kind=rr8), INTENT(in)                           :: X
+    REAL(kind=rr8), INTENT(out)                          :: GA
+
+    ! Local
+    REAL(kind=rr8), DIMENSION(26)                        :: G
+    REAL(kind=rr8)                                       :: Z , R , GR
+    INTEGER                                              :: M1, K , M
+    CHARACTER(len=Sl)                                    :: fname
+    
+    DATA G /1.0D0, 0.5772156649015329D0, -0.6558780715202538D0, -0.420026350340952D-1,                &
+      0.1665386113822915D0,-.421977345555443D-1, -.96219715278770D-2, .72189432466630D-2,             &
+      -.11651675918591D-2, -.2152416741149D-3, .1280502823882D-3, -.201348547807D-4,                  &
+      -.12504934821D-5, .11330272320D-5, -.2056338417D-6, .61160950D-8, .50020075D-8, -.11812746D-8,  &
+      .1043427D-9, .77823D-11, -.36968D-11, .51D-12, -.206D-13, -.54D-14, .14D-14, .1D-15 /
+
+    !!!!!!! Variables
+    ! x: argument 
+    fname = 'com_gamma'
+    
+    IF (X.EQ.INT(X)) THEN
+      IF (X.GT.0.0D0) THEN
+        GA=1.0D0
+        M1=X-1
+        DO K=2,M1
+          GA=GA*K
+        END DO
+      ELSE
+        GA=1.0D+300
+      ENDIF
+
+    ELSE
+      IF (DABS(X).GT.1.0D0) THEN
+        Z = DABS(X)
+        M = INT(Z)
+        R = 1.0D0
+        DO K=1, M
+          R = R*(Z-K)
+        END DO
+        Z=Z-M
+      ELSE
+        Z=X
+      ENDIF
+      GR=G(26)
+      DO K = 25, 1, -1
+        GR = GR*Z + G(K)
+      END DO
+
+      GA=1.0D0/(GR*Z)
+      IF (DABS(X).GT.1.0D0) THEN
+        GA=GA*R
+        IF (X.LT.0.0D0) GA=-DPICT/(X*GA*DSIN(DPICT*X))
+      ENDIF
+    ENDIF
+
+    RETURN
+
+  END SUBROUTINE com_gamma
+
+  SUBROUTINE Polarimetrics_fromLUT_1D(qx, iz, ibnd, dimv, q_log_vec, Nbins, Zh_x, Zdr_x, KDP_x,       &
+    Zh_out, Zdr_out, KDP_out, idbg)
+  ! Subroutine to interpolate the polarimetic characteristics of a given water specie following T-matrix
+  
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: iz, ibnd, dimv, Nbins
+    REAL(kind=rr8), INTENT(in)                           :: qx
+    REAL(kind=rr8), DIMENSION(dimv), INTENT(in)          :: q_log_vec
+    REAL(kind=rr8), DIMENSION(Nbins), INTENT(in)         :: Zh_x, Zdr_x, KDP_x
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL(kind=rr8), INTENT(out)                          :: Zh_out, Zdr_out, KDP_out
+    
+    ! Local
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! qx: value of the water specie
+    ! iz: lut azimuth index
+    ! ibnd: band
+    !   1: 'C'
+    !   2: 'S'
+    !   3: 'X'
+    ! dimv: length of the logarithmic scale
+    ! q_log_vec: logarithmic scale
+    ! Nbins: amount of bins 
+    ! Zh_x: values of 'Zh' for the specific water specie
+    ! Zdr_x: values of 'Zdr' for the specific water specie
+    ! KDP_x: values of 'KDP' for the specific water specie
+    fname = 'Polarimetrics_fromLUT_1D'
+    
+    IF (dbg) THEN
+      PRINT *, '  ' // TRIM(fname) // ": q_log_vec 1 a 5:", q_log_vec(1:5)
+      PRINT *, '  ' // TRIM(fname) // ": Zh_x at ibnd= ", ibnd ," iz= ", iz, " 1 a 5:", Zh_x(1:5)
+    END IF
+    
+    dbg = set_dbg(idbg)
+
+    Zh_out = fillValueR
+    Zdr_out = fillValueR
+    KDP_out = fillValueR
+    
+    Zh_out = lin_interpolate_1DD(qx, dimv, q_log_vec, Zh_x)
+    Zdr_out = lin_interpolate_1DD(qx, dimv, q_log_vec, Zdr_x)
+    KDP_out = lin_interpolate_1DD(qx, dimv, q_log_vec, KDP_x)
+                  
+    RETURN
+  
+  END SUBROUTINE Polarimetrics_fromLUT_1D
+ 
+  REAL(kind=rr8) FUNCTION calc_vt(a, b, lambdax)
+  ! Function to compute terminal velocity after a gamma function
+  
+    IMPLICIT NONE
+    
+    REAL, INTENT(in)                                     :: a, b
+    REAL(kind=rr8), INTENT(in)                           :: lambdax
+    
+    ! Local
+    REAL(kind=rr8)                                       :: db, gammav, lambda6
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! a, b: gamma parameters
+    ! lambdax: lambda of the water specie
+    
+    fname = 'calc_vt' 
+    
+    calc_vt = fillValueD
+    
+    db = b*1.D0
+    CALL com_gamma(4.D0+db, gammav)
+    
+    calc_vt = a*gammav/6
+    lambda6 = lambdax**db
+    
+    calc_vt = calc_vt / lambda6
+
+    RETURN
+    
+  END FUNCTION calc_vt
+  
+  SUBROUTINE calc_tvelocities_1D(qr, qs, qg, qh, p, T, v_rain, v_snow, v_grau, v_hail)
+  ! Subroutine to compute terminal velocities for water species 1D version
+  !
+  ! Calculate the MASS-WEIGHTED MEAN terminal velocities following Srivastava (1967).
+  !    int vt l(D) dD/l, where vt is the terminal velocity of diamater D, l(D) is the mixing
+  !    ratio of the precipitation particle of diameter D, and l is the mixing ratio of a precip. field
+  !    see eq. 11-13 in Lin et al. 1983. (same as wrf2radar)
+
+    IMPLICIT NONE
+    
+    REAL(kind=rr8), INTENT(in)                           :: qr, qs, qg, qh, p, T
+    REAL(kind=rr8), INTENT(out)                          :: v_rain, v_snow, v_grau, v_hail
+    
+    ! Local
+    REAL                                                 :: rhoo, rho_air, rhofac
+    REAL                                                 :: rho_r, n0r, rho_s, n0s, rho_g, n0g,       &
+      rho_h, n0h
+    REAL(kind=rr8)                                       :: lambdar, lambdas, lambdag, lambdah
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! qr: mixing ratio for rain [kgkg-1]
+    ! qs: mixing ratio for snow [kgkg-1]
+    ! qg: mixing ratio for graupel [kgkg-1]
+    ! qh: mixing ratio for hail [kgkg-1]
+    ! p: pressure [Pa]
+    ! T: air temperature [K]
+    fname = 'calc_tvelocities_1D'
+    
+    !! Attention bring herer rl rhofactor! 
+    !!!! THIS must be generalized from lutgrid !!!!
+    !!! reference air density used in some WSM6 docs, kg m^-3
+    rhoo     = 1.28      
+    !!! kg/m3
+    rho_air  = p / (287.058 * T)
+    rhofac  = (rhoo/rho_air)**0.5
+    
+    rho_r = 1000.
+    n0r   = 8E6
+    rho_s = 100.
+    n0s   = 2e6
+    rho_g = 500.
+    n0g   = 4e6
+    rho_h = -9999.
+    n0h   = -9999.
+    
+    v_rain = fillValueD
+    v_snow = fillValueD
+    v_grau = fillValueD
+
+    lambdar = fillValueR
+    lambdas = fillValueR
+    lambdag = fillValueR
+
+    ! Rain
+    IF (qr > 0.) THEN
+      lambdar = (dpict*rho_r*n0r / (qr))**(1./4.)
+      v_rain = calc_vt(841.9, 0.8, lambdar)*rhofac
+    END IF
+    
+    ! Snow
+    IF (qs > 0.) THEN
+      lambdas = (dpict*rho_s*n0s / (qs))**(1./4.)
+      v_snow = calc_vt(11.72, 0.41, lambdas)*rhofac
+    END IF
+
+    ! Grau
+    IF (qg > 0.) THEN
+      lambdag = (dpict*rho_g*n0g / (qg))**(1./4.)
+      v_grau = calc_vt(330., 0.8, lambdag)*rhofac
+    END IF
+
+    ! Hail (LLUIS not know range !!)
+    IF (qh > 0.) THEN
+      lambdah = (dpict*rho_h*n0h / (qh))**(1./4.)
+      v_hail = calc_vt(-9999., -9999., lambdah)*rhofac
+    END IF
+
+    RETURN
+
+  END SUBROUTINE calc_tvelocities_1D
+  
+  SUBROUTINE weights_hcoordsR27around_polar_ellipsoide_1D(i1, j1, id1x, ed1x, id1y, ed1y, id1z,       &
+    ed1z, a, f, elips, lon1, lat1, vert1, miss_v1, maxNcoords, ij21Ncoords, Nc2, ij21coords,          &
+    Na2, id2x, ed2x, id2y, ed2y, id2z, ed2z, lon2, lat2, vert2, miss_v2, maxN3coords, ijk21Ncoords,   &
+    Nc3, ijk21coords, totngridradar, Na3, wghts, idbg)
+  ! Subroutine to compute weights of the 27 around grid points to 3-dimensional interpolate to a new 
+  !   space using the list of cells on the horizontal of the targeted space that lay within each grid 
+  !   cell of the reference space with the values to interpolate version on an ellipsoide
+  !    lon1,lat1,vert1: space with data to interpolate (reference)
+  !    lon2,lat2,vert2: polar space towards which interpolate (target)
+  !    id1x= i1-1, edx1= i1+1; id1y= j1-1, edy1= j1+1; id1z=1, ed1z=dimz
+  !   NOTE in polar space:
+  !     dx: distance    dy: angle    dz: azimuth
+  !     3Dvariables (dy,dz,dx),        lon,lats(dy,dx),        hgt(dx,dz)
+  
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: i1, j1, id1x, ed1x, id1y, ed1y, id1z,     &
+      ed1z, MaxNcoords, MaxN3coords, Nc2, Na2, Nc3, Na3
+    INTEGER, INTENT(in)                                  :: id2x, ed2x, id2y, ed2y, id2z, ed2z
+    REAL, INTENT(in)                                     :: miss_v1, miss_v2
+    REAL(kind=rr8), INTENT(in)                           :: a, f
+    CHARACTER(len=30), INTENT(in)                        :: elips
+    REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
+    REAL, DIMENSION(id1x:ed1x,id1y:ed1y,id1z:ed1z),                                                   &
+      INTENT(in)                                         :: vert1
+    INTEGER, INTENT(in)                                  :: ij21Ncoords
+    INTEGER, DIMENSION(MaxNcoords,Nc2), INTENT(in)       :: ij21coords
+    REAL, DIMENSION(id2y:ed2y,id2x:ed2x), INTENT(in)     :: lon2, lat2
+    REAL, DIMENSION(id2z:ed2z,id2x:ed2x), INTENT(in)     :: vert2
+    LOGICAL, OPTIONAL                                    :: idbg
+    INTEGER, INTENT(out)                                 :: totngridradar
+    INTEGER, DIMENSION(id1z:ed1z), INTENT(out)           :: ijk21Ncoords
+    REAL, DIMENSION(id1z:ed1z,maxN3coords,Na3),                                                       &
+      INTENT(out)                                        :: wghts
+    INTEGER, DIMENSION(id1z:ed1z,maxN3coords,Nc3),                                                    &
+      INTENT(out)                                        :: ijk21coords
+    
+    ! Local
+    INTEGER                                              :: k1, ic, i2, j2, k2, kk2, ij, ijk
+    INTEGER                                              :: ici, icj, ick
+    INTEGER                                              :: ijkfound
+    REAL                                                 :: ijkvert1, sumdists, totwght
+    INTEGER, DIMENSION(1)                                :: kmindist
+    INTEGER, DIMENSION(1)                                :: imaxwght, izero
+    REAL, DIMENSION(Na2)                                 :: ijlon1, ijlat1, ijdists
+    REAL, DIMENSION(Na3)                                 :: zdists, dists, wgs
+    REAL, DIMENSION(id1z:ed1z)                           :: vert1mask, zdist1
+    LOGICAL, DIMENSION(Na3)                              :: ijkmask
+    LOGICAL                                              :: printdbg
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! id1x, ed1x, id1y, ed1y, id1z, ed1z: Extent of the reference space
+    ! a: semimajor axis equatorial (in meters)
+    ! f: flattening
+    ! elips: name of the ellipsis being used
+    ! lon1, lat1, vert1: coordinates of the reference space [degrees_east, degrees_north, m]
+    ! MaxNcoords: maximum amount of target space grid points in a single reference grid point
+    ! ij21Ncoords: amount of target grid points in a single reference grid pointv
+    ! Nc2: amount of coordinates of 2-dimensional space
+    ! ij21coords: coordinates of the target grid points in a single reference grid point
+    ! ij21dists: horizonatal distancess of the target grid points in a single reference grid point
+    ! id2x, ed2x, id2y, ed2y, id2z, ed2z: Extent of the target space
+    ! lon2, lat2, vert2: coordinates of the target space [degrees_east, degrees_north, m]
+    ! ijk21Ncoords: amount of target grid 3-dimensional points in a single reference grid pointv 
+    ! Nc3: amount of coordinates of 3-dimensional space
+    ! ijk21coords: 3-dimensional coordinates of the target grid points in a single reference grid point
+    ! Na3: amount of points around in a 3-dimensional space
+    ! wghts: weights to use to interpolate values of a target grid point to its closest 3x3x3 grid 
+    !   points in the reference space
+    ! Rdists: distances of a target grid point to its closest 3x3x3 grid points in the reference space
+    fname = 'weights_hcoordsR27around_polar_ellipsoide_1D'
+     
+    dbg = set_dbg(idbg)
+        
+    ijk21Ncoords = 0    
+    ijk21coords = fillValueI
+    wghts = 0.
+
+    IF (dbg) PRINT *,'  ' // TRIM(fname) // ": Compute 3-dimensional weights at ", i1, ', ', j1 ,     &
+      ' with ', ij21Ncoords, " radar cells horizontally"
+    
+    totngridradar = 0
+    ijkfound = 0
+    
+    gridpts: DO ic=1, ij21Ncoords
+      ! Indices of target space within reference grid 
+      !! angle
+      ici = ij21coords(ic,1)
+      !! dist
+      icj = ij21coords(ic,2)
+              
+      ! computing distances from 3x3 horizontal grid (the already computed is only for i1,j1)
+      ! horizontal 3x3 array as 
+      !   -1,-1,(1,1)[1]: SW; 0,-1,(2,1)[2]: SC, 1,-1,(3,1)[3]: SE; 
+      !    -1,0,(1,2)[4]: CW;  0,0,(2,2)[5]: CC;  1,0,(3,2)[6]: CE;
+      !    -1,1,(1,3)[7]: NW;  0,1,(2,3)[8]: NC;  1,1,(3,3)[9]: NE;
+      ij = 1
+      DO i2=-1,1
+        DO j2=-1,1
+          ijlon1(ij) = lon1(i1+i2,j1+j2)
+          ijlat1(ij) = lat1(i1+i2,j1+j2)
+          ij = ij + 1
+        END DO
+      END DO
+      
+      CALL real_distances(1, 3, 1, 3, ijlon1, ijlat1, lon2(ici,icj), lat2(ici,icj), ijdists)
+
+      ! Computing vertical distances (from closest i,j)
+      zloop: DO k2=id2z, ed2z
+        IF (vert2(k2,icj) /= miss_v2) THEN
+          
+          printdbg = .FALSE.         
+          IF (dbg) THEN
+            IF (MOD(ic+k2, 10) == 0 .AND. ijkfound < 10) THEN
+              printdbg = .TRUE.
+              ijkfound = ijkfound + 1
+            END IF
+          END IF
+
+          ! vertical level at center of 3x3
+          DO k1=id1z, ed1z
+            IF (vert1(i1,j1,k1) == miss_v1) THEN
+              vert1mask(k1) = fillValueR
+            ELSE
+              vert1mask(k1) = vert1(i1,j1,k1)
+            END IF
+          END DO
+
+          zdist1 = ABS( vert1mask - vert2(k2,icj) )
+          kmindist = MINLOC(zdist1)
+          ick = kmindist(1)
+              
+          IF (printdbg) PRINT *,'    ' // TRIM(fname) // ": i1,j1:", i1, j1, " i2, j2, k2: ",         &
+            ici, icj, k2, ' vert1 masked:', vert1mask, ' vert2: ', vert2(k2,icj), ' zdist1: ',        &
+            zdist1, ' ick:', ick, ' found: ', totngridradar+1
+
+          ijk21Ncoords(ick) = ijk21Ncoords(ick) + 1
+          IF (ijk21Ncoords(ick) > maxN3coords) THEN
+            CALL ErrMsg("Too much radar cells: " // TRIM(ItoS(ijk21Ncoords(ick))) //                  &
+              " in a WRF grid. Increase 'ngrid_radar3' in namelist current value: " //                &
+              TRIM(ItoS(maxN3coords)), fname, -1)
+          END IF 
+          ijk21coords(ick,ijk21Ncoords(ick),1) = ici
+          ijk21coords(ick,ijk21Ncoords(ick),2) = icj
+          ijk21coords(ick,ijk21Ncoords(ick),3) = k2
+          totngridradar = totngridradar + 1              
+
+          ! vertical 27 array as 
+          !   SW
+          !   -1,-1,-1,(1,1,1),[1]: bottom; -1,-1,0,(1,1,2),[2]: middle, -1,-1,1,(1,1,3),[3]: top; 
+          !   (...)
+          !   NE
+          !   1,1,-1,(3,3,1),[25]: bottom; 1,1,0,(3,3,2),[26]: middle, 1,1,1,(3,3,3),[27]: top; 
+          ij = 1
+          ijk = 1
+          dists = fillValueR
+          ijkmask = .FALSE.
+          IF (ick == 1) THEN
+            IF (printdbg) PRINT *, '  ' // TRIM(fname) // ": radar height ", vert2(k2,icj),       &
+              " at first WRF level ", ick, ' hgt= ', vert1(i1,j1,ick), ' m'
+            DO i2=-1,1
+              DO j2=-1,1
+                DO kk2=0,1
+                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
+                  IF (ijkvert1 /= miss_v1) THEN
+                    ! 3-dimensional distance
+                    !   dist = SQRT(hdist**2 + zdist**2)
+                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
+                    ijkmask(ijk) = .TRUE.
+                  END IF
+                  ijk = ijk + 1
+                END DO
+                ij = ij + 1
+              END DO
+            END DO
+          ELSE IF (ick == ed1z) THEN
+            IF (printdbg) PRINT *, '  ' // TRIM(fname) // ": radar height ", vert2(k2,icj),       &
+              " at last WRF level ", ed1z, ' hgt= ', vert1(i1,j1,ed1z), ' m'
+            DO i2=-1,1
+              DO j2=-1,1
+                DO kk2=-1,0
+                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
+                  IF (ijkvert1 /= miss_v1) THEN
+                    ! 3-dimensional distance
+                    !   dist = SQRT(hdist**2 + zdist**2)
+                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
+                    ijkmask(ijk) = .TRUE.
+                  END IF
+                  ijk = ijk + 1
+                END DO
+                ij = ij + 1
+              END DO
+            END DO
+          ELSE
+            DO i2=-1,1
+              DO j2=-1,1
+                DO kk2=-1,1
+                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
+                  IF (ijkvert1 /= miss_v1) THEN
+                    ! 3-dimensional distance
+                    !   dist = SQRT(hdist**2 + zdist**2)
+                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
+                    ijkmask(ijk) = .TRUE.
+                  END IF
+                  ijk = ijk + 1
+                END DO
+                ij = ij + 1
+              END DO
+            END DO              
+          END IF
+              
+          ! Filtering for dist == 0!!
+          wgs = 0.
+          IF (ANY(dists == 0.)) THEN
+            izero = MINLOC(dists)
+            wgs = 0.
+            wgs(izero(1)) = 1.
+            sumdists = 1.
+          ELSE
+            sumdists = SUM(1./dists, mask=ijkmask)
+            ! Applying mask in weights
+            DO k1=1, Na3
+              IF (.NOT.ijkmask(k1)) THEN
+                wgs(k1) = 0.
+              ELSE                 
+                wgs(k1) = 1./dists(k1)/sumdists
+              END IF
+            END DO
+            totwght = SUM(wgs)
+            ! Fixing
+            IF (totwght < 1.) THEN
+              imaxwght = MAXLOC(wgs)
+              wgs(imaxwght(1)) = wgs(imaxwght(1)) + 1. - totwght
+            END IF
+          END IF
+          wghts(ick,ijk21Ncoords(ick),:) = wgs
+
+          IF (printdbg) THEN
+            PRINT *, '    '//TRIM(fname) // ": i,j,k radar cell: ",                                   &
+              ijk21coords(ick,ijk21Ncoords(ick),:), ' hgt: ', vert2(k2,icj), ' i,j,k reference: ',    &
+              i1,j1,ick, ' dists: ', dists, ' mask: ', ijkmask, ' wghts: ',                           &
+              wghts(ick,ijk21Ncoords(ick),:)
+          END IF
+        END IF
+      END DO zloop
+
+    END DO gridpts
+    
+    IF (totngridradar > ij21Ncoords*(ed2z-id2z+1) ) THEN
+      CALL ErrMsg('Too many radar cells were found! Theoretical maximum: ' //                         &
+        TRIM(ItoS(ij21Ncoords*(ed2z-id2z+1))) // ', but I found: ' // TRIM(ItoS(totngridradar)),      &
+        fname, -1)
+    END IF
+    
+    
+    IF (dbg) THEN
+      PRINT *,'    ' // TRIM(fname) // ": amount of vertical radar cells in WRF grid: ", i1, j1,      &
+        ' = ', totngridradar
+      PRINT *, '    found along the reference column [amount (k_lev)]:',                              &
+        (TRIM(ItoS(ijk21Ncoords(k1))) // ' (' // TRIM(ItoS(k1)) // '), ', k1=id1z, ed1z)
+    END IF
+            
+    RETURN
+  
+  END SUBROUTINE weights_hcoordsR27around_polar_ellipsoide_1D
 
   SUBROUTINE compute_radar_lonlat_radial(Nangle, Nazimuth, Ndist, lon_pt, lat_pt, hgt_pt, ddist,      &
     max_dist, max_hgt, azimuths, a, f, elips, angle1d, dist1d, azimuth1d, lons, lats, hgts, lhgts,    &
@@ -1260,6 +1881,62 @@ MODULE module_simradar_tools
 
   END SUBROUTINE is_inside
 
+  SUBROUTINE beam_height(hgt_pt, a, angle, azimuth, dist, hgt, lhgt)
+  ! Function to compute the height of the beam
+  
+  ! After
+  !
+  ! [PURPOSE:] Common radar procedures and variables.
+  !
+  ! [HISTORY:]
+  !   02/19/2014 Juan Ruiz created
+  !
+
+    IMPLICIT NONE
+    
+    REAL, INTENT(in)                                     :: hgt_pt, angle, azimuth, dist
+    REAL(kind=rr8), INTENT(in)                           :: a
+    REAL, INTENT(out)                                    :: hgt, lhgt
+    
+    ! Local
+    REAL                                                 :: tmp1, tmp2
+    REAL(kind=rr8)                                       :: height, local_elevation
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! hgt_pt: height of the radar station [m]
+    ! a: radar ellipsoide semimajor axis equatorial [m]
+    ! angle: angle of the beam [rad]
+    ! azimuth: azimuth of the beam [rad]
+    ! dist: distance respect the radar [m]
+    fname = 'beam_height'
+    
+    ! Initializing
+    height = 0.d0
+    local_elevation = 0.d0
+  
+    tmp1 = dist**2 + (ke*a)**2 + 2.*dist*ke*a*sin(azimuth)
+    height = hgt_pt + SQRT( tmp1 ) - ke*a
+
+    !Compute the local elevation angle tacking into account the efective earth radius.
+    tmp1= dist * cos( azimuth )
+    tmp2= dist * sin( azimuth ) + ke*a
+    local_elevation = azimuth + atan(tmp1/tmp2)
+   
+    IF (height < 0.) THEN
+      PRINT *,'  ' // TRIM(ErrorMsg)
+      PRINT *,'    dist: ', dist, ' azimuth: ', azimuth
+      PRINT *,'    radar height: ', height
+      CALL ErrMsg('Negative radar height !', fname, -1)
+    END IF
+   
+    hgt = REAL(height)
+    lhgt = REAL(local_elevation)
+   
+   RETURN
+
+  END SUBROUTINE beam_height
+
   SUBROUTINE real_distances_ellipsoide(ims, ime, jms, jme, a, f, elips                                &
     ,lon, lat                                                                                         &
     ,lonv, latv                                                                                       &
@@ -1317,6 +1994,49 @@ MODULE module_simradar_tools
     RETURN
  
   END SUBROUTINE real_distances_ellipsoide
+  
+  SUBROUTINE real_distances(ims, ime, jms, jme                                                        &
+    ,lon, lat                                                                                         &
+    ,lonv, latv                                                                                       &
+    ,dist)
+!    ,dlonpt, dlatpt)
+    ! Subroutine to compute the diferential of coordinattes of a distance from a given point
+    !   Following: https://en.wikipedia.org/wiki/Geographical_distance
+    !
+    !     D = 2*R * SQRT( [sin(dlat /2)*cos(dlon/2)]**2 + [cos(latm)*sin(dlon/2)]**2 )
+    
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ims, ime, jms, jme
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: lon, lat
+    REAL, INTENT(in)                                     :: lonv, latv
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(out)    :: dist
+!    REAL, INTENT(out)                                    :: dlonpt, dlatpt
+
+    ! Local 
+!    REAL, PARAMETER                                      :: R = 6371.009 ! km
+    REAL, PARAMETER                                      :: R = 6371009.
+    REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm, sec1, sec2
+    CHARACTER(len=50)                                    :: fname
+    
+    !!!!!!! Variables
+    ! lon, lat: 2D array longitude, latitude matrices
+    ! lonv, latv: point to compute the distance
+    fname = 'real_distance'
+  
+    dist = 0.
+    
+    dlat = (latv - lat)/DegRad
+    dlon = (lonv - lon)/DegRad
+    latm = (lat + latv)/DegRad / 2.
+    
+    sec1 = sin(dlat /2.)*cos(dlon/2.)
+    sec2 = cos(latm)*sin(dlon/2.)
+    dist = 2.*R * SQRT( (sec1)**2 + (sec2)**2 )
+   
+    RETURN
+ 
+  END SUBROUTINE real_distances
 
 !!!! basic
   
@@ -1461,6 +2181,17 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE ErrMsg
+
+  CHARACTER(LEN=50) FUNCTION DtoS(Dval)
+  ! DtoS: Function to transform a double real to String
+
+    IMPLICIT NONE
+
+    REAL(kind=rr8), INTENT(IN)                           :: Dval
+
+    WRITE(DtoS,'(F21.10)')Dval
+
+  END FUNCTION DtoS
 
   CHARACTER(LEN=50) FUNCTION RtoS(Rval)
   ! RtoS: Function to transform a real to String

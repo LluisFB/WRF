@@ -5857,6 +5857,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !     dx: distance    dy: angle    dz: azimuth
     !     3Dvariables (dy,dz,dx),        lon,lats(dy,dx),        hgt(dx,dz)
 
+    ! There is no domain-related differences in radar configuration
     USE module_configure, ONLY: model_config_rec
     USE module_simradar_tools
 
@@ -6248,7 +6249,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
           TRIM(ItoS(model_config_rec%eloption)) // " not ready !! Available ones: 1, 2"
       CALL wrf_error_fatal ( diag_message )
     END IF
-  
+    model_config_rec%elips_a = a
+    model_config_rec%elips_f = f
+    model_config_rec%elips_name = TRIM(elipsn)
+    
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
     
