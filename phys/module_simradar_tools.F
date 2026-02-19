@@ -12,6 +12,8 @@ MODULE module_simradar_tools
 ! com_gamma: Gamma function
 ! compute_radar_lonlat_radial: Subroutine to copmute lon, lat, hgt coordinates in the radar matrix 
 !   following polar coordinates
+! create_logarithmic_scaled_vectorsD: Function to create logarithmic-based equi-spaced scaled double 
+!   Real vectors
 ! distance_between_points: Subroutine tro compute the coordinates at a given distance and angle from a 
 !   given point
 ! DIRCT1: Solution of the geodetic direct problem after T. Vincenty
@@ -43,19 +45,26 @@ MODULE module_simradar_tools
 ! FileExist: Checks if a file exists
 ! freeunit: provides the number of a free unit in which open a file
 ! [I/R/D]toS: Function to transform an Integer/Real/double Real to String
+! removeNONnum: Subroutine to remove non numeric characters from a string
 ! set_dbg: Function to setup debug value
 ! Sto[I/R/L]: Function to transform a String to an Integer/Real/Boolean
 
 ! netCDF: (from PyNCplot)
+! close_NCfile: Subroutine to close a netCDF file
 ! get_dimlength_ncid: Subroutine to get the length of a dimension from an existing to an open netCDF
+! get_dims_ncid: Subroutine to get the dimensions from an open netCDF file
 ! get_Ndims_ncid: Subroutine to get the amount of dimensions from an open netCDF file
 ! get_Nvars_ncid: Subroutine to get the amount of variables from an open netCDF file
 ! get_vars_ncid: Subroutine to provide all the ids and names of the variables existing to an open 
 !   netCDF
+! get_varR[0/1]D_ncid: Subroutine to get a [0/1]D Real variable from a netCDF file unit passing 
+!   starting and ending
 ! get_varD3D_ncid: Subroutine to get a 3D double Real variable from a netCDF file unit passing 
 !   starting and ending
 ! get_varS0D_ncid: Subroutine to get a 0D String variable from a netCDF file unit passing starting 
 !   and ending
+! handle_errf: Subroutine to provide the error message when something with netCDF went wrong 
+!   (including fname)
 ! isin_ncunit: Function to tell if a given variable is inside a netcdf file unit
 ! isin_dim_ncid: Function to tell if a given dimension is inside a netcdf file unit
 ! open_NCfile: Subroutine to open a basic netCDF file
@@ -116,6 +125,9 @@ MODULE module_simradar_tools
   
   ! simrad.AR version
   CHARACTER(len=S32)                                     :: simradARversion = '1.0'
+
+  ! 4 / 3 radar beam height 
+  REAL(kind=rr8), PARAMETER                              :: ke = 4.d0 / 3.d0
   
   ! Derived type with all the ranges for all water species for LUT
   TYPE lut_vars
@@ -192,9 +204,67 @@ MODULE module_simradar_tools
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_ice_vec
     REAL(kind=rr8), DIMENSION(:), ALLOCATABLE            :: q_hail_vec
     
+    ! Denisities
+    REAL                                                 :: rhoo
+    REAL                                                 :: rho_r
+    REAL                                                 :: n0r
+    REAL                                                 :: rho_s
+    REAL                                                 :: n0s
+    REAL                                                 :: rho_g
+    REAL                                                 :: n0g
+    REAL                                                 :: rho_h
+    REAL                                                 :: n0h
+
   END TYPE lut_vars
 
   CONTAINS
+  
+  SUBROUTINE create_logarithmic_scaled_vectorsD(vec_min, vec_max, Nvals, logvec, idbg)
+  ! Function to create logarithmic-based equi-spaced scaled double Real vectors
+  
+    IMPLICIT NONE 
+    
+    INTEGER, INTENT(in)                                  :: Nvals
+    REAL, INTENT(in)                                     :: vec_min, vec_max
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL(kind=rr8), DIMENSION(NVals), INTENT(out)        :: logvec
+
+    ! Local
+    INTEGER                                              :: i
+    REAL(kind=rr8)                                       :: log10n, log10x, ddvec
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! vec_min: minimum value
+    ! vec_max: maximum value
+    ! Nvals: amount of values
+    fname = 'create_logarithmic_scaled_vectorsD'
+
+    dbg = set_dbg(idbg)
+    
+    log10n = DLOG10(vec_min*1.D0)
+    log10x = DLOG10(vec_max*1.D0)
+    
+    ddvec = (log10x - log10n)/(Nvals-1)*1.D0
+    
+    DO i=1, Nvals
+      logvec(i) = (10.D0)**(log10n + (i-1)*ddvec)
+    END DO
+
+    IF (dbg) THEN
+      PRINT *, '    ' // TRIM(fname) // ": log10 min: ", log10n, ' max: ', log10x,                    &
+        ' estimated distance: ', ddvec       
+      PRINT *, '      LOG10 distance between consecutive log10(1), log10(2), dist:',                  &
+        DLOG10(logvec(1)), ', ', DLOG10(logvec(2)), ', ', DLOG10(logvec(2)) - DLOG10(logvec(1))
+      PRINT *, '      LOG10 distance between consecutive log10(Ndim-1), log10(Ndim), dist:',          &
+        DLOG10(logvec(Nvals-1)), ', ',  DLOG10(logvec(Nvals)), ', ', DLOG10(logvec(Nvals)) -          &
+        DLOG10(logvec(Nvals-1))
+    END IF
+
+    RETURN
+
+  END SUBROUTINE create_logarithmic_scaled_vectorsD
   
   REAL(kind=rr8) FUNCTION lin_interpolate_1DD(pt, Ndim, coords, vals)
 ! If willing to manage error as function
@@ -440,7 +510,7 @@ MODULE module_simradar_tools
     
   END FUNCTION calc_vt
   
-  SUBROUTINE calc_tvelocities_1D(qr, qs, qg, qh, p, T, v_rain, v_snow, v_grau, v_hail)
+  SUBROUTINE calc_tvelocities_1D(qr, qs, qg, qh, p, T, lutgrid, v_rain, v_snow, v_grau, v_hail)
   ! Subroutine to compute terminal velocities for water species 1D version
   !
   ! Calculate the MASS-WEIGHTED MEAN terminal velocities following Srivastava (1967).
@@ -451,6 +521,7 @@ MODULE module_simradar_tools
     IMPLICIT NONE
     
     REAL(kind=rr8), INTENT(in)                           :: qr, qs, qg, qh, p, T
+    TYPE(lut_vars), INTENT(in)                           :: lutgrid
     REAL(kind=rr8), INTENT(out)                          :: v_rain, v_snow, v_grau, v_hail
     
     ! Local
@@ -467,24 +538,25 @@ MODULE module_simradar_tools
     ! qh: mixing ratio for hail [kgkg-1]
     ! p: pressure [Pa]
     ! T: air temperature [K]
+    ! lutgrid: derived type with all the T-MATRIX look-up-table values
     fname = 'calc_tvelocities_1D'
     
     !! Attention bring herer rl rhofactor! 
     !!!! THIS must be generalized from lutgrid !!!!
     !!! reference air density used in some WSM6 docs, kg m^-3
-    rhoo     = 1.28      
+    rhoo = lutgrid%rhoo
     !!! kg/m3
     rho_air  = p / (287.058 * T)
     rhofac  = (rhoo/rho_air)**0.5
     
-    rho_r = 1000.
-    n0r   = 8E6
-    rho_s = 100.
-    n0s   = 2e6
-    rho_g = 500.
-    n0g   = 4e6
-    rho_h = -9999.
-    n0h   = -9999.
+    rho_r = lutgrid%rho_r
+    n0r   = lutgrid%n0r
+    rho_s = lutgrid%rho_s
+    n0s   = lutgrid%n0s
+    rho_g = lutgrid%rho_g
+    n0g   = lutgrid%n0g
+    rho_h = lutgrid%rho_h
+    n0h   = lutgrid%n0g
     
     v_rain = fillValueD
     v_snow = fillValueD
@@ -984,6 +1056,226 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE compute_radar_lonlat_radial
+
+  SUBROUTINE pertinence_polar(iwdx, ewdx, iwdy, ewdy, WRFlon, WRFlat, WRFlon_bnds, WRFlat_bnds,       &
+    irdx, erdx, irdy, erdy, rlon, rlat, crx, cry, rmax, miss_v, maxNcoords, distradar, inradar,       &
+    radarnum, ngridradar, Nc2, ijradar, ijdistradar, inside, idbg)
+  ! Subroutine to compute the 2-dimensional pertinence of a lonlat polar radial space (r) into 
+  !   another regular lonlat (WRF)
+  !    NOTE:
+  !      - In radial space
+  !         dx: distance          dy: angle
+  !         lon(dy,dx), lat(dy,dx)
+  
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: iwdx, ewdx, iwdy, ewdy, maxNcoords, Nc2
+    INTEGER, INTENT(in)                                  :: irdx, erdx, irdy, erdy
+    REAL, INTENT(in)                                     :: crx, cry, rmax, miss_v
+    REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy), INTENT(in)     :: WRFlon, WRFlat
+    REAL, DIMENSION(irdy:erdy,irdx:erdx), INTENT(in)     :: rlon, rlat
+    REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy,4), INTENT(in)   :: WRFlon_bnds, WRFlat_bnds
+    LOGICAL, OPTIONAL                                    :: idbg
+    INTEGER, DIMENSION(iwdx:ewdx,iwdy:ewdy), INTENT(out) :: radarnum
+    INTEGER, DIMENSION(iwdx:ewdx,iwdy:ewdy), INTENT(out) :: ngridradar
+    INTEGER, DIMENSION(iwdx:ewdx,iwdy:ewdy),                                                          &
+      INTENT(inout)                                      :: inradar
+    REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy), INTENT(out)    :: distradar
+    INTEGER, DIMENSION(iwdx:ewdx,iwdy:ewdy,maxNcoords,Nc2),                                           &
+      INTENT(out)                                        :: ijradar
+    REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy,maxNcoords),                                                  &
+      INTENT(out)                                        :: ijdistradar      
+    LOGICAL, INTENT(out)                                 :: inside
+    
+    ! Local
+    INTEGER                                              :: i, j, ir
+    INTEGER                                              :: ic, jc, ijfound
+    INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax, kmindist
+    INTEGER                                              :: rdx2, rdy2, rdx
+    INTEGER, DIMENSION(2)                                :: ijtile_rad
+    REAL                                                 :: lonmin, lonmax, latmin, latmax, mindist
+    REAL                                                 :: lonrad, latrad, distrad
+    INTEGER                                              :: totngridradar
+    REAL                                                 :: lonSW, lonNW, lonNE, lonSE
+    REAL                                                 :: latSW, latNW, latNE, latSE
+    REAL, DIMENSION(4)                                   :: lonvertices, latvertices
+    REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy)                 :: ijdist
+    LOGICAL                                              :: centerin
+    LOGICAL                                              :: dbg, printdbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! iwdx, ewdx, iwdy, ewdy: size of the WRF lonlathgt
+    ! rnum: number of radar from the list of radars to process
+    ! WRFlon, WRFlat: coordinates of the WRF lonlathgt [degrees_east, degrees_North]
+    ! WRFlon_bnds, WRFlat_bnds: coordinates of the vertices of the grids of the WRF lonlat
+    ! irdx, erdx, irdy, erdy: size of the polar r lonlathgt that we want to know how much fits inside
+    !   WRF lonlat
+    ! rlon, rlat: coordinates of the r lonlathgt [degrees_east, degrees_North]
+    ! crx, cry: coordinates of the center of the radial space
+    ! rmax: maximum radii from the center of the radial space
+    ! miss_v: missing value
+    ! rmax: maximum possible amount of r lonlathgt cells in a single WRFlonlat grid
+    !
+    ! OUTPUT
+    ! distradar: distance in WRF lonlat grids to the center of r lonlat
+    ! inradar: whether a WRF lonlat grid holds inside any r lonlat cell (horizontal only)
+    ! radarnum: whether a WRF lonlat grid holds inside the r lonlat cell (horizontal only)
+    ! ngridradar: amount of r lonlat cells wihtin a WRF lonlat grid
+    ! ijkradar: indices of the polar r lonlat cells wihtin a WRF lonlat grid
+    ! ijdistradar: distance to the WRF lonlat grid of the r lonlat cells wihtin a WRF lonlat grid
+    fname = 'pertinence_polar'
+  
+    dbg = set_dbg(idbg)
+  
+    IF (dbg) THEN
+      PRINT *,'  ' // TRIM(fname) // ": looking for radar at ", crx, cry, ' max dist: ', rmax
+      PRINT *,'    size of WRF lonlat:', iwdx, ewdx, iwdy, ewdy
+      PRINT *,'    size of r lonlat:', irdx, erdx, irdy, erdy
+    END IF
+  
+    ! Getting borders of the tile
+    lonSW = WRFlon(iwdx,iwdy)
+    lonNW = WRFlon(iwdx,ewdy)
+    lonNE = WRFlon(ewdx,ewdy)
+    lonSE = WRFlon(ewdx,iwdy)
+    latSW = WRFlat(iwdx,iwdy)
+    latNW = WRFlat(iwdx,ewdy)
+    latNE = WRFlat(ewdx,ewdy)
+    latSE = WRFlat(ewdx,iwdy)
+    
+    ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
+    lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
+    latvertices = (/ latSW, latNW, latNE, latSE /)
+    lonmin = MINVAL(lonvertices)
+    lonmax = MAXVAL(lonvertices)
+    latmin = MINVAL(latvertices)
+    latmax = MAXVAL(latvertices)
+    
+    klonmin = MINLOC(lonvertices)
+    klatmin = MINLOC(latvertices)
+    klonmax = MAXLOC(lonvertices)
+    klatmax = MAXLOC(latvertices)
+    
+    rdx2 = (erdx - irdx + 1) / 2
+    rdy2 = (erdy - irdy + 1) / 2
+  
+    ! Getting actual areas encompassed by a radar
+    distradar = fillValueR
+    inradar = fillValueI
+    radarnum = fillValueI
+    ngridradar = 0
+    ijradar = fillValueI
+    ijdistradar = fillValueR
+    
+    !irng = 0    
+    centerin = .FALSE.
+    CALL radar_inside (iwdx, ewdx, iwdy, ewdy, WRFlon, WRFlat, WRFlon_bnds, WRFlat_bnds, crx, cry,    & 
+      rmax, miss_v, distradar, inradar, radarnum, inside, dbg)
+    
+    ! Getting lon,lat for the radar matrix
+    ! Can we know from the radar perspective which of its grid points are inside this tile?
+    ! Even if I could know that, radar matrix is not (by now) parallelized !
+    ! Therefore, I need to compute the whole radar matrix at each tile
+    
+    totngridradar = 0
+    ijfound = 1
+    !IF (rlon > lonvertices(klonmin(1)) .AND. rlon < lonvertices(klonmax(1)) .AND.                     &
+    !  rlat > latvertices(klonmin(1)) .AND. rlat < latvertices(klatmax(1))) THEN
+    insideradar: IF (inside) THEN
+
+      centerin = .TRUE.
+
+      ! Looping all over the radar matrix
+      lonlat_radar: DO i=irdy, erdy
+        DO j=irdx, erdx
+!      lonlat_radar: DO i=1,erdy
+!        DO j=irdx, 10
+          printdbg = .FALSE.
+          IF (dbg) THEN
+            IF (MOD(i+j,10) == 0 .AND. ijfound < 10) THEN
+              printdbg = .TRUE.
+              ijfound = ijfound + 1
+            END IF
+          END IF
+                         
+          ! Avoid values outside radar range
+          IF (rlon(i,j) >= fillValueR*0.95 .OR. rlat(i,j) >= fillValueR*0.95) CYCLE
+
+          ins: IF (rlon(i,j) > lonvertices(klonmin(1)) .AND. rlon(i,j) < lonvertices(klonmax(1)) .AND. &
+            rlat(i,j) > latvertices(klonmin(1)) .AND. rlat(i,j) < latvertices(klatmax(1))) THEN
+              
+            totngridradar = totngridradar + 1
+            ! Closest WRF grid point to the radar cell
+            ijdist=SQRT((WRFlon-rlon(i,j))**2+(WRFlat-rlat(i,j))**2)
+            ijtile_rad = MINLOC(ijdist)
+            ic = ijtile_rad(1)
+            jc = ijtile_rad(2)
+              
+            inradar(ic,jc) = 1
+            radarnum(ic,jc) = 1
+            
+            ! Amount of r cells in this WRF grid point
+            ngridradar(ic,jc) = ngridradar(ic,jc) + 1
+            IF (ngridradar(ic,jc) > maxNcoords) THEN
+              CALL ErrMsg("For WRF's i,j: " // TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //             &
+                " too much radar cells: " // TRIM(ItoS(ngridradar(ic,jc))) // " in a WRF grid. " //   &
+                " distance to the radar: " // TRIM(RtoS(MINVAL(ijdist))) //                           &
+                "'ngrid_radar' in namelist current value: " // TRIM(ItoS(maxNcoords)), fname, -1)
+            END IF 
+                              
+            ! Coordinates of the radar cells within this WRF grid
+            ijradar(ic,jc,ngridradar(ic,jc), 1) = i
+            ijradar(ic,jc,ngridradar(ic,jc), 2) = j
+            ijdistradar(ic,jc,ngridradar(ic,jc)) = MINVAL(ijdist)
+               
+            IF (printdbg) THEN
+              PRINT *,'  ' // TRIM(fname) // ": check total amount of radar cells wihtin " //         &
+                "WRF grid: ", totngridradar
+              PRINT *, '        > WRF grid:', ijtile_rad
+              PRINT *, '        > amount radar cells in WRF grid:', ngridradar(ic,jc)
+              PRINT *, '        > radar cell coordinates of last found:', i,j
+            END IF
+
+          END IF ins
+        END DO
+      END DO lonlat_radar
+
+      rdx = erdx-irdx+1
+      IF (dbg) THEN
+        PRINT *,'    WRF lonlat box ...'
+        PRINT *,'      SW:', lonvertices(klonmin(1)), latvertices(klatmin(1))
+        PRINT *,'      NE:', lonvertices(klonmax(1)), latvertices(klatmax(1))
+        PRINT *,'  ' // TRIM(fname) // ": with radar at ", crx,', ',cry,  "; amount of " //           &
+          "radar cells in WRF grid: ", totngridradar, ' theoretical value:',                          &
+          INT(pict*((rdx)/2)**2), INT(SUM(ngridradar))
+        ijtile_rad = MAXLOC(ngridradar)
+        ic = ijtile_rad(1)
+        jc = ijtile_rad(2)
+        ijdist=SQRT((WRFlon(ic,jc)-crx)**2+(WRFlat(ic,jc)-cry)**2)
+        PRINT *,'      largest amount radar cells in a WRF grid:', MAXVAL(ngridradar), ' found at: ', &
+          ijtile_rad, ' distance to the radar:', ijdist(1,1), ' degree'
+      END IF
+        
+      IF (totngridradar < INT((pict*(rdx/2)**2)/10)) THEN
+        CALL ErrMSg(' found radar cells in WRF grid: ' // TRIM(ItoS(totngridradar)) //                &
+          ' theoretical: ' // TRIM(ItoS(INT(pict*(rdx/2)**2))) // ' Not enough ' //                   &
+          'radar cells were found',fname,-1)
+      END IF
+      
+    ELSE
+      IF (dbg) THEN
+        PRINT *,'  ' // TRIM(fname) // ": radar at ", crx,', ', cry, "; outside WRF grid !!"
+        PRINT *,'    WRF lonlat box ...'
+        PRINT *,'      SW:', lonvertices(klonmin(1)), latvertices(klatmin(1))
+        PRINT *,'      NE:', lonvertices(klonmax(1)), latvertices(klatmax(1))
+      END IF
+      
+    END IF insideradar
+
+    RETURN
+    
+  END SUBROUTINE pertinence_polar
      
   SUBROUTINE read_lut(lutfilen, lutgrid, idbg)
   ! Subroutine to read the T-MATRIX look-up-table (LUT) from an specific microphysics from a netCDF 
@@ -1209,6 +1501,26 @@ MODULE module_simradar_tools
 !    S32a = 'dimv'
 !    CALL get_varN0D_ncid(lutid, S32a, lutgrid%dimv, dbg)
 
+    !! Getting densities
+    S32a = 'rhoo'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%rhoo, dbg)
+    S32a = 'rho_r'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%rho_r, dbg)
+    S32a = 'n0r'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%n0r, dbg)
+    S32a = 'rho_s'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%rho_s, dbg)
+    S32a = 'n0s'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%n0s, dbg)
+    S32a = 'rho_g'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%rho_g, dbg)
+    S32a = 'n0g'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%n0g, dbg)
+    S32a = 'rho_h'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%rho_h, dbg)
+    S32a = 'n0h'
+    CALL get_varR0D_ncid(lutid, S32a, lutgrid%n0h, dbg)
+
     IF (ALLOCATED(lutgrid%elevations)) DEALLOCATE(lutgrid%elevations)
     ALLOCATE(lutgrid%elevations(Nlevs), STAT=ierr)
     IF (ierr /= 0) CALL ErrMsgAlloc('', 'elevations', 1, (/Nlevs/), fname, ierr)
@@ -1241,7 +1553,7 @@ MODULE module_simradar_tools
     REAL(kind=rr8)                                         :: glat2, glon2, baz
     INTEGER                                                :: Niter, kindv
     REAL(kind=rr8)                                         :: signv, lamv
-    CHARACTER(len=50)                                      :: fname
+    CHARACTER(len=S32)                                     :: fname
 
     !!!!!!! Variables
     ! lon1_pt, lat1_pt: coordinates of the first point [deg]
@@ -1563,7 +1875,7 @@ MODULE module_simradar_tools
       glat2_min
     REAL(kind=rr8)                                       :: glon2_sec, glat2_sec
     REAL(kind=rr8)                                       :: lat2, lon2
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     !!!!!!! Variables
     ! lon_pt, lat_pt: coordinates of the point
@@ -1637,7 +1949,7 @@ MODULE module_simradar_tools
     REAL(kind=rr8)                                       :: Y, SY, CY, CZ
     LOGICAL                                              :: converged
     
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     DATA EPS /0.5D-13/
     
@@ -1720,7 +2032,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: ibnd
     LOGICAL, DIMENSION(ims:ime,jms:jme)                  :: mask
     LOGICAL                                              :: dbg
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! lon, lat: 2D array longitude, latitude matrices at the center 
@@ -1850,7 +2162,7 @@ MODULE module_simradar_tools
     REAL                                                 :: mindist
     REAL, DIMENSION(:,:), ALLOCATABLE                    :: distborder  
     LOGICAL                                              :: dbg
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! lon, lat: 2D array longitude, latitude matrices at the center 
@@ -1970,7 +2282,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: i,j
     REAL                                                 :: angleab
     LOGICAL                                              :: dbg
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! lon, lat: 2D array longitude, latitude matrices
@@ -2017,7 +2329,7 @@ MODULE module_simradar_tools
 !    REAL, PARAMETER                                      :: R = 6371.009 ! km
     REAL, PARAMETER                                      :: R = 6371009.
     REAL, DIMENSION(ims:ime,jms:jme)                     :: dlat, dlon, latm, sec1, sec2
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! lon, lat: 2D array longitude, latitude matrices
@@ -2160,7 +2472,7 @@ MODULE module_simradar_tools
 
     ! Local
     CHARACTER (LEN=1000)                                 :: diag_message
-    CHARACTER(LEN=50)                                    :: emsg
+    CHARACTER(len=S32)                                   :: emsg
 
     !!!!!!! Variables
     ! msg: message to print with the error
@@ -2182,7 +2494,7 @@ MODULE module_simradar_tools
 
   END SUBROUTINE ErrMsg
 
-  CHARACTER(LEN=50) FUNCTION DtoS(Dval)
+  CHARACTER(len=S32)FUNCTION DtoS(Dval)
   ! DtoS: Function to transform a double real to String
 
     IMPLICIT NONE
@@ -2193,7 +2505,7 @@ MODULE module_simradar_tools
 
   END FUNCTION DtoS
 
-  CHARACTER(LEN=50) FUNCTION RtoS(Rval)
+  CHARACTER(len=S32)FUNCTION RtoS(Rval)
   ! RtoS: Function to transform a real to String
 
     IMPLICIT NONE
@@ -2204,7 +2516,7 @@ MODULE module_simradar_tools
 
   END FUNCTION RtoS
 
-  CHARACTER(LEN=50) FUNCTION ItoS(Ival)
+  CHARACTER(len=S32)FUNCTION ItoS(Ival)
   ! ItoS: Function to transform an integer to String
 
     IMPLICIT NONE
@@ -2212,7 +2524,7 @@ MODULE module_simradar_tools
     INTEGER, INTENT(IN)                                  :: Ival
 
     ! Local
-    CHARACTER(LEN=50)                                    :: itoS0
+    CHARACTER(len=S32)                                   :: itoS0
 
     WRITE(ItoS0,'(I50)')Ival
     CALL  removeNONnum(ItoS0, ItoS)
@@ -2296,6 +2608,35 @@ MODULE module_simradar_tools
     RETURN
 
   END FUNCTION freeunit
+  
+  SUBROUTINE removeNONnum(String, newString)
+  ! Subroutine to remove non numeric characters from a string
+
+    IMPLICIT NONE
+
+    CHARACTER(LEN=*), INTENT(IN)                         :: String
+    CHARACTER(LEN=*), INTENT(OUT)                        :: newString
+
+    ! Local
+    INTEGER                                              :: ic, inc, Lstring
+    CHARACTER(len=S32)                                   :: fname
+
+    !!!!!!! Variables
+    ! String: string to remove non-numeric characters
+    ! newString: resultant string
+    fname = 'removeNONnum'
+
+    Lstring = LEN_TRIM(String)
+    newString = ''
+    inc = 1
+    DO ic=1, Lstring
+      IF (ICHAR(String(ic:ic)) >= ICHAR('0') .AND. ICHAR(String(ic:ic)) <= ICHAR('9')) THEN
+        newString(inc:inc) = String(ic:ic)
+        inc = inc + 1
+      END IF
+    END DO
+
+  END SUBROUTINE removeNONnum
 
 !!!! netCDF
 
@@ -2405,7 +2746,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: vid, Ndims, Nvars
     INTEGER                                              :: iv, rcode
     CHARACTER(LEN=1000)                                  :: varinfile
-    CHARACTER(len=50)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
 
     !!!!!!! Variables
     ! nid: number of the open netCDF
@@ -2527,6 +2868,47 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE get_dimlength_ncid
+
+  SUBROUTINE get_dims_ncid(ncid, Ndims, dimns, dimlengths)
+  ! Subroutine to get the dimensions from an open netCDF file
+  
+    USE netcdf
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ncid, Ndims
+    CHARACTER(len=S32), DIMENSION(Ndims), INTENT(out)    :: dimns
+    INTEGER, DIMENSION(Ndims), OPTIONAL                  :: dimlengths
+    
+    ! Local
+    INTEGER                                              :: idd
+    INTEGER                                              :: rcode    
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! ncid: netCDF open object
+    ! Ndims: amount of fimensions in the file
+    fname = 'get_dims_ncid'
+    
+    dimns = ''
+    IF (PRESENT(dimlengths)) dimlengths = -1
+    
+    DO idd=1, Ndims
+      IF (PRESENT(dimlengths)) THEN
+        rcode = nf90_inquire_dimension(ncid, idd, name=dimns(idd), len=dimlengths(idd))
+      ELSE
+        rcode = nf90_inquire_dimension(ncid, idd, name=dimns(idd))
+      END IF
+      IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+      IF (PRESENT(dimlengths)) THEN
+        IF (dimlengths(idd) == NF90_UNLIMITED) PRINT *,'  ' // TRIM(fname) // ": dimension '" //      &
+          TRIM(dimns(idd)) // "' is unlimited ", NF90_UNLIMITED
+      END IF
+    END DO
+    
+    RETURN
+
+  END SUBROUTINE get_dims_ncid
   
   SUBROUTINE get_varS0D_ncid(ncid, StrL, vname, vals, idbg)
   ! Subroutine to get a 0D String variable from a netCDF file unit passing starting and ending
@@ -2598,6 +2980,143 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE get_varS0D_ncid
+
+  SUBROUTINE get_varR0D_ncid(ncid, vname, vals, idbg)
+  ! Subroutine to get a 0D Real variable from a netCDF file unit passing starting and ending
+
+    USE netcdf
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ncid
+    CHARACTER(LEN=S32), INTENT(in)                       :: vname
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL, INTENT(out)                                    :: vals
+  
+    ! Local
+    INTEGER                                              :: i, Ndims, Nvars
+    INTEGER                                              :: rcode, varid, vartype, rank
+    LOGICAL                                              :: vfound
+    INTEGER, DIMENSION(:), ALLOCATABLE                   :: invarids
+    CHARACTER(len=S32), DIMENSION(:), ALLOCATABLE        :: invarns
+    LOGICAL                                              :: infile
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+
+    !!!!!!! Variables
+    ! ncid: netCDF file identifier
+    ! vals: values to get
+    ! vname: name of the variable to get
+    fname = 'get_varR0D_ncid'
+        
+    dbg = set_dbg(idbg)
+    
+    ! Checking existence of variable
+    infile = isin_ncunit(ncid, vname)
+    IF (.NOT.infile) THEN
+       rcode = nf90_inquire(ncid, Ndims, Nvars)
+       IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+       IF (ALLOCATED(invarids)) DEALLOCATE(invarids)
+       ALLOCATE(invarids(Nvars))
+       IF (ALLOCATED(invarns)) DEALLOCATE(invarns)
+       ALLOCATE(invarns(Nvars))
+       
+       CALL get_vars_ncid(ncid, Nvars, invarids, invarns)
+       PRINT *,'  Available variales in netcdf unit: ', ("'" // TRIM(invarns(i)) // "', ", i=1, Nvars)
+       CALL ErrMsg("Passed variable '" // TRIM(vname) // "' not found", fname, -1)
+    END IF
+
+    rcode = nf90_inq_varid(ncid, vname, varid)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+    
+    ! Checking variable
+    rcode = nf90_inquire_variable(ncid, varid, xtype=vartype, ndims=rank)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+    IF (vartype /= NF90_FLOAT) CALL ErrMSg("Wrong type of variable '" // TRIM(vname) //               &
+      "'. I expected NF90_FLOAT= " // TRIM(ItoS(NF90_FLOAT)) // ' instead got ' //                    &
+      TRIM(ItoS(vartype)), fname, -1)
+    IF (rank /= 0) CALL ErrMSg("Wrong rank of variable '" //TRIM(vname)// "'. I expected rank= 0 " // &
+      ' instead got ' // TRIM(ItoS(rank)), fname, -1)
+
+    rcode = nf90_get_var(ncid, varid, vals)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+  
+    IF (ALLOCATED(invarids)) DEALLOCATE(invarids)
+    IF (ALLOCATED(invarns)) DEALLOCATE(invarns)
+
+    RETURN
+
+  END SUBROUTINE get_varR0D_ncid
+
+  SUBROUTINE get_varR1D_ncid(ncid, id1, ed1, vname, vals, idbg)
+  ! Subroutine to get a 1D Real variable from a netCDF file unit passing starting and ending
+
+    USE netcdf
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: ncid, id1, ed1
+    CHARACTER(LEN=S32), INTENT(in)                       :: vname
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL, DIMENSION(id1:ed1),INTENT(out)                 :: vals
+  
+    ! Local
+    INTEGER                                              :: i, Ndims, Nvars
+    INTEGER                                              :: rcode, varid, vartype, rank
+    INTEGER                                              :: d1
+    LOGICAL                                              :: vfound
+    INTEGER, DIMENSION(:), ALLOCATABLE                   :: invarids
+    CHARACTER(len=S32), DIMENSION(:), ALLOCATABLE        :: invarns
+    LOGICAL                                              :: infile
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+
+    !!!!!!! Variables
+    ! ncid: netCDF file identifier
+    ! id1,ed1: shape of the matrix
+    ! vals: values to get
+    ! vname: name of the variable to get
+    fname = 'get_varR1D_ncid'
+        
+    dbg = set_dbg(idbg)
+    
+    ! Checking existence of variable
+    infile = isin_ncunit(ncid, vname)
+    IF (.NOT.infile) THEN
+       rcode = nf90_inquire(ncid, Ndims, Nvars)
+       IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+       IF (ALLOCATED(invarids)) DEALLOCATE(invarids)
+       ALLOCATE(invarids(Nvars))
+       IF (ALLOCATED(invarns)) DEALLOCATE(invarns)
+       ALLOCATE(invarns(Nvars))
+       
+       CALL get_vars_ncid(ncid, Nvars, invarids, invarns)
+       PRINT *,'  Available variales in netcdf unit: ', ("'" // TRIM(invarns(i)) // "', ", i=1, Nvars)
+       CALL ErrMsg("Passed variable '" // TRIM(vname) // "' not found", fname, -1)
+    END IF
+
+    rcode = nf90_inq_varid(ncid, vname, varid)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+    
+    ! Checking variable
+    rcode = nf90_inquire_variable(ncid, varid, xtype=vartype, ndims=rank)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+    IF (vartype /= NF90_FLOAT) CALL ErrMSg("Wrong type of variable '" // TRIM(vname) //               &
+      "'. I expected NF90_FLOAT= " // TRIM(ItoS(NF90_FLOAT)) // ' instead got ' //                    &
+      TRIM(ItoS(vartype)), fname, -1)
+    IF (rank /= 1) CALL ErrMSg("Wrong rank of variable '" //TRIM(vname)// "'. I expected rank= 1 " // &
+      ' instead got ' // TRIM(ItoS(rank)), fname, -1)
+
+    d1 = ed1-id1+1
+    rcode = nf90_get_var(ncid, varid, vals, start=(/id1/), count=(/d1/))
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+  
+    IF (ALLOCATED(invarids)) DEALLOCATE(invarids)
+    IF (ALLOCATED(invarns)) DEALLOCATE(invarns)
+
+    RETURN
+
+  END SUBROUTINE get_varR1D_ncid
 
   SUBROUTINE get_varD3D_ncid(ncid, id1, id2, id3, ed1, ed2, ed3, vname, vals, idbg)
   ! Subroutine to get a 3D double Real variable from a netCDF file unit passing starting and ending
@@ -2671,5 +3190,103 @@ MODULE module_simradar_tools
     RETURN
 
   END SUBROUTINE get_varD3D_ncid
+  
+  ! From UNIDATA: https://www.unidata.ucar.edu/software/netcdf/docs/netcdf-f90.html
+  SUBROUTINE handle_errf(st, fn)
+  ! Subroutine to provide the error message when something with netCDF went wrong (including fname)
+
+    USE netcdf
+
+    INTEGER, INTENT(in)                                  :: st
+    CHARACTER(len=*), INTENT(in)                         :: fn
+    CHARACTER (LEN=1000)                                 :: diag_message
+
+    !!!!!!! Variables
+    ! st: netCDF status number
+    ! fn: function name from which it is used
+
+    IF (st /= nf90_noerr) THEN
+      WRITE (diag_message , * ) &
+      TRIM(errormsg) // ":   " // TRIM(fn) // ": " // TRIM(nf90_strerror(st))
+      CALL wrf_error_fatal ( diag_message )
+
+    END IF
+
+  END SUBROUTINE handle_errf
+
+  SUBROUTINE close_NCfile(filename, ncid, idbg)
+  ! Subroutine to close a netCDF file
+
+    USE netcdf
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+    
+    CHARACTER(len=S128), INTENT(in)                      :: filename
+    LOGICAL, OPTIONAL                                    :: idbg
+    INTEGER, INTENT(out)                                 :: ncid
+    
+    ! Local
+    INTEGER                                              :: rcode
+    LOGICAL                                              :: fexist
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! filename: name of the file to create
+    
+    fname = 'close_NCfile'
+    
+    dbg = set_dbg(idbg)
+      
+    rcode = NF90_CLOSE(ncid)
+    IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+
+    RETURN
+    
+  END SUBROUTINE close_NCfile  
+    
+  SUBROUTINE get_vars_ncid(ncid, Nvars, invarids, invarns)
+  ! Subroutine to provide all the ids and names of the variables existing to an open netCDF
+  !    previously knowing how many variables the file has via Nvars 
+  !      rcode = nf90_inq_nvars(ncid, Nvars)
+  
+    USE netcdf
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER, INTENT(in)                                  :: ncid, Nvars
+    INTEGER, DIMENSION(Nvars), INTENT(out)               :: invarids
+    CHARACTER(len=S32), DIMENSION(Nvars), INTENT(out)    :: invarns
+    
+    ! Local
+    INTEGER                                              :: iv
+    INTEGER                                              :: rcode
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! ncid: netCDF open object
+    ! Nvars: amount of variables
+    ! invarids: Ids of the variables
+    ! invarns: name of the variables
+    fname = 'get_vars_ncid'
+    
+    invarids = -1
+    invarns = ''
+        
+    DO iv=1, Nvars
+      invarids(iv) = iv
+      rcode = nf90_inquire_variable(ncid, invarids(iv), invarns(iv))
+      IF (rcode /= NF90_NOERR) CALL handle_errf(rcode, fname)
+    END DO
+    
+    RETURN
+
+  END SUBROUTINE get_vars_ncid
+
+
 #endif
 END MODULE module_simradar_tools
