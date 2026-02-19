@@ -783,8 +783,8 @@ MODULE module_simradar
                 END IF
             
                 ! Terminal velocities          
-                CALL calc_tvelocities_1D(dqr, dqs, dqg, dqh, dpress, dta, dtv_rain, dtv_snow,         &
-                  dtv_grau, dtv_hail)
+                CALL calc_tvelocities_1D(dqr, dqs, dqg, dqh, dpress, dta, lutgrid, dtv_rain,          &
+                  dtv_snow, dtv_grau, dtv_hail)
                 tv_rain_NOc = REAL(dtv_rain)
                 tv_snow_NOc = REAL(dtv_snow)
                 tv_grau_NOc = REAL(dtv_grau)
