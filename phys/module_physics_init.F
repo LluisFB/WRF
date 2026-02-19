@@ -5914,6 +5914,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
     INTEGER                                              :: e_angle2, e_azimuth2, e_dist2
+    INTEGER                                              :: dbg_level
     INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
@@ -6157,8 +6158,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     dist = SQRT((xlong-londbg)**2+(xlat-latdbg)**2)
     mindist = MINVAL(dist)
     
-    ! How to get True/False from namelist debug number?
-    dbg = .TRUE.
+    ! Set-up simrad.AR debug
+    CALL get_wrf_debug_level( dbg_level )
+    IF (dbg_level > 75) dbg = .TRUE.
     
     found = .FALSE.
     WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, ' mindist:', mindist, ' mindd:', &
