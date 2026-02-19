@@ -1000,6 +1000,26 @@ endif
       CALL wrf_put_dom_ti_integer ( fid , 'COMPRESSION' , config_flags%compression , 1 , ierr )
     ENDIF
 
+#ifdef SIMRADAR
+! No character vectors as attribute
+!    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_RADAR_NAMES' , model_config_recs%radar_name , 1 , ierr )
+!rconfig   character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"       
+     ""
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CLON' , model_config_recs%radar_clon(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CLAT' , model_config_recs%radar_clat(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CHGT' , model_config_recs%radar_chgt(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+! No character vectors as attribute
+!rconfig   character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
+    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_RADAR_SCAN' , model_config_recs%radar_scan(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_DISTMAX' , model_config_recs%radar_distmax(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_HGTTMAX' , model_config_recs%radar_hgtmax(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_EM_RAY' , model_config_recs%em_ray(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADARDS' , model_config_recs%radards(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_RADARINTERP' , model_config_recs%radarinterp(1:model_config_recs%nradar) , model_config_recs%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADII_DIST' , model_config_recs%radii_dist , 1 , ierr )
+    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_ELOPTION' , model_config_recs%eloption , 1 , ierr )
+#endif
+
 #if ( (EM_CORE == 1) && (DA_CORE != 1) )
       save_topo_orig = grid%save_topo_from_real
 
