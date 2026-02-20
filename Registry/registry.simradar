@@ -20,6 +20,11 @@ dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
+dimspec    nbds       2     namelist=nNbands                 c     Nbands
+dimspec    lqb        2     namelist=Nlutqxbins              c     Nlutqxbins
+dimspec    ddli       2     namelist=Nluticebins             c     Nluticebins
+dimspec    lnl        2     namelist=Nlutlevs                c     Nlutlevs
+dimspec    xiid       2     constant=12                      z     xiid
 
 # simrad.AR package namelist options
 rconfig   integer  nradar        namelist,simradar     1                1     rh{11}    "nradar"            "amount of surface radar"                                ""
@@ -35,6 +40,12 @@ rconfig   integer  nradar_coord4 namelist,simradar     1              160     rh
 rconfig   integer  ngrid_coord2  namelist,simradar     1            60000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
 rconfig   integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
 rconfig   integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
+
+rconfig   integer  Nbands        namelist,simradar     1                3     rh{11}    "Nbands"            "amount of radar bands"                                  ""
+rconfig   integer  Nluticebins   namelist,simradar     1              200     rh{11}    "Nluticebins"       "amount of ice bins for LUT interpolations"              "#"
+rconfig   integer  Nlutqxbins    namelist,simradar     1            30000     rh{11}    "Nlutqxbins"        "amount of water species bins for LUT interpolations"    "#"
+rconfig   integer  Nlutlevs      namelist,simradar     1               15     rh{11}    "Nlutlevs"          "amount of azimuths for LUT interpolations"              ""
+
 
 rconfig   character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
 rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
@@ -57,7 +68,7 @@ rconfig   real     londbg        namelist,simradar     1             -999.    rh
 rconfig   real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
 
 # LUT options (maybe from netCDF file!)
-rconfig   character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc"    -  "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
+rconfig   character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc"    -    "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
 rconfig   real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
 rconfig   real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
@@ -104,10 +115,69 @@ rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh
 #    END DO
 #  END DO
 ##
-state    integer ijraddbg  {iit}              misc        -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
-state    real    ellipse_a   -                misc        1       -     -         "ellipse_a"         "semimajor axis equatorial of the ellipsoide"                "m"
-state    real    ellipse_f   -                misc        1       -     -         "ellipse_f"         "flatteing of the ellipsoide"                                "-"
+state    integer   ijraddbg  {iit}            misc        -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
+state    real      ellipse_a     -            misc        1       -     -         "ellipse_a"         "semimajor axis equatorial of the ellipsoide"                "m"
+state    real      ellipse_f     -            misc        1       -     -         "ellipse_f"         "flatteing of the ellipsoide"                                "-"
 state    character ellipse_name  -            misc        1       -     -         "ellipse_name"      "name of the ellipsoide"                                     "-"
+
+# Specific variables for the interpolation-integration of radar values retrieved from the T-MATRIX netCDF file 'lutfilen'
+state    real      lutelevations {lnl}        misc        1       -     -         "lutelevations"     "azimuths used for T-MATRIX LUT interpolations"              "degree"
+state    real      Zh_RAIN       {nbds}{lqb}{lnl} misc    1       -     -         "Zh_RAIN"           "Zh rain values used for T-MATRIX LUT interpolations"        ""
+state    real      Zdr_RAIN      {nbds}{lqb}{lnl} misc    1       -     -         "Zdr_RAIN"          "Zdr rain values used for T-MATRIX LUT interpolations"       ""
+state    real      LDR_RAIN      {nbds}{lqb}{lnl} misc    1       -     -         "LDR_RAIN"          "LDR rain values used for T-MATRIX LUT interpolations"       ""
+state    real      Aih_RAIN      {nbds}{lqb}{lnl} misc    1       -     -         "Aih_RAIN"          "Aih rain values used for T-MATRIX LUT interpolations"       ""
+state    real      Aiv_RAIN      {nbds}{lqb}{lnl} misc    1       -     -         "Aiv_RAIN"          "Aiv rain values used for T-MATRIX LUT interpolations"       ""
+state    real      KDP_RAIN      {nbds}{lqb}{lnl} misc    1       -     -         "KDP_RAIN"          "KDP rain values used for T-MATRIX LUT interpolations"       ""
+
+state    real      Zh_SNOW       {nbds}{lqb}{lnl} misc    1       -     -         "Zh_SNOW"           "Zh snow values used for T-MATRIX LUT interpolations"        ""
+state    real      Zdr_SNOW      {nbds}{lqb}{lnl} misc    1       -     -         "Zdr_SNOW"          "Zdr snow values used for T-MATRIX LUT interpolations"       ""
+state    real      LDR_SNOW      {nbds}{lqb}{lnl} misc    1       -     -         "LDR_SNOW"          "LDR snow values used for T-MATRIX LUT interpolations"       ""
+state    real      Aih_SNOW      {nbds}{lqb}{lnl} misc    1       -     -         "Aih_SNOW"          "Aih snow values used for T-MATRIX LUT interpolations"       ""
+state    real      Aiv_SNOW      {nbds}{lqb}{lnl} misc    1       -     -         "Aiv_SNOW"          "Aiv snow values used for T-MATRIX LUT interpolations"       ""
+state    real      KDP_SNOW      {nbds}{lqb}{lnl} misc    1       -     -         "KDP_SNOW"          "KDP snow values used for T-MATRIX LUT interpolations"       ""
+
+state    real      Zh_GRAU       {nbds}{lqb}{lnl} misc    1       -     -         "Zh_GRAU"           "Zh graupel values used for T-MATRIX LUT interpolations"     ""
+state    real      Zdr_GRAU      {nbds}{lqb}{lnl} misc    1       -     -         "Zdr_GRAU"          "Zdr graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      LDR_GRAU      {nbds}{lqb}{lnl} misc    1       -     -         "LDR_GRAU"          "LDR graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      Aih_GRAU      {nbds}{lqb}{lnl} misc    1       -     -         "Aih_GRAU"          "Aih graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      Aiv_GRAU      {nbds}{lqb}{lnl} misc    1       -     -         "Aiv_GRAU"          "Aiv graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      KDP_GRAU      {nbds}{lqb}{lnl} misc    1       -     -         "KDP_GRAU"          "KDP graupel values used for T-MATRIX LUT interpolations"    ""
+
+state    real      Zh_ICE        {nbds}{lqb}{lnl} misc    1       -     -         "Zh_ICE"            "Zh cloud ice values used for T-MATRIX LUT interpolations"   ""
+state    real      Zdr_ICE       {nbds}{lqb}{lnl} misc    1       -     -         "Zdr_ICE"           "Zdr cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      LDR_ICE       {nbds}{lqb}{lnl} misc    1       -     -         "LDR_ICE"           "LDR cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      Aih_ICE       {nbds}{lqb}{lnl} misc    1       -     -         "Aih_ICE"           "Aih cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      Aiv_ICE       {nbds}{lqb}{lnl} misc    1       -     -         "Aiv_ICE"           "Aiv cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      KDP_ICE       {nbds}{lqb}{lnl} misc    1       -     -         "KDP_ICE"           "KDP cloud ice values used for T-MATRIX LUT interpolations"  ""
+
+state    real      Zh_HAIL       {nbds}{lqb}{lnl} misc    1       -     -         "Zh_HAIL"           "Zh hail values used for T-MATRIX LUT interpolations"        ""
+state    real      Zdr_HAIL      {nbds}{lqb}{lnl} misc    1       -     -         "Zdr_HAIL"          "Zdr hail values used for T-MATRIX LUT interpolations"       ""
+state    real      LDR_HAIL      {nbds}{lqb}{lnl} misc    1       -     -         "LDR_HAIL"          "LDR hail values used for T-MATRIX LUT interpolations"       ""
+state    real      Aih_HAIL      {nbds}{lqb}{lnl} misc    1       -     -         "Aih_HAIL"          "Aih hail values used for T-MATRIX LUT interpolations"       ""
+state    real      Aiv_HAIL      {nbds}{lqb}{lnl} misc    1       -     -         "Aiv_HAIL"          "Aiv hail values used for T-MATRIX LUT interpolations"       ""
+state    real      KDP_HAIL      {nbds}{lqb}{lnl} misc    1       -     -         "KDP_HAIL"          "KDP hail values used for T-MATRIX LUT interpolations"       ""
+
+state    integer N_tocompute     -                        1       -     -         "N_tocompute"       "Amount of variables to interpolate / use"                   ""
+state    integer   tocompute     {xiit}                   1       -     -         "tocompute"         "Indices of variables to interpolate / use"                  ""
+state    integer   N_tcmoist     -                        1       -     -         "N_tcomist"         "Amount of water species to interpolate / use"               ""
+state    integer    itcmoist     {xiit}                   1       -     -         "tcmoist"           "Indices of water species to interpolate / use"              ""
+
+state    real      q_rain_vec    {lqb}            misc    1       -     -         "q_rain_vec"        "rain bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
+state    real      q_snow_vec    {lqb}            misc    1       -     -         "q_snow_vec"        "snow bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
+state    real      q_grau_vec    {lqb}            misc    1       -     -         "q_grau_vec"        "grau bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
+state    real      q_ice_vec     {lqb}            misc    1       -     -         "q_ice_vec"         "ice bin values used for T-MATRIX LUT interpolations"        "kgkg-1"
+state    real      q_hail_vec    {lqb}            misc    1       -     -         "q_hail_vec"        "hail bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
+    
+# microphysics Denisities
+state    real      rhoo              -            misc    1       -     -         "rhoo"              "microphysics basic density"                                 "kgm-3"
+state    real      rho_r             -            misc    1       -     -         "rho_r"             "microphysics rain basic density"                            "kgm-3"
+state    real      n0r               -            misc    1       -     -         "n0r"               "microphysics rain basic number of particles"                "#"
+state    real      rho_s             -            misc    1       -     -         "rho_s"             "microphysics snow basic density"                            "kgm-3"
+state    real      n0s               -            misc    1       -     -         "n0s"               "microphysics snow basic number of particles"                "#"
+state    real      rho_g             -            misc    1       -     -         "rho_g"             "microphysics graupel basic density"                         "kgm-3"
+state    real      n0g               -            misc    1       -     -         "n0g"               "microphysics graupel basic number of particles"             "#"
+state    real      rho_h             -            misc    1       -     -         "rho_h"             "microphysics hail basic density"                            "kgm-3"
+state    real      n0h               -            misc    1       -     -         "n0h"               "microphysics hail basic number of particles"                "#"
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
