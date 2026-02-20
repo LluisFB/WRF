@@ -177,7 +177,7 @@ CONTAINS
       TYPE(WRFU_Time) :: currentTime
 
 #ifdef SIMRADAR
-      TYPE(lut_vars), INTENT(in)                         :: lutgrid
+      TYPE(lut_vars)                                     :: lutgrid
       LOGICAL                                            :: is_output_t_simradar
       TYPE(WRFU_Time)                                    :: hist_time, aux11_time, CurrTime, StartTime
       TYPE(WRFU_TimeInterval)                            :: dtint, histint, aux11int
@@ -1261,7 +1261,7 @@ CONTAINS
              IDBG=grid%ijraddbg(1), JDBG=grid%ijraddbg(2),                                            &
 
              ! Input
-             N_MOIST=n_moist,                                                                         &
+             N_MOIST=num_moist,                                                                       &
              MOIST=grid%moist,                                                                        &
              PARAM_FIRST_SCALAR=param_first_scalar,                                                   &             
              M_QV=P_QV, M_QC=P_QC, M_QR=P_QR, M_QS=P_QS, M_QI=P_QI, M_QG=P_QG, M_QH=P_QH,             &
