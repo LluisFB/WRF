@@ -1018,9 +1018,9 @@ endif
     CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_RADARINTERP' , model_config_rec%radinterp , 1 , ierr )
     CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADII_DIST' , model_config_rec%radii_dist , 1 , ierr )
     CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_ELOPTION' , model_config_rec%eloption , 1 , ierr )
-    CALL wrf_put_dom_ti_char ( fid , 'SIMRADAR_ELLIPSE_NAME' , TRIM(model_config_rec%elips_name) , ierr )
-    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_A' , model_config_rec%elips_a , 1 , ierr )
-    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_F' , model_config_rec%elips_f , 1 , ierr )
+!    CALL wrf_put_dom_ti_char ( fid , 'SIMRADAR_ELLIPSE_NAME' , TRIM(model_config_rec%elips_name) , ierr )
+!    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_A' , model_config_rec%elips_a , 1 , ierr )
+!    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_F' , model_config_rec%elips_f , 1 , ierr )
     CALL wrf_put_dom_ti_char ( fid , 'SIMRADAR_TMATRIX-LUT_FILEN' , TRIM(model_config_rec%lutfilen) , ierr )
 #endif
 

@@ -173,6 +173,13 @@ MODULE module_simradar_tools
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: Aiv_HAIL
     REAL(kind=rr8), DIMENSION(:,:,:), ALLOCATABLE        :: KDP_HAIL    
     
+    ! Which variables need to be interpolated / used depending on the microphysics scheme
+    INTEGER                                              :: N_tocompute
+    INTEGER, DIMENSION(12)                               :: tocompute
+    !! Indices of the water species to compute / use
+    INTEGER                                              :: Nmoist
+    INTEGER, DIMENSION(12)                               :: imoist
+    
     REAL                                                 :: q_rain_min
     REAL                                                 :: q_rain_max
     REAL                                                 :: qn_rain_min

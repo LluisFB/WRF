@@ -49,9 +49,6 @@ rconfig   real     radards       namelist,simradar     max_nradar    (/250.,250.
 rconfig   integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
 rconfig   real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
 rconfig   integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
-rconfig   real     elips_a       namelist,simradar     1            -999.     rh{11}    "elips_a"           "semimajor axis equatorial"                              "m"
-rconfig   real     elips_f       namelist,simradar     1            -999.     rh{11}    "elips_f"           "flatteing"                                              "-"
-rconfig   character elips_name   namelist,simradar     1                -     rh{11}    "elips_name"        "name of the ellipsoide"                                 "-"
 rconfig   real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
 rconfig   integer  doppler_scheme namelist,simradar    1                1     rh{11}    "doppler_scheme"    "method to compute the doppler velocities"               ""
 
@@ -108,6 +105,9 @@ rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh
 #  END DO
 ##
 state    integer ijraddbg  {iit}              misc        -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
+state    real    ellipse_a   -                misc        1       -     -         "ellipse_a"         "semimajor axis equatorial of the ellipsoide"                "m"
+state    real    ellipse_f   -                misc        1       -     -         "ellipse_f"         "flatteing of the ellipsoide"                                "-"
+state    character ellipse_name  -            misc        1       -     -         "ellipse_name"      "name of the ellipsoide"                                     "-"
 
 # All bands variables
 state    integer inradar   ij                 misc        1       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"

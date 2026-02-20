@@ -289,6 +289,7 @@ CONTAINS
                          ,londbg, latdbg                                          &
                          ,ijdbg                                                   &
                          ,radars_dist, radars_angle, radars_azimuth               &
+                         ,ra, rf, elipsn                                          &
                          ,gatehdist, inradar, radnum                              &
                          ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
                          ,radarlon_bnds, radarlat_bnds, radarhgt_bnds             &
@@ -939,6 +940,8 @@ CHARACTER(LEN=8) :: name
   REAL, INTENT(in)                                       :: londbg, latdbg
   REAL, DIMENSION(ims:ime, jms:jme), INTENT(in)          :: xlong_v, xlat_u
   INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
+  REAL, INTENT(out)                                      :: ra, rf
+  CHARACTER(len=256),INTENT(out)                         :: elipsn
   REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                          &
     INTENT(out)                                          :: gatehdist
   INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)      :: inradar
@@ -1801,6 +1804,8 @@ CHARACTER(LEN=8) :: name
        ,ids, ide, jds, jde, kds, kde                                                                  &
        ,ims, ime, jms, jme, kms, kme                                                                  &
        ,its, ite, jts, jte, kts, kte                                                                  &
+       ,param_first_scalar                                                                            &
+       ,p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh                                                      &
 
        ,model_config_rec%nradar, model_config_rec%ngrid_radar                                         & 
        ,model_config_rec%nradar_ngrid, model_config_rec%nradar_ngrid_coord2                           &
@@ -1811,6 +1816,7 @@ CHARACTER(LEN=8) :: name
        ! output
        ,ijdbg                                                                                         &
        ,radars_dist, radars_angle, radars_azimuth                                                     &
+       ,ra, rf, elipsn                                                                                &
        ,gatehdist, inradar, radnum                                                                    &
        ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                        &
        ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                   &
@@ -5835,6 +5841,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
+    ,param_first_scalar                                                                               &
+    ,p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh                                                         &
     ,nradar, ngrid_radar                                                                              &
     ,nrnn, nrnncoord                                                                                  &
     ,nrcoord, nr4coord                                                                                &
@@ -5845,6 +5853,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! output
     ,ijdbg                                                                                            &
     ,radars_dist, radars_angle, radars_azimuth                                                        &
+    ,ra, rf, elipsn                                                                                   &
     ,gatehdist, inradar, radnum                                                                       &
     ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                           &
     ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                      &
@@ -5867,6 +5876,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, INTENT(in)                                  :: ids, ide, jds, jde, kds, kde
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
     INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
+    INTEGER, INTENT(in)                                  :: param_first_scalar
+    INTEGER, INTENT(in)                                  :: p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_u, xlat_u
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_v, xlat_v
@@ -5887,6 +5898,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION(e_angle, nradar), INTENT(inout)      :: radars_angle
     REAL, DIMENSION(e_azimuth, nradar), INTENT(inout)    :: radars_azimuth
     REAL, DIMENSION(e_dist, nradar), INTENT(inout)       :: radars_dist
+    REAL, INTENT(out)                                    :: ra, rf
+    CHARACTER(len=256), INTENT(out)                      :: elipsn
     REAL, DIMENSION(ims:ime, jms:jme, nradar),                                                        &
       INTENT(out)                                        :: gatehdist
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
@@ -5923,7 +5936,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: rlon, rlat, rhgt, rtype, rddist, rdistx,  &
       rhgtx
     REAL(kind=rr8)                                       :: a, f
-    CHARACTER(len=30)                                    :: elipsn
     REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
     REAL                                                 :: latSW, latNW, latNE, latSE
@@ -5949,6 +5961,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! ids, ide, jds, jde, kds, kde: extension of the matrices
 ! ims, ime, jms, jme, kms, kme: extension of the matrices in memory
 ! its, ite, jts, jte, kts, kte: extension of the martices by tile
+! param_first_scalar index to account for the first active water species (microphysics scheme 
+!   dependend)
+! p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh: moist indices for each specie: vapour, cloud, rain, 
+!   snow, ice, graupel, ice and hail
 ! idbg, jdbg: point coordinates of the debugging point
 !! Radar variables
 ! nradar: amount of radars
@@ -6249,9 +6265,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
           TRIM(ItoS(model_config_rec%eloption)) // " not ready !! Available ones: 1, 2"
       CALL wrf_error_fatal ( diag_message )
     END IF
-    model_config_rec%elips_a = a
-    model_config_rec%elips_f = f
-    model_config_rec%elips_name = TRIM(elipsn)
+    
+    ! To real as member of grid
+    ra = REAL(a)
+    rf = REAL(f)
     
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
@@ -6301,6 +6318,87 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       
     END DO look_radar
     
+    !! Looking for the specees to interpolate and use
+    !!   When simulating radar, there is an array that holds the variable to interpolate
+    !!     cvals(:,1:12) = (/ qv, qc, qr, qi, qs, qg, qh, ua, va, wa, ta, press /)
+    !!
+    !!   Not all micrphysics schemes have all the water species. This is managed via PARAM_FIRST_SCALAR
+    !! Extracted from phys/module_radiation_driver.F
+    ! Among the arguments is moist, a four-dimensional scalar array storing
+    ! a variable number of moisture tracers, depending on the physics 
+    ! configuration for the WRF run, as determined in the namelist.  The
+    ! highest numbered index of active moisture tracers the integer argument
+    ! n_moist (note: the number of tracers at run time is the quantity
+    ! <tt>n_moist - PARAM_FIRST_SCALAR + 1</tt> , not n_moist. Individual tracers
+    ! may be indexed from moist by the Registry name of the tracer prepended
+    ! with P_; for example P_QC is the index of cloud water. An index 
+    ! represents a valid, active field only if the index is greater than
+    ! or equal to PARAM_FIRST_SCALAR.  PARAM_FIRST_SCALAR and the individual
+    ! indices for each tracer is defined in module_state_description and
+    ! set in <a href=set_scalar_indices_from_config.html>set_scalar_indices_from_config</a> defined in 
+    ! frame/module_configure.F.
+    !!
+    !
+    ! keeping in a vector which indices have to be computed
+    lutgrid%N_tocompute = 0
+    lutgrid%Nmoist = 0
+    lutgrid%tocompute = 0
+    lutgrid%imoist = 0
+    IF (p_qv .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 1
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qv
+    END IF
+    IF (p_qc .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 2
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qc
+    END IF
+    IF (p_qr .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 3
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qr
+    END IF
+    IF (p_qi .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 4
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qi
+    END IF
+    IF (p_qs .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 5
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qs
+    END IF
+    IF (p_qg .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 6
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qg
+    END IF
+    IF (p_qh .ge. param_first_scalar) THEN
+      lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+      lutgrid%tocompute(lutgrid%N_tocompute) = 7
+      lutgrid%Nmoist = lutgrid%Nmoist + 1
+      lutgrid%imoist(lutgrid%Nmoist) = p_qh
+    END IF
+    ! These will be always interpolated / used
+    !! ua, va, wa, ta, press
+    lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+    lutgrid%tocompute(lutgrid%N_tocompute) = 8
+    lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+    lutgrid%tocompute(lutgrid%N_tocompute) = 9
+    lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+    lutgrid%tocompute(lutgrid%N_tocompute) = 10
+    lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+    lutgrid%tocompute(lutgrid%N_tocompute) = 11
+    lutgrid%N_tocompute = lutgrid%N_tocompute + 1
+    lutgrid%tocompute(lutgrid%N_tocompute) = 12
+        
     !! Look-up tables space for T-matrix
     CALL read_lut(model_config_rec%lutfilen, lutgrid, dbg)
     

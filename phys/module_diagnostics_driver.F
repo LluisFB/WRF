@@ -61,7 +61,13 @@ CONTAINS
                                    model_config_rec
 
       USE module_streams
+#ifdef SIMRADAR
+! simrad.AR CIMA Feb. 26
+      USE module_utility
+      USE module_simradar_tools, ONLY: lut_vars
+#else
       USE module_utility, ONLY : WRFU_Time
+#endif
 
       !=============================================================
       !  USE Association for the Diagnostic Packages
@@ -80,7 +86,6 @@ CONTAINS
       USE module_trad_fields, ONLY : trad_fields
 
       IMPLICIT NONE
-
 
       !=============================================================
       !  Subroutine Arguments
@@ -170,6 +175,16 @@ CONTAINS
       ! Current time associated with current simulation step (RASM_DIAGS)
 
       TYPE(WRFU_Time) :: currentTime
+
+#ifdef SIMRADAR
+      TYPE(lut_vars), INTENT(in)                         :: lutgrid
+      LOGICAL                                            :: is_output_t_simradar
+      TYPE(WRFU_Time)                                    :: hist_time, aux11_time, CurrTime, StartTime
+      TYPE(WRFU_TimeInterval)                            :: dtint, histint, aux11int
+      CHARACTER(len=256)                                 :: message, timestr
+      INTEGER                                            :: i
+      CHARACTER(len=1024)                                :: msg
+#endif
 
       !=============================================================
       !  Start of executable code
@@ -1212,6 +1227,101 @@ CONTAINS
               kts=k_start, kte=min(k_end,kde-1), num_tiles=grid%num_tiles   )
       END IF SOLAR_FIELDS
 
+#ifdef SIMRADAR
+      IF ( ( config_flags%auxhist11_interval == 0 ) ) THEN
+        WRITE (diag_message , * ) &
+          "SIMRAD.AR: ERROR -- error -- ERROR -- error : NO 'auxhist11_interval' has been " //        &
+          "defined in 'namelist.input'"
+        CALL wrf_error_fatal ( diag_message )
+      END IF
+
+      CALL wrf_debug ( 100 , '--> CALL DIAGNOSTICS PACKAGE: SIMRAD.AR DIAGNOSTICS' )
+      ! Do not forget, SIMRADAR initialization in phys/module_physics_init.F at SUBROUTINE simradar_init
+         
+      ! From AFWA diagnostics ...
+      CALL WRFU_ALARMGET( grid%alarms( HISTORY_ALARM ), prevringtime=hist_time,                       &
+        ringinterval=histint)
+      CALL WRFU_ALARMGET( grid%alarms(AUXHIST11_ALARM), prevringtime=aux11_time, ringinterval=aux11int)
+      CALL domain_clock_get ( grid, current_time=CurrTime, simulationStartTime=StartTime,             &
+        current_timestr=timestr, time_step=dtint )
+      !is_output_t_simradar = ( Currtime .GE. hist_time + histint - dtint .OR.                                  & 
+      !  Currtime .ge. aux11_time + aux19int - dtint )
+      is_output_t_simradar = ( Currtime .ge. aux11_time + aux11int - dtint )
+      ! Complementary way...
+      !is_output_t_simradar=(MOD(NINT((curr_secs2+grid%dt)/grid%dt),NINT(config_flags%auxhist11_interval*60./grid%dt))==0 .OR. curr_secs2==0.)
+
+      IF (is_output_t_simradar) THEN
+        CALL simradar_calc(                                                                           &
+             IS_RESTART=config_flags%restart,                                                         &
+             IS_OUTPUT_TIME=is_output_t_simradar, NSTEPS=grid%nsteps,                                 & 
+             DT=grid%dt, XTIME=grid%xtime, CURR_SECS2=curr_secs2,                                     &
+                      
+             TIMEDBG=config_flags%timedbg,                                                            &
+             LONDBG=config_flags%londbg, LATDBG=config_flags%latdbg,                                  &
+             IDBG=grid%ijraddbg(1), JDBG=grid%ijraddbg(2),                                            &
+
+             ! Input
+             N_MOIST=n_moist,                                                                         &
+             MOIST=grid%moist,                                                                        &
+             PARAM_FIRST_SCALAR=param_first_scalar,                                                   &             
+             M_QV=P_QV, M_QC=P_QC, M_QR=P_QR, M_QS=P_QS, M_QI=P_QI, M_QG=P_QG, M_QH=P_QH,             &
+             M_QNG=P_QNG, M_QNH=P_QNH, M_QNR=P_QNR, M_QVOLG=P_QVOLG,                                  &
+!             M_QG=F_QV, F_QC, F_QI, F_QS,                                                             &
+!             QV=grid%moist(:,:,:,m_qv), QC=grid%moist(:,:,:,m_qc),                                    &
+!             QR=grid%moist(:,:,:,m_qr), QS=grid%moist(:,:,:,m_qs),                                    &
+!             QI=grid%moist(:,:,:,m_qi), QG=grid%moist(:,:,:,m_qg),                                    &
+!             QH=grid%moist(:,:,:,m_qh),                                                               &
+             LON=grid%xlong, LAT=grid%xlat,                                                           &
+             SINA=grid%sina, COSA=grid%cosa,                                                          &
+             U=grid%u_phy, V=grid%v_phy, W=grid%w_2,                                                  &
+             P=grid%p, PB=grid%pb,                                                                    &
+             T=grid%t_phy, PH=grid%ph_2, PHB=grid%phb,                                                &
+             NRADAR=config_flags%nradar, NGRID_RADAR=config_flags%ngrid_radar,                        &
+             E_ANGLE=config_flags%e_angle, E_AZIMUTH=config_flags%e_azimuth,                          &
+             E_DIST=config_flags%e_dist,                                                              &
+             COORD2=2, COORD3=3, COORD4=4, AROUND2=9, AROUND3=27,                                     &
+             NGRID3_RADAR=config_flags%ngrid3_radar, NRD=config_flags%nradar_dist,                    &
+             NRNN=config_flags%nradar_ngrid, NRNNCOORD=config_flags%nradar_ngrid_coord2,              &
+             NRCOORD=config_flags%nradar_coord2, NR4COORD=config_flags%nradar_coord4,                 &
+             ELIPSN=grid%ellipse_name, A=grid%ellipse_a, F=grid%ellipse_f,                            &
+             RADARS_ANGLE=grid%radars_angle, RADARS_AZIMUTH=grid%radars_azimuth,                      &
+             RADARS_DIST=grid%radars_dist,                                                            &
+             IJRADARDBG=grid%ijraddbg,                                                                &
+             RADARLONS=grid%radarlons, RADARLATS=grid%radarlats,                                      &
+             RADARHGTS=grid%radarhgts, RADARLHGTS=grid%radarlhgts,                                    &
+             GATEHDIST=grid%gatehdist, INRADAR=grid%inradar, RADNUM=grid%radarnum,                    &
+             NGRIDRADAR=grid%ngridradar, IJGRIDRADAR=grid%ijgridradar,                                &
+             IJDISTGRIDRADAR=grid%ijdistgridradar,                                                    &
+             LUTGRID=lutgrid,                                                                         &
+
+             ! Output
+             !!! Optional. Modify Registry/registry.simradar and recompile
+             !!SIMRADARop!!IQVM=grid%qvradar, IQCM=grid%qcradar, IQRM=grid%qrradar,                    &
+             !!SIMRADARop!!IQIM=grid%qiradar, IQSM=grid%qvsadar, IQGM=grid%qgradar,                    &
+             !!SIMRADARop!!IQHM=grid%qhradar,                                                          &
+             !!SIMRADARop!!IUAM=grid%uaradar, IVAM=grid%varadar, IWAM=grid%waradar,                    &
+             !!SIMRADARop!!ITAM=grid%taradar, IPRESSM=grid%pressradar,                                 &
+             ZH_RAIN=grid%zh_rain, ZDR_RAIN=grid%zdr_rain, KDP_RAIN=grid%kdp_rain,                    &
+             ZH_SNOW=grid%zh_snow, ZDR_SNOW=grid%zdr_snow, KDP_SNOW=grid%kdp_snow,                    &
+             ZH_GRAU=grid%zh_grau, ZDR_GRAU=grid%zdr_grau, KDP_GRAU=grid%kdp_grau,                    &
+             ZH_ICE=grid%zh_ice, ZDR_ICE=grid%zdr_ice, KDP_ICE=grid%kdp_ice,                          &
+             ZH_HAIL=grid%zh_hail, ZDR_HAIL=grid%zdr_hail, KDP_HAIL=grid%kdp_hail,                    &
+             ZH_TOTAL=grid%zh_total, ZDR_TOTAL=grid%zdr_total, KDP_TOTAL=grid%kdp_total,              &
+             TV_RAIN=grid%tv_rain, TV_SNOW=grid%tv_snow, TV_GRAU=grid%tv_grau,                        &
+             TV_ICE=grid%tv_ice, TV_HAIL=grid%tv_hail,                                                &
+             TV_WGT=grid%tv_wgt, VR=grid%vr,                                                          &
+ 
+         ! Dimension arguments
+             IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde,                                       &
+             IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme,                                       &
+             IPS=ips,IPE=ipe, JPS=jps,JPE=jpe, KPS=kps,KPE=kpe,                                       &
+             I_START=grid%i_start,I_END=min(grid%i_end, ide-1),                                       &
+             J_START=grid%j_start,J_END=min(grid%j_end, jde-1),                                       &
+             KTS=k_start, KTE=k_end,                                                                  &
+             NUM_TILES=grid%num_tiles                                                                 &
+             )
+      END IF
+#endif
 
    END SUBROUTINE diagnostics_driver
 
