@@ -1323,6 +1323,68 @@ endif
 
    CALL wrf_debug ( 100 , 'start_domain_em: After call to phy_init' )
 
+#ifdef SIRADAR
+    !! Filling grid with lutgrid values
+    grid%lutelevatoins = grid%elevations
+    grid%lut_Zh_RAIN = lutgrid%Zh_RAIN
+    grid%lut_Zdr_RAIN = lutgrid%Zdr_RAIN
+    grid%lut_LDR_RAIN = lutgrid%LDR_RAIN
+    grid%lut_Aih_RAIN = lutgrid%Aih_RAIN
+    grid%lut_Aiv_RAIN = lutgrid%Aiv_RAIN
+    grid%lut_KDP_RAIN = lutgrid%KDP_RAIN
+    
+    grid%lut_Zh_SNOW = lutgrid%Zh_SNOW
+    grid%lut_Zdr_SNOW = lutgrid%Zdr_SNOW
+    grid%lut_LDR_SNOW = lutgrid%LDR_SNOW
+    grid%lut_Aih_SNOW = lutgrid%Aih_SNOW
+    grid%lut_Aiv_SNOW = lutgrid%Aiv_SNOW
+    grid%lut_KDP_SNOW = lutgrid%KDP_SNOW
+
+    grid%lut_Zh_GRAU = lutgrid%Zh_GRAU
+    grid%lut_Zdr_GRAU = lutgrid%Zdr_GRAU
+    grid%lut_LDR_GRAU = lutgrid%LDR_GRAU
+    grid%lut_Aih_GRAU = lutgrid%Aih_GRAU
+    grid%lut_Aiv_GRAU = lutgrid%Aiv_GRAU
+    grid%lut_KDP_GRAU = lutgrid%KDP_GRAU
+
+    grid%lut_Zh_ICE = lutgrid%Zh_ICE
+    grid%lut_Zdr_ICE = lutgrid%Zdr_ICE
+    grid%lut_LDR_ICE = lutgrid%LDR_ICE
+    grid%lut_Aih_ICE = lutgrid%Aih_ICE
+    grid%lut_Aiv_ICE = lutgrid%Aiv_ICE
+    grid%lut_KDP_ICE = lutgrid%KDP_ICE
+
+    grid%lut_Zh_HAIL = lutgrid%Zh_HAIL
+    grid%lut_Zdr_HAIL = lutgrid%Zdr_HAIL
+    grid%lut_LDR_HAIL = lutgrid%LDR_HAIL
+    grid%lut_Aih_HAIL = lutgrid%Aih_HAIL
+    grid%lut_Aiv_HAIL = lutgrid%Aiv_HAIL
+    grid%lut_KDP_HAIL = lutgrid%KDP_HAIL
+
+    grid%N_tocompute = lutgrid%N_tocompute
+    grid%tocompute = lutgrid%tocompute
+    grid%N_tcmoist = lutgrid%Nmoist
+    grid%tcmoist = lutgrid%imoist
+
+    grid%q_rain_vec = lutgrid%q_rain_vec
+    grid%q_snow_vec = lutgrid%q_sno_vec
+    grid%q_grau_vec = lutgrid%q_grau_vec
+    grid%q_ice_vec = lutgrid%q_ice_vec
+    grid%q_hail_vec = lutgrid%q_rhail_vec
+    
+    ! microphysics-derived Denisities
+    grid%rhoo = lutgrid%rhoo
+    grid%rho_r = lutgrid%rho_r
+    grid%n0r = lutgrid%n0r
+    grid%rho_s = lutgrid%rho_s
+    grid%n0s = lutgrid%n0s
+    grid%rho_g = lutgrid%rho_g
+    grid%n0g = lutgrid%n0g
+    grid%rho_h = lutgrid%rho_h
+    grid%n0h = lutgrid%n0h
+    
+#endif
+
    IF (config_flags%do_avgflx_em .EQ. 1) THEN
       WRITE ( message , FMT = '("start_em: initializing avgflx on domain ",I3)' ) &
            & grid%id
