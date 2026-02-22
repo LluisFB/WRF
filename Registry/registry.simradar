@@ -3,6 +3,10 @@
 #ifdef SIMRADAR
 
 ## L. Fita. This should work, but WRF is not prepared for 4D output variables like this
+
+# FROM Tiger's Registry documentation (https://www2.mmm.ucar.edu/wrf/WG2/software_2.0/registry_schaffer.pdf)
+## Entry: The keyword “dimspec”
+# dimspec DimName  Order HowDefined CoordAxis DatName
 dimspec    ri         2     namelist=e_dist                  c     e_dist
 dimspec    rj         2     namelist=e_angle                 c     e_angle
 dimspec    rk         2     namelist=e_azimuth               c     e_azimuth
@@ -24,9 +28,11 @@ dimspec    nbds       2     namelist=Nbands                  c     Nbands
 dimspec    lqb        2     namelist=Nlutqxbins              c     Nlutqxbins
 dimspec    ddli       2     namelist=Nluticebins             c     Nluticebins
 dimspec    lnl        2     namelist=Nlutlevs                c     Nlutlevs
-dimspec    xiid       2     constant=12                      c     xiid
+dimspec    xiid       -     constant=12                      c     xiid
 
 # simrad.AR package namelist options
+## From Tiger's Registry documentation
+# rconfig [Type]   [Sym]         [How set]         [Nentries]    [Default]
 rconfig   integer  nradar        namelist,simradar     1                1     rh{11}    "nradar"            "amount of surface radar"                                ""
 rconfig   integer  e_dist        namelist,simradar     1              800     rh{11}    "e_dist"            "radar grid points along the radii"                      ""
 rconfig   integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
@@ -45,7 +51,6 @@ rconfig   integer  Nbands        namelist,simradar     1                3     rh
 rconfig   integer  Nluticebins   namelist,simradar     1              200     rh{11}    "Nluticebins"       "amount of ice bins for LUT interpolations"              "#"
 rconfig   integer  Nlutqxbins    namelist,simradar     1            50000     rh{11}    "Nlutqxbins"        "amount of water species bins for LUT interpolations"    "#"
 rconfig   integer  Nlutlevs      namelist,simradar     1               15     rh{11}    "Nlutlevs"          "amount of azimuths for LUT interpolations"              ""
-
 
 rconfig   character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
 rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
@@ -115,10 +120,13 @@ rconfig   integer  Nqxbins       namelist,simradar     1             50000    rh
 #    END DO
 #  END DO
 ##
-state    integer   ijraddbg  {iit}            misc        -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
-state    real      ellipse_a     -            misc        1       -     -         "ellipse_a"         "semimajor axis equatorial of the ellipsoide"                "m"
-state    real      ellipse_f     -            misc        1       -     -         "ellipse_f"         "flatteing of the ellipsoide"                                "-"
-state    character ellipse_name  -            misc        1       -     -         "ellipse_name"      "name of the ellipsoide"                                     "-"
+
+## Fromt Tiger's Registry
+# state  [Type]    [Sym]          [Dims]       [Use]  [NumTLev]  [Stagger]  [IO]        [DName]                  [Descrip]                                           [Units]
+state    integer   ijraddbg       {iit}           misc    -       -     rh{11}    "ijraddbg"          "i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
+state    real      ellipse_a       -              misc    -       -     -         "ellipse_a"         "semimajor axis equatorial of the ellipsoide"                "m"
+state    real      ellipse_f       -              misc    -       -     -         "ellipse_f"         "flatteing of the ellipsoide"                                "-"
+state    character ellipse_name    -              misc    -       -     -         "ellipse_name"      "name of the ellipsoide"                                     "-"
 
 # Specific variables for the interpolation-integration of radar values retrieved from the T-MATRIX netCDF file 'lutfilen'
 state    real      lutelevations {lnl}        misc        1       -     -         "lutelevations"     "azimuths used for T-MATRIX LUT interpolations"              "degree"
@@ -157,10 +165,10 @@ state    real      lut_Aih_HAIL  {nbds}{lqb}{lnl} misc    1       -     -       
 state    real      lut_Aiv_HAIL  {nbds}{lqb}{lnl} misc    1       -     -         "lut_Aiv_HAIL"      "Aiv hail values used for T-MATRIX LUT interpolations"       ""
 state    real      lut_KDP_HAIL  {nbds}{lqb}{lnl} misc    1       -     -         "lut_KDP_HAIL"      "KDP hail values used for T-MATRIX LUT interpolations"       ""
 
-state    integer   N_tocompute   -                        -       -     -         "N_tocompute"       "Amount of variables to interpolate / use"                   ""
-state    integer   tocompute     {xiid}                   1       -     -         "tocompute"         "Indices of variables to interpolate / use"                  ""
-state    integer   N_tcmoist     -                        -       -     -         "N_tcomist"         "Amount of water species to interpolate / use"               ""
-state    integer   tcmoist       {xiid}                   1       -     -         "tcmoist"           "Indices of water species to interpolate / use"              ""
+state    integer   N_tocompute   -                misc    -       -     -         "N_tocompute"       "Amount of variables to interpolate / use"                   ""
+state    integer   tocompute     {xiid}           misc    -       -     -         "tocompute"         "Indices of variables to interpolate / use"                  ""
+state    integer   N_tcmoist     -                misc    -       -     -         "N_tcomist"         "Amount of water species to interpolate / use"               ""
+state    integer   tcmoist       {xiid}           misc    -       -     -         "tcmoist"           "Indices of water species to interpolate / use"              ""
 
 state    real      q_rain_vec    {lqb}            misc    1       -     -         "q_rain_vec"        "rain bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
 state    real      q_snow_vec    {lqb}            misc    1       -     -         "q_snow_vec"        "snow bin values used for T-MATRIX LUT interpolations"       "kgkg-1"
