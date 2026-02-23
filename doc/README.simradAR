@@ -22,7 +22,7 @@ This code is available from Lluis Fita's WRF fork (git@github.com:LluisFB/WRF.gi
 A new section into the WRF's namelist calles 'simradar' has to be set up
 
 === namelist ===
-simradar&
+&simradar
 /
 
 | type     | name                | default value       | description                                                         | units |
