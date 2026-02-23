@@ -5991,7 +5991,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 !   IF azimuths(1) == -1; aximuths are internally computed from Nazimuth, by regular intervals 
 !     30. / (e_azimuth-1)
 ! e_dist: amount of distances (horizontal) in the radar space [computed as 
-!   2.*max(distmax) / min(ddist)]
+!   2.*max(distmax) / min(radards)]
 ! lutfilen: name of the netCDF file with the look-up-tables for a given miscrophysics of the 
 !   polymetries obntained via the T-matrix derived
 ! doppler_scheme: mtehod to use to retrieve the radial velocities after LUT
