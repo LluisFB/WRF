@@ -1325,7 +1325,7 @@ endif
 
 #ifdef SIRADAR
     !! Filling grid with lutgrid values
-    grid%lutelevatoins = grid%elevations
+    grid%lutelevations = grid%elevations
     grid%lut_Zh_RAIN = lutgrid%Zh_RAIN
     grid%lut_Zdr_RAIN = lutgrid%Zdr_RAIN
     grid%lut_LDR_RAIN = lutgrid%LDR_RAIN
@@ -1367,7 +1367,7 @@ endif
     grid%tcmoist = lutgrid%imoist
 
     grid%q_rain_vec = lutgrid%q_rain_vec
-    grid%q_snow_vec = lutgrid%q_sno_vec
+    grid%q_snow_vec = lutgrid%q_snow_vec
     grid%q_grau_vec = lutgrid%q_grau_vec
     grid%q_ice_vec = lutgrid%q_ice_vec
     grid%q_hail_vec = lutgrid%q_rhail_vec
