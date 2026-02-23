@@ -19,10 +19,10 @@ MODULE module_simradar_tools
 ! DIRCT1: Solution of the geodetic direct problem after T. Vincenty
 ! inverse: Subroutine to compute distance between 2 points
 ! is_inside: Subroutine to check if a tile gets a radar
-! lin_interpolate_1DD: Function to provide linear interpolation a double Real location on a given axis
+! lin_interpolate_1RR: Function to provide linear interpolation a Real location on a given Real axis
 ! pertinence_polar: Subroutine to compute the 2-dimensional pertinence of a lonlat polar radial space 
 !   (r) into another regular lonlat (WRF)
-! Polarimetrics_fromLUT_1D: Subroutine to interpolate the polarimetic characteristics of a given water 
+! Polarimetrics_fromLUT_1R: Subroutine to interpolate the polarimetic characteristics of a given water 
 !   specie following T-matrix
 ! position_from_point: Subroutine tro compute the coordinates at a given distance and angle from a 
 !   given point
@@ -273,25 +273,25 @@ MODULE module_simradar_tools
 
   END SUBROUTINE create_logarithmic_scaled_vectorsD
   
-  REAL(kind=rr8) FUNCTION lin_interpolate_1DD(pt, Ndim, coords, vals)
+  REAL(kind=rr8) FUNCTION lin_interpolate_1RR(pt, Ndim, coords, vals)
 ! If willing to manage error as function
-!  REAL(kind=rr8) FUNCTION lin_interpolate_1DD(pt, Ndim, coords, vals, statv)
-  ! Function to provide linear interpolation a double Real location on a given axis
+!  REAL(kind=rr8) FUNCTION lin_interpolate_1RD(pt, Ndim, coords, vals, statv)
+  ! Function to provide linear interpolation a Real location on a given real axis
 
     IMPLICIT NONE
    
     INTEGER, INTENT(in)                                  :: Ndim
-    REAL(kind=rr8), INTENT(in)                           :: pt
-    REAL(kind=rr8), DIMENSION(Ndim), INTENT(in)          :: coords, vals
+    REAL), INTENT(in)                                    :: pt
+    REAL, DIMENSION(Ndim), INTENT(in)                     :: coords, vals
     ! 0: no error; 1: error
 !    INTEGER, INTENT(out)                                 :: statv
    
     ! Local
     INTEGER                                              :: icor
     INTEGER                                              :: refi
-    REAL(kind=rr8)                                       :: minc, maxc
-    REAL(kind=rr8)                                       :: signv, a, b
-    REAL(kind=rr8), DIMENSION(Ndim)                      :: origsing
+    REAL                                                 :: minc, maxc
+    REAL                                                 :: signv, a, b
+    REAL, DIMENSION(Ndim)                                :: origsing
     CHARACTER (LEN=1000)                                 :: diag_message
     CHARACTER(len=Sl)                                    :: fname
 
@@ -299,11 +299,11 @@ MODULE module_simradar_tools
     ! pt: pt to interpolate
     ! coords: coordinates along the axis (incremental)
     ! vals: values at the coordinates
-    fname = 'lin_interpolate_1DD'
+    fname = 'lin_interpolate_1RR'
   
-    lin_interpolate_1DD = fillValueD  
+    lin_interpolate_1RR = fillValueD  
     ! Sign of the axis
-    origsing = DABS(coords(Ndim)-coords(1))/(coords(Ndim)-coords(1))
+    origsing = ABS(coords(Ndim)-coords(1))/(coords(Ndim)-coords(1))
   
     minc = MINVAL(coords)
     maxc = MAXVAL(coords)
@@ -352,13 +352,13 @@ MODULE module_simradar_tools
       CALL wrf_error_fatal ( diag_message )
     END IF
 
-    b = DABS(pt-coords(refi))/(coords(refi+1)-coords(refi))
+    b = ABS(pt-coords(refi))/(coords(refi+1)-coords(refi))
     
-    lin_interpolate_1DD = a + signv*(vals(refi+1)-a)*b
+    lin_interpolate_1RR = a + signv*(vals(refi+1)-a)*b
 
     RETURN
 
-  END FUNCTION lin_interpolate_1DD
+  END FUNCTION lin_interpolate_1RR
 
   SUBROUTINE com_gamma(x, ga)
   ! GAMMA FUNCTION
@@ -434,18 +434,18 @@ MODULE module_simradar_tools
 
   END SUBROUTINE com_gamma
 
-  SUBROUTINE Polarimetrics_fromLUT_1D(qx, iz, ibnd, dimv, q_log_vec, Nbins, Zh_x, Zdr_x, KDP_x,       &
+  SUBROUTINE Polarimetrics_fromLUT_1R(qx, iz, ibnd, dimv, q_log_vec, Nbins, Zh_x, Zdr_x, KDP_x,       &
     Zh_out, Zdr_out, KDP_out, idbg)
   ! Subroutine to interpolate the polarimetic characteristics of a given water specie following T-matrix
   
     IMPLICIT NONE
     
     INTEGER, INTENT(in)                                  :: iz, ibnd, dimv, Nbins
-    REAL(kind=rr8), INTENT(in)                           :: qx
-    REAL(kind=rr8), DIMENSION(dimv), INTENT(in)          :: q_log_vec
-    REAL(kind=rr8), DIMENSION(Nbins), INTENT(in)         :: Zh_x, Zdr_x, KDP_x
+    REAL, INTENT(in)                                     :: qx
+    REAL, DIMENSION(dimv), INTENT(in)                    :: q_log_vec
+    REAL, DIMENSION(Nbins), INTENT(in)                   :: Zh_x, Zdr_x, KDP_x
     LOGICAL, OPTIONAL                                    :: idbg
-    REAL(kind=rr8), INTENT(out)                          :: Zh_out, Zdr_out, KDP_out
+    REAL), INTENT(out)                                   :: Zh_out, Zdr_out, KDP_out
     
     ! Local
     LOGICAL                                              :: dbg
@@ -477,9 +477,9 @@ MODULE module_simradar_tools
     Zdr_out = fillValueR
     KDP_out = fillValueR
     
-    Zh_out = lin_interpolate_1DD(qx, dimv, q_log_vec, Zh_x)
-    Zdr_out = lin_interpolate_1DD(qx, dimv, q_log_vec, Zdr_x)
-    KDP_out = lin_interpolate_1DD(qx, dimv, q_log_vec, KDP_x)
+    Zh_out = lin_interpolate_1RR(qx, dimv, q_log_vec, Zh_x)
+    Zdr_out = lin_interpolate_1RR(qx, dimv, q_log_vec, Zdr_x)
+    KDP_out = lin_interpolate_1RR(qx, dimv, q_log_vec, KDP_x)
                   
     RETURN
   

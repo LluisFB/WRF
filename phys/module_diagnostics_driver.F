@@ -1249,6 +1249,17 @@ CONTAINS
       is_output_t_simradar = ( Currtime .ge. aux11_time + aux11int - dtint )
       ! Complementary way...
       !is_output_t_simradar=(MOD(NINT((curr_secs2+grid%dt)/grid%dt),NINT(config_flags%auxhist11_interval*60./grid%dt))==0 .OR. curr_secs2==0.)
+          
+      ! microphysics-derived Denisities. Scalars, can be duplicated
+      lutgrid%rhoo = grid%rhoo
+      lutgrid%rho_r = grid%rho_r
+      lutgrid%n0r = grid%n0r
+      lutgrid%rho_s = grid%rho_s
+      lutgrid%n0s = grid%n0s
+      lutgrid%rho_g= grid%rho_g
+      lutgrid%n0g = grid%n0g
+      lutgrid%rho_h = grid%rho_h
+      lutgrid%n0h = grid%n0h
 
       IF (is_output_t_simradar) THEN
         CALL simradar_calc(                                                                           &
@@ -1292,6 +1303,36 @@ CONTAINS
              GATEHDIST=grid%gatehdist, INRADAR=grid%inradar, RADNUM=grid%radarnum,                    &
              NGRIDRADAR=grid%ngridradar, IJGRIDRADAR=grid%ijgridradar,                                &
              IJDISTGRIDRADAR=grid%ijdistgridradar,                                                    &
+             NBANDS=config_flags%Nbands, NLUTQXBINS=config_flags%Nlutqxbins,                          &
+             NLUTICEBINS=config_flags%Nluticebins, NLUTLEVS=config_flags%Nlutlevs,                    &
+             ELEVATIONS=grid%lutelevations,                                                           &
+             lutZH_RAIN=grid%lut_Zh_RAIN, lutZDR_RAIN=grid%lut_Zdr_RAIN,                              &
+             ! Not needed yet...
+!             lutLDR_RAIN=grid%lut_LDR_RAIN, lutAIH_RAIN=grid%lut_Aih_RAIN,                            &
+!             lutAIV_RAIN=grid%lut_Aiv_RAIN, lutKDP_RAIN=grid%lut_KDP_RAIN,                            &  
+             lutKDP_RAIN=grid%lut_KDP_RAIN,                                                           &
+             lutZH_SNOW=grid%lut_Zh_SNOW, lutZDR_SNOW=grid%lut_Zdr_SNOW,                              &
+!             lutLDR_SNOW=grid%lut_LDR_SNOW, lutAIH_SNOW=grid%lut_Aih_SNOW,                            &
+!             lutAIV_SNOW=grid%lut_Aiv_SNOW, lutKDP_SNOW=grid%lut_KDP_SNOW,                            &
+             lutKDP_SNOW=grid%lut_KDP_SNOW,                                                           &
+             lutZH_GRAU=grid%lut_Zh_GRAU, lutZDR_GRAU=grid%lut_Zdr_GRAU,                              &
+!             lutLDR_GRAU=grid%lut_LDR_GRAU, lutAIH_GRAU=grid%lut_Aih_GRAU,                            &
+!             lutAIV_GRAU=grid%lut_Aiv_GRAU, lutKDP_GRAU=grid%lut_KDP_GRAU,                            &
+             lutKDP_GRAU=grid%lut_KDP_GRAU,                                                           &
+             lutZH_ICE=grid%lut_Zh_ICE, lutZDR_ICE=grid%lut_Zdr_ICE,                                  &
+!             lutLDR_ICE=grid%lut_LDR_ICE, lutAIH_ICE=grid%lut_Aih_ICE,                                &
+!             lutAIV_ICE=grid%lut_Aiv_ICE, lutKDP_ICE=grid%lut_KDP_ICE,                                &
+             lutKDP_ICE=grid%lut_KDP_ICE,                                                             &
+             lutZH_HAIL=grid%lut_Zh_HAIL, lutZDR_HAIL=grid%lut_Zdr_HAIL,                              &
+!             lutLDR_HAIL=grid%lut_LDR_HAIL, lutAIH_HAIL=grid%lut_Aih_HAIL,                            &
+!             lutAIV_HAIL=grid%lut_Aiv_HAIL, lutKDP_HAIL=grid%lut_KDP_HAIL,                            &
+             lutKDP_HAIL=grid%lut_KDP_HAIL,                                                           &
+             N_TOCOMPUTE=grid%N_tocompute, TOCOMPUTE=grid%tocompute,                                  &
+             NMOIST=grid%N_tcmoist, IMOIST=grid%tcmoist,                                              &
+             ! These are too big to be duplicated
+             NQXBIINS = config_flags%Nqxbins,                                                         &
+             Q_RAIN_VEC=grid%q_rain_vec, Q_SNOW_VEC=grid%q_snow_vec, Q_GRAU_VEC=grid%q_grau_vec,      &
+             Q_ICE_VEC=grid%q_ice_vec, Q_HAIL_VEC=grid%q_hail_vec,                                    &
              LUTGRID=lutgrid,                                                                         &
 
              ! Output

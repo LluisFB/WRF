@@ -36,6 +36,34 @@ MODULE module_simradar
                       radarhgts, radarlhgts,                                                          &
                       gatehdist, inradar, radnum,                                                     &
                       ngridradar, ijgridradar, ijdistgridradar,                                       &
+                      nbands, nlutqxbins,                                                             &
+                      nluticebins, nlutlevs,                                                          &
+                      elevations,                                                                     &
+                      lutzh_rain, lutzdr_rain,                                                        &
+!                      lutldr_rain, lutaih_rain,                                                       &
+!                      lutaiv_rain, lutkdp_rain,                                                       &
+                      lutkdp_rain,                                                                    &
+                      lutzh_snow, lutzdr_snow,                                                        &
+!                      lutldr_snow, lutaih_snow,                                                       &
+!                      lutaiv_snow, lutkdp_snow,                                                       &
+                      lutkdp_snow,                                                                    &
+                      lutzh_grau, lutzdr_grau,                                                        &
+!                      lutldr_grau, lutaih_grau,                                                       &
+!                      lutaiv_grau, lutkdp_grau,                                                       &
+                      lutkdp_grau,                                                                    &
+                      lutzh_ice, lutzdr_ice,                                                          &
+!                      lutldr_ice, lutaih_ice,                                                         &
+!                      lutaiv_ice, lutkdp_ice,                                                         &
+                      lutkdp_ice,                                                                     &
+                      lutzh_hail, lutzdr_hail,                                                        &
+!                      lutldr_hail, lutaih_hail,                                                       &
+!                      lutaiv_hail, lutkdp_hail,                                                       &
+                      lutkdp_hail,                                                                    &
+                      n_tocompute, tocompute,                                                         &
+                      nmoist, imoist,                                                                 &
+                      Nqxbins,                                                                        &
+                      q_rain_vec, q_snow_vec, q_grau_vec,                                             &
+                      q_ice_vec, q_hail_vec,                                                          &
                       lutgrid,                                                                        &
 
                       ! Output
@@ -181,6 +209,55 @@ MODULE module_simradar
 ! ijgridradar: coordinates of radar cells inside the grid point [-]
 ! ijdistgridradar: distance of radar cells inside the grid point to its center [m]
 
+!! T-MATRIX LUT variables
+! nbands: amount of radar bans 
+! nlutqxbins: mnount of mixing ratio bins
+! nluticebins: mnount of ice mixing ratio bins
+! nlutlevs: amount of elevations
+! elevations: elevations [degree]
+! lutzh_rain: Zh for rain by band, elevation and bind accordig to a microphysics scheme 
+! lutzdr_rain: Zdr for rain by band, elevation and bind accordig to a microphysics scheme
+! lutldr_rain: LDR for rain by band, elevation and bind accordig to a microphysics scheme
+! lutaih_rain: Aih for rain by band, elevation and bind accordig to a microphysics scheme
+! lutaiv_rain: Aiv for rain by band, elevation and bind accordig to a microphysics scheme
+! lutkdp_rain: KDP for rain by band, elevation and bind accordig to a microphysics scheme
+! lutzh_snow: Zh for snow by band, elevation and bind accordig to a microphysics scheme
+! lutzdr_snow: Zdr for snow by band, elevation and bind accordig to a microphysics scheme
+! lutldr_snow: LDR for snow by band, elevation and bind accordig to a microphysics scheme
+! lutaih_snow: Aih for snow by band, elevation and bind accordig to a microphysics scheme
+! lutaiv_snow: Aiv for snow by band, elevation and bind accordig to a microphysics scheme
+! lutkdp_snow: KDP for snow by band, elevation and bind accordig to a microphysics scheme
+! lutzh_grau: Zh for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutzdr_grau: Zdr for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutldr_grau: LDR for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutaih_grau: Aih for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutaiv_grau: Aiv for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutkdp_grau: KDP for graupel by band, elevation and bind accordig to a microphysics scheme
+! lutzh_ice: Zh for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutzdr_ice: Zdr for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutldr_ice: LDR for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutaih_ice: Aih for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutaiv_ice: Aiv for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutkdp_ice: KDP for cloud ice by band, elevation and bind accordig to a microphysics scheme
+! lutzh_hail: Zh for hail by band, elevation and bind accordig to a microphysics scheme
+! lutzdr_hail: Zdr for hail by band, elevation and bind accordig to a microphysics scheme
+! lutldr_hail: LDR for hail by band, elevation and bind accordig to a microphysics scheme
+! lutaih_hail: Aih for hail by band, elevation and bind accordig to a microphysics scheme
+! lutaiv_hail: Aiv for hail by band, elevation and bind accordig to a microphysics scheme
+! lutkdp_hail: KDP for hail by band, elevation and bind accordig to a microphysics scheme
+! n_tocompute: amount of variables to interpolate / use in the radar space
+! tocompute: indices of the variables to interpolate / use in the radar space
+! nmoist: amount of water species to interpolate / use in the radar space
+! imoist: indices of the of water species to interpolate / use in the radar space
+
+!! Microphysics depending variables
+! Nqxbins: amount of bins for the water species for the interpolation into LUT space
+! q_rain_vec: bins for rain for the interpolation into LUT space
+! q_snow_vec: bins for snow for the interpolation into LUT space
+! q_grau_vec: bins for graupel for the interpolation into LUT space
+! q_ice_vec, q_hail_vec: bins for cloud ice for the interpolation into LUT space
+! q_ice_vec, q_hail_vec: bins for hail for the interpolation into LUT space
+
 !! Compressed dimensions
 ! nrnn = nradar*ngrid_radar
 ! nrcoord = nradar*coord2
@@ -305,6 +382,24 @@ MODULE module_simradar
     REAL, DIMENSION(ims:ime, jms:jme, nrnn), INTENT(in)  :: ijdistgridradar
     
     ! LUT space
+    INTEGER, INTENT(in)                                  :: nbands, nlutqxbins, nluticebins, nlutlevs
+    REAL, DIMENSION(nlutlevs), INTENT(in)                :: elevations
+    REAL, DIMENSION(nbands,nlutlevs,nlutqxbins),                                                      &
+      INTENT(in)                                         :: lutzh_rain, lutzdr_rain, lutkdp_rain,     &
+      lutzh_snow, lutzdr_snow, lutkdp_snow,                                                           &
+      lutzh_grau, lutzdr_grau, lutkdp_grau,                                                           &
+      lutzh_ice, lutzdr_ice, lutkdp_ice,                                                              &
+      lutzh_hail, lutzdr_hail, lutkdp_hail
+!      lutaih_rain, lutaiv_rain, lutkdp_rain,                                                          &
+!      lutzh_snow, lutzdr_snow, lutldr_snow, lutaih_snow, lutaiv_snow, lutkdp_snow,                    &
+!      lutzh_grau, lutzdr_grau, lutldr_grau, lutaih_grau, lutaiv_grau, lutkdp_grau,                    &
+!      lutzh_ice, lutzdr_ice, lutldr_ice, lutaih_ice, lutaiv_ice, lutkdp_ice,                          &
+!      lutzh_hail, lutzdr_hail, lutldr_hail, lutaih_hail, lutaiv_hail, lutkdp_hail
+    INTEGER, INTENT(in)                                  :: n_tocompute, nmoist
+    INTEGER, DIMENSION(12), INTENT(in)                   :: tocompute, imoist
+    INTEGER, INTENT(in)                                  :: Nqxbins
+    REAL, DIMENSION(Nqxbins), INTENT(in)                 :: q_rain_vec, q_snow_vec, q_grau_vec,       &
+      q_ice_vec, q_hail_vec
     TYPE(lut_vars), INTENT(in)                           :: lutgrid
 
     ! Output 
@@ -572,9 +667,9 @@ MODULE module_simradar
                 DO ii1=-1,1
                   DO ii2=-1,1
                     DO ii3=0,1
-                      DO iqm=1, lutgrid%Nmoist
-                        iicv = lutgrid%tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,lutgrid%imoist(iqm))
+                      DO iqm=1, Nmoist
+                        iicv = tocompute(iqm)
+                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
                       END DO
                       cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
                       cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
@@ -589,9 +684,9 @@ MODULE module_simradar
                 DO ii1=-1,1
                   DO ii2=-1,1
                     DO ii3=-1,0
-                      DO iqm=1, lutgrid%Nmoist
-                        iicv = lutgrid%tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,lutgrid%imoist(iqm))
+                      DO iqm=1, Nmoist
+                        iicv = tocompute(iqm)
+                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
                       END DO
                       cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
                       cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
@@ -606,9 +701,9 @@ MODULE module_simradar
                 DO ii1=-1,1
                   DO ii2=-1,1
                     DO ii3=-1,1
-                      DO iqm=1, lutgrid%Nmoist
-                        iicv = lutgrid%tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,lutgrid%imoist(iqm))
+                      DO iqm=1, Nmoist
+                        iicv = tocompute(iqm)
+                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
                       END DO
                       cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
                       cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
@@ -655,66 +750,53 @@ MODULE module_simradar
 
                 iqc = SUM(cvals(:,2)*wghts(k,ic,:))
                 ! Filtering to 0.
-                dqc = iqc*1.d0
-                IF (iqc .lt. lutgrid%q_clou_min) THEN
-                  dqc = 0.d0
-                ELSE
-                  dqc = iqc*1.d0
+                IF (iqc .lt. model_config_rec%q_clou_min) THEN
+                  iqc = 0.
                 END IF
 
                 iqr = SUM(cvals(:,3)*wghts(k,ic,:))
-                IF (iqr .lt. lutgrid%q_rain_min) THEN
-                  dqr = 0.d0
-                ELSE
-                  dqr = iqr*1.d0
+                IF (iqr .lt. model_config_rec%q_rain_min) THEN
+                  iqr = 0.
                 END IF
 
                 IF (m_qi .GE. param_first_scalar) THEN
                   iqi = SUM(cvals(:,4)*wghts(k,ic,:))
                   ! Filtering to 0
-                  IF (iqi .LT. lutgrid%q_ice_min) THEN
-                    dqi = 0.d0
-                  ELSE
-                    dqi = iqi*1.d0
+                  IF (iqi .LT. model_config_rec%q_ice_min) THEN
+                    iqi = 0.
                   END IF
                 ELSE
-                  dqi = 0.d0
+                  iqi = 0.
                 END IF
 
                 IF (m_qs .GE. param_first_scalar) THEN
                   iqs = SUM(cvals(:,5)*wghts(k,ic,:))
                   ! Filtering to 0
-                  IF (iqs .LT. lutgrid%q_snow_min) THEN
-                    dqs = 0.d0
-                  ELSE
-                    dqs = iqs*1.d0
+                  IF (iqs .LT. model_config_rec%q_snow_min) THEN
+                    iqs = 0.d0
                   END IF
                 ELSE
-                  dqs = 0.d0
+                  iqs = 0.d0
                 END IF
 
                 IF (m_qg .GE. param_first_scalar) THEN
                   iqg = SUM(cvals(:,6)*wghts(k,ic,:))
                   ! Filtering to 0
-                  IF (iqg .LT. lutgrid%q_grau_min) THEN
-                    dqg = 0.d0
-                  ELSE
-                    dqg = iqg*1.d0
+                  IF (iqg .LT. model_config_rec%q_grau_min) THEN
+                    iqg = 0.
                   END IF
                 ELSE
-                  dqg = 0.d0
+                  iqg = 0.
                 END IF
 
                 IF (m_qh .GE. param_first_scalar) THEN
                   iqh = SUM(cvals(:,7)*wghts(k,ic,:))
                   ! Filtering to 0
-                  IF (iqh .LT. lutgrid%q_hail_min) THEN
-                    dqh = 0.d0
-                  ELSE
-                    dqh = iqh*1.d0
+                  IF (iqh .LT. model_config_rec%q_hail_min) THEN
+                    iqh = 0.
                   END IF
                 ELSE
-                  dqh = 0.d0
+                  iqh = 0.
                 END IF
 
                 iua = SUM(cvals(:,8)*wghts(k,ic,:))
@@ -770,9 +852,9 @@ MODULE module_simradar
                 ! Polarimetrics_fromLUT_1D(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,  &
                 !    KDP_x, Zh_out, Zdr_out, KDP_out)
                 ! Rain
-                CALL Polarimetrics_fromLUT_1D(dqr, iz, iband, lutgrid%dimv, lutgrid%q_rain_vec,        &
-                  lutgrid%Nlutqxbins, lutgrid%Zh_RAIN(iband,iz,:), lutgrid%Zdr_RAIN(iband,iz,:),       &
-                  lutgrid%KDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q)
+                CALL Polarimetrics_fromLUT_1D(iqr, iz, iband, model_config_rec%Nqxbins,                &
+                  q_rain_vec, Nlutqxbins, lutZh_RAIN(iband,iz,:), lutZdr_RAIN(iband,iz,:),             &
+                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
                 zh_rain_NOc = REAL(dZh_q)
                 zdr_rain_NOc = REAL(dZdr_q)
                 kdp_rain_NOc = REAL(dKDP_q)
@@ -780,9 +862,9 @@ MODULE module_simradar
                 
                 ! Snow
                 IF (m_qs .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(dqs, iz, iband, lutgrid%dimv, lutgrid%q_snow_vec,     &
-                    lutgrid%Nlutqxbins, lutgrid%Zh_SNOW(iband,iz,:), lutgrid%Zdr_SNOW(iband,iz,:),    &
-                    lutgrid%KDP_SNOW(iband,iz,:), dZh_q, dZdr_q, dKDP_q)
+                  CALL Polarimetrics_fromLUT_1D(iqs, iz, iband, model_config_rec%Nqxbins,             &
+                    q_snow_vec, Nlutqxbins, lutZh_SNOW(iband,iz,:), lutZdr_SNOW(iband,iz,:),          &
+                    lutKDP_SNOW(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
                   zh_snow_NOc = REAL(dZh_q)
                   zdr_snow_NOc = REAL(dZdr_q)
                   kdp_snow_NOc = REAL(dKDP_q)
@@ -790,9 +872,9 @@ MODULE module_simradar
 
                 ! Graupel
                 IF (m_qg .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(dqg, iz, iband, lutgrid%dimv, lutgrid%q_grau_vec,     &
-                    lutgrid%Nlutqxbins, lutgrid%Zh_GRAU(iband,iz,:), lutgrid%Zdr_GRAU(iband,iz,:),    &
-                    lutgrid%KDP_GRAU(iband,iz,:), dZh_q, dZdr_q, dKDP_q)
+                  CALL Polarimetrics_fromLUT_1D(iqg, iz, iband, model_config_rec%Nqxbins,             &
+                    q_grau_vec, Nlutqxbins, lutZh_GRAU(iband,iz,:), lutZdr_GRAU(iband,iz,:),          &
+                    lutKDP_GRAU(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
                   zh_grau_NOc = REAL(dZh_q)
                   zdr_grau_NOc = REAL(dZdr_q)
                   kdp_grau_NOc = REAL(dKDP_q)
@@ -800,9 +882,9 @@ MODULE module_simradar
 
                 ! Cloud ice
                 IF (m_qi .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(dqi, iz, iband, lutgrid%dimv, lutgrid%q_ice_vec,      &
-                    lutgrid%Nlutqxbins, lutgrid%Zh_ICE(iband,iz,:), lutgrid%Zdr_ICE(iband,iz,:),      &
-                    lutgrid%KDP_ICE(iband,iz,:), dZh_q, dZdr_q, dKDP_q)
+                  CALL Polarimetrics_fromLUT_1D(iqi, iz, iband, model_config_rec%Nqxbins,             &
+                    q_ice_vec, Nlutqxbins, lutZh_ICE(iband,iz,:), lutZdr_ICE(iband,iz,:),             &
+                    lutKDP_ICE(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
                   zh_ice_NOc = REAL(dZh_q)
                   zdr_ice_NOc = REAL(dZdr_q)
                   kdp_ice_NOc = REAL(dKDP_q)
@@ -810,9 +892,9 @@ MODULE module_simradar
 
                 ! Hail
                 IF (m_qh .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(dqh, iz, iband, lutgrid%dimv, lutgrid%q_hail_vec,     &
-                    lutgrid%Nlutqxbins, lutgrid%Zh_HAIL(iband,iz,:), lutgrid%Zdr_HAIL(iband,iz,:),    &
-                    lutgrid%KDP_HAIL(iband,iz,:), dZh_q, dZdr_q, dKDP_q)
+                  CALL Polarimetrics_fromLUT_1D(iqh, iz, iband, model_config_rec%Nqxbins,             &
+                    q_hail_vec, Nlutqxbins, lutZh_HAIL(iband,iz,:), lutZdr_HAIL(iband,iz,:),          &
+                    lutKDP_HAIL(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
                   zh_hail_NOc = REAL(dZh_q)
                   zdr_hail_NOc = REAL(dZdr_q)
                   kdp_hail_NOc = REAL(dKDP_q)
@@ -823,7 +905,7 @@ MODULE module_simradar
                 END IF
             
                 ! Terminal velocities          
-                CALL calc_tvelocities_1D(dqr, dqs, dqg, dqh, dpress, dta, lutgrid, dtv_rain,          &
+                CALL calc_tvelocities_1D(iqr, iqs, iqg, iqh, dpress, dta, lutgrid, dtv_rain,          &
                   dtv_snow, dtv_grau, dtv_hail)
                 tv_rain_NOc = REAL(dtv_rain)
                 tv_snow_NOc = REAL(dtv_snow)
