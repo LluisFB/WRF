@@ -6134,12 +6134,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     maxrdistmax = MAXVAL(model_config_rec%radar_distmax(1:nradar))
     minrds = MINVAL(model_config_rec%radards(1:nradar))
 
-    IF ( e_dist /= INT(2*maxrdistmax / minrds)) THEN
+    IF ( e_dist /= INT(2*maxrdistmax*1000. / minrds)) THEN
       PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along radial-axis does not " //     &
         "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal  "// &
-        "resolution (minimum radards)! e_dist = INT(2*maxrdistmax / minradards)"
+        "resolution (minimum radards)! e_dist = INT(2*max(maxrdistmax)*1000. / minradards)"
       CALL wrf_error_fatal ( diag_message )
     END IF
 
