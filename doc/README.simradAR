@@ -28,9 +28,11 @@ simradar&
 | type     | name                | default value       | description                                                        | units |
 | ---- | ---- | ---- | ---- | ---- |
 |integer   | nradar              | 1                   | amount of surface radar                                            | # |
-|integer   | e_dist              | 800                 | radar grid points along the radii                                  | # |
-|integer   | e_angle             | 376                 | radar amount of horizontal angles                                  | # |
-|integer   | e_azimuth           | 15                  | radar amount of azimuths                                           | # |
+|integer   | e_dist              | 800                 | radar grid points along the radii [computed as                     | # |
+|          |                     |                     |    2.*max(distmax) / min(radards)]                                 | # |
+|integer   | e_angle             | 376                 | radar amount of horizontal angles  [computed as                    | # |
+|          |                     |                     |    2*pi*radii_ddist / (min(ddist))                                 | # |
+|integer   | e_azimuth           | 15                  | radar amount of azimuths (vertical angle) [same for all radars]    | # |
 |integer   | ngrid_radar         | 1500                | maximum amount of radar cells into a given WRF grid point          | # |
 |integer   | ngrid3_radar        | 25000               | maximum amount of vertical radar cells into a given WRF grid point | # | 
 |integer   | nradar_ngrid        | 30000               | nradar*ngrid_radar                                                 | # |
@@ -53,12 +55,22 @@ simradar&
 |real      | radar_distmax       | 250.                | maximum distance from radar [one per radar]                        | km |
 |real      | radar_hgtmax        | 20.                 | maximum height from radar  [one per radar]                         | km |
 |integer   | em_ray              | 1                   | type of propagation of em ray. 1: 4/3 Ref [one per radar]          | - |
+|          |                     |                     |      1:     4/3 Ref                                                |   |
 |real      | radards             | 250.                | nominal horizontal resolution of radar values [one per radar]      | m |
 |integer   | radinterp           | 1                   | method of interpolation to the radar space (1: inverted distance weighted) | - |
 |real      | radii_dist          | 15.                 | radii at which arc resolution is the same as minimum radards       | km |
 |integer   | eloption            | 1                   | Ellipsoide                                                         | - |
+|          |                     |                     |      1: 'GRS80 / WGS84  (NAD83)'                                   |   |
+|          |                     |                     |        a = 6378137.d0                                              |   |
+|          |                     |                     |        f = 1.d0/298.25722210088d0                                  |   |
+|          |                     |                     |      2: 'Clarke 1866    (NAD27)'                                   |   |
+|          |                     |                     |        a = 6378206.4d0                                             |   |
+|          |                     |                     |        f = 1.d0/294.9786982138d0                                   |   |
 |real      | missing_value       | 1.e20               | missing value                                                      | - |
 |integer   | doppler_scheme      | 1                   | method to compute the doppler velocities                           | - |
+|          |                     |                     |   0: Reflectivity weighted terminal velocity                       |   |
+|          |                     |                     |   1: Get PSD integrated backscattering cross section int = v S/S   |   |
+|          |                     |                     |      [not implemented]                                             |   |
 |integer   | timedbg             | 720                 | frecuency of time-debugging                                        | minute |
 |real      | londbg              | -999.               | longitude of grid-point debugging (-999., not used)                | degree_east  |
 |real      | latdbg              | -999.               | latitude of grid-point debugging (-999., not used)                 | degree_north |
@@ -87,7 +99,6 @@ simradar&
 |real      | q_clou_max          | 0.013               | maximum clou mixing ratio to consider"                             | kgkg-1 |
 |integer   | dim_ice             | 200                 | dimension for ice bins"                                            | - |
 |integer   | Nqxbins             | 50000               | dimension for water species bins"                                  | - |
-
 
 == Installation ==
 
