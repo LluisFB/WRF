@@ -2,10 +2,13 @@ MODULE module_simradar
 #ifdef SIMRADAR
 ! Module for the simulation of surface polimeric radar following simrad.AR, Galligani et al (CONGREMET XIII), 2018
 
+  INTEGER, PARAMETER                                     :: Ntotvarsinterp = 12
+
   CONTAINS
 
   SUBROUTINE simradar_calc(                                                                           &
-                      is_restart, is_output_time, nsteps,                                             & 
+                      is_restart, is_output_time,                                                     &
+                      nsteps,                                                                         &
                       dt, xtime, curr_secs2,                                                          &
                       
                       timedbg,                                                                        &
@@ -15,7 +18,7 @@ MODULE module_simradar
                       ! Input
                       n_moist,                                                                        &
                       moist,                                                                          &
-                      param_first_scalar,                                                             &
+                      prm_first_scalar,                                                             &
                       m_qv, m_qc, m_qr, m_qs, m_qi, m_qg, m_qh,                                       &
                       m_qng, m_qnh, m_qnr, m_qvolg,                                                   &
 !                      qv, qc, qr, qs, qi, qg, qh,                                                     &
@@ -135,7 +138,7 @@ MODULE module_simradar
 !-- kte           end index for k in tile
 !-- num_tiles     number of tiles
 !-- n_moist       number of water species
-!-- param_first_scalar index to account for the first active water species (microphysics scheme 
+!-- prm_first_scalar index to account for the first active water species (microphysics scheme 
 !     dependend)
 !-- m_qv, m_qc, m_qr, m_qs, m_qi, m_qg, m_qh: moist indices for each specie: vapour, cloud, rain, 
 !     snow, ice, graupel, ice and hail
@@ -145,11 +148,11 @@ MODULE module_simradar
 ! configuration for the WRF run, as determined in the namelist.  The
 ! highest numbered index of active moisture tracers the integer argument
 ! n_moist (note: the number of tracers at run time is the quantity
-! <tt>n_moist - PARAM_FIRST_SCALAR + 1</tt> , not n_moist. Individual tracers
+! <tt>n_moist - prm_first_scalar + 1</tt> , not n_moist. Individual tracers
 ! may be indexed from moist by the Registry name of the tracer prepended
 ! with P_; for example P_QC is the index of cloud water. An index 
 ! represents a valid, active field only if the index is greater than
-! or equal to PARAM_FIRST_SCALAR.  PARAM_FIRST_SCALAR and the individual
+! or equal to prm_first_scalar.  prm_first_scalar and the individual
 ! indices for each tracer is defined in module_state_description and
 ! set in <a href=set_scalar_indices_from_config.html>set_scalar_indices_from_config</a> defined in 
 ! frame/module_configure.F.
@@ -177,7 +180,7 @@ MODULE module_simradar
 ! wa: vertical wind speed [ms-1]
 ! p: 3D pressure perturbation [Pa]
 ! pb: 3D pressure base state [Pa]
-! t: air temperature [K]
+! ta: air temperature [K]
 ! ph: 3D gepotential perturbation [m2s-2]
 ! phb: 3D gepotential base state [m2s-2]
 
@@ -325,7 +328,7 @@ MODULE module_simradar
 
 
     INTEGER, DIMENSION(num_tiles), INTENT(in)            :: i_start, i_end, j_start, j_end
-    INTEGER, INTENT(in)                                  :: param_first_scalar
+    INTEGER, INTENT(in)                                  :: prm_first_scalar
     INTEGER, INTENT(in)                                  :: m_qv, m_qc, m_qr, m_qs, m_qi, m_qg, m_qh, &
       m_qng, m_qnh, m_qnr, m_qvolg
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(in)         :: lon, lat
@@ -359,7 +362,7 @@ MODULE module_simradar
     REAL, DIMENSION(e_angle, nradar), INTENT(in)         :: radars_angle
     REAL, DIMENSION(e_azimuth, nradar), INTENT(in)       :: radars_azimuth
     REAL, DIMENSION(e_dist, nradar), INTENT(in)          :: radars_dist
-    REAL(kind=rr8), INTENT(in)                           :: a, f
+    REAL, INTENT(in)                                     :: a, f
     CHARACTER(len=30), INTENT(in)                        :: elipsn
     ! Compressed dimensions
     INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord 
@@ -450,8 +453,8 @@ MODULE module_simradar
     INTEGER                                              :: ei2, ei3
     INTEGER                                              :: i123
     INTEGER                                              :: ijkfound
-    REAL, DIMENSION(around3,12)                          :: cvals
-    CHARACTER(len=1), DIMENSION(3)                       :: availrband
+    REAL, DIMENSION(around3,Ntotvarsinterp)              :: cvals
+    CHARACTER(len=1), DIMENSION(Nbands)                  :: availrband
 
     REAL, DIMENSION(ims:ime,kms:kme,jms:jme)             :: zg, press, unua, unva, ua, va
     
@@ -759,7 +762,7 @@ MODULE module_simradar
                   iqr = 0.
                 END IF
 
-                IF (m_qi .GE. param_first_scalar) THEN
+                IF (m_qi .GE. prm_first_scalar) THEN
                   iqi = SUM(cvals(:,4)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqi .LT. model_config_rec%q_ice_min) THEN
@@ -769,7 +772,7 @@ MODULE module_simradar
                   iqi = 0.
                 END IF
 
-                IF (m_qs .GE. param_first_scalar) THEN
+                IF (m_qs .GE. prm_first_scalar) THEN
                   iqs = SUM(cvals(:,5)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqs .LT. model_config_rec%q_snow_min) THEN
@@ -779,7 +782,7 @@ MODULE module_simradar
                   iqs = 0.d0
                 END IF
 
-                IF (m_qg .GE. param_first_scalar) THEN
+                IF (m_qg .GE. prm_first_scalar) THEN
                   iqg = SUM(cvals(:,6)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqg .LT. model_config_rec%q_grau_min) THEN
@@ -789,7 +792,7 @@ MODULE module_simradar
                   iqg = 0.
                 END IF
 
-                IF (m_qh .GE. param_first_scalar) THEN
+                IF (m_qh .GE. prm_first_scalar) THEN
                   iqh = SUM(cvals(:,7)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqh .LT. model_config_rec%q_hail_min) THEN
@@ -849,55 +852,61 @@ MODULE module_simradar
                     iwa
                 END IF
               
-                ! Polarimetrics_fromLUT_1D(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,  &
+                ! Polarimetrics_fromLUT_1R(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,  &
                 !    KDP_x, Zh_out, Zdr_out, KDP_out)
                 ! Rain
-                CALL Polarimetrics_fromLUT_1D(iqr, iz, iband, model_config_rec%Nqxbins,                &
+                CALL Polarimetrics_fromLUT_1R(iqr, iz, iband, model_config_rec%Nqxbins,                &
                   q_rain_vec, Nlutqxbins, lutZh_RAIN(iband,iz,:), lutZdr_RAIN(iband,iz,:),             &
-                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-                zh_rain_NOc = REAL(dZh_q)
-                zdr_rain_NOc = REAL(dZdr_q)
-                kdp_rain_NOc = REAL(dKDP_q)
+                  lutKDP_RAIN(iband,iz,:), zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc, dbg)
+!                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                zh_rain_NOc = REAL(dZh_q)
+!                zdr_rain_NOc = REAL(dZdr_q)
+!                kdp_rain_NOc = REAL(dKDP_q)
 
                 
                 ! Snow
-                IF (m_qs .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(iqs, iz, iband, model_config_rec%Nqxbins,             &
+                IF (m_qs .GE. prm_first_scalar) THEN
+                  CALL Polarimetrics_fromLUT_1R(iqs, iz, iband, model_config_rec%Nqxbins,             &
                     q_snow_vec, Nlutqxbins, lutZh_SNOW(iband,iz,:), lutZdr_SNOW(iband,iz,:),          &
-                    lutKDP_SNOW(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-                  zh_snow_NOc = REAL(dZh_q)
-                  zdr_snow_NOc = REAL(dZdr_q)
-                  kdp_snow_NOc = REAL(dKDP_q)
+                    lutKDP_SNOW(iband,iz,:), zh_snow_NOc, zdr_snow_NOc, kdp_snow_NOc, dbg)
+!                    lutKDP_SNOW(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                  zh_snow_NOc = REAL(dZh_q)
+!                  zdr_snow_NOc = REAL(dZdr_q)
+!                  kdp_snow_NOc = REAL(dKDP_q)
                 END IF
 
                 ! Graupel
-                IF (m_qg .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(iqg, iz, iband, model_config_rec%Nqxbins,             &
+                IF (m_qg .GE. prm_first_scalar) THEN
+                  CALL Polarimetrics_fromLUT_1R(iqg, iz, iband, model_config_rec%Nqxbins,             &
                     q_grau_vec, Nlutqxbins, lutZh_GRAU(iband,iz,:), lutZdr_GRAU(iband,iz,:),          &
-                    lutKDP_GRAU(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-                  zh_grau_NOc = REAL(dZh_q)
-                  zdr_grau_NOc = REAL(dZdr_q)
-                  kdp_grau_NOc = REAL(dKDP_q)
+                  lutKDP_GRAU(iband,iz,:), zh_grau_NOc, zdr_grau_NOc, kdp_grau_NOc, dbg)
+!                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                zh_grau_NOc = REAL(dZh_q)
+!                zdr_grau_NOc = REAL(dZdr_q)
+!                kdp_grau_NOc = REAL(dKDP_q)
                 END IF
 
                 ! Cloud ice
-                IF (m_qi .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(iqi, iz, iband, model_config_rec%Nqxbins,             &
+                IF (m_qi .GE. prm_first_scalar) THEN
+                  CALL Polarimetrics_fromLUT_1R(iqi, iz, iband, model_config_rec%Nqxbins,             &
                     q_ice_vec, Nlutqxbins, lutZh_ICE(iband,iz,:), lutZdr_ICE(iband,iz,:),             &
-                    lutKDP_ICE(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-                  zh_ice_NOc = REAL(dZh_q)
-                  zdr_ice_NOc = REAL(dZdr_q)
-                  kdp_ice_NOc = REAL(dKDP_q)
+                  lutKDP_ICE(iband,iz,:), zh_ice_NOc, zdr_ice_NOc, kdp_ice_NOc, dbg)
+!                    lutKDP_ICE(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                  zh_ice_NOc = REAL(dZh_q)
+!                  zdr_ice_NOc = REAL(dZdr_q)
+!                  kdp_ice_NOc = REAL(dKDP_q)
+
                  END IF
 
                 ! Hail
-                IF (m_qh .GE. param_first_scalar) THEN
-                  CALL Polarimetrics_fromLUT_1D(iqh, iz, iband, model_config_rec%Nqxbins,             &
+                IF (m_qh .GE. prm_first_scalar) THEN
+                  CALL Polarimetrics_fromLUT_1R(iqh, iz, iband, model_config_rec%Nqxbins,             &
                     q_hail_vec, Nlutqxbins, lutZh_HAIL(iband,iz,:), lutZdr_HAIL(iband,iz,:),          &
-                    lutKDP_HAIL(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-                  zh_hail_NOc = REAL(dZh_q)
-                  zdr_hail_NOc = REAL(dZdr_q)
-                  kdp_hail_NOc = REAL(dKDP_q)
+                  lutKDP_HAIL(iband,iz,:), zh_hail_NOc, zdr_hail_NOc, kdp_hail_NOc, dbg)
+!                    lutKDP_HAIL(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                  zh_hail_NOc = REAL(dZh_q)
+!                  zdr_hail_NOc = REAL(dZdr_q)
+!                  kdp_hail_NOc = REAL(dKDP_q)
                 END IF
                 IF (printdbg) THEN
                   PRINT *, '    band:', TRIM(model_config_rec%radar_band(ir)), ' RAIN Zh:',           &

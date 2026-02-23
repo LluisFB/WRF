@@ -621,7 +621,7 @@ MODULE module_simradar_tools
       ed1z, MaxNcoords, MaxN3coords, Nc2, Na2, Nc3, Na3
     INTEGER, INTENT(in)                                  :: id2x, ed2x, id2y, ed2y, id2z, ed2z
     REAL, INTENT(in)                                     :: miss_v1, miss_v2
-    REAL(kind=rr8), INTENT(in)                           :: a, f
+    REAL, INTENT(in)                                     :: a, f
     CHARACTER(len=30), INTENT(in)                        :: elips
     REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
     REAL, DIMENSION(id1x:ed1x,id1y:ed1y,id1z:ed1z),                                                   &
@@ -643,6 +643,7 @@ MODULE module_simradar_tools
     INTEGER                                              :: ici, icj, ick
     INTEGER                                              :: ijkfound
     REAL                                                 :: ijkvert1, sumdists, totwght
+    REAL(kind=rr8)                                       :: da, df
     INTEGER, DIMENSION(1)                                :: kmindist
     INTEGER, DIMENSION(1)                                :: imaxwght, izero
     REAL, DIMENSION(Na2)                                 :: ijlon1, ijlat1, ijdists
@@ -680,6 +681,9 @@ MODULE module_simradar_tools
     ijk21Ncoords = 0    
     ijk21coords = fillValueI
     wghts = 0.
+    
+    da = a*1.D0
+    df = f*1.D0
 
     IF (dbg) PRINT *,'  ' // TRIM(fname) // ": Compute 3-dimensional weights at ", i1, ', ', j1 ,     &
       ' with ', ij21Ncoords, " radar cells horizontally"
