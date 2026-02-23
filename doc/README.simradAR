@@ -277,52 +277,70 @@ This file has to be in the WRF/run folder in order to be read and taken into con
 
 == Output ==
 Accordingly to thge set-up provided for auxhist11, the specific file will contain the following variables
-| type    | name            | dimensions                                  | description    | uints |
-| integer | ijraddbg        | iit                                         | i,j-grid points from londbg,latdbg for simrad.AR debugging" "-"
-| integer | inradar         | west_east, south_north                      | pertinence of the grid cell to any radar (1: yes)  |            1"
-| integer | radarnum        | west_east, south_north, nradar              | pertinence of the grid cell inside a given radar area  |            1"
-| real    | RADARS_DIST     | e_dist, nradar                              | ground radar gate distances to their center"              "m"
-| real    | RADARS_ANGLE    | e_angle, nradar                             | ground radar gate horizontal angles to emit beams  |            m"
-| real    | RADARS_AZIMUTH  | e_angle, nradar                             | ground radar gate vertical angles to emit beams  |            m"
-| real    | RADARLONS       | e_angle, e_dist, nradar                     | ground radar gate longitude"                              "degree_east"
-| real    | RADARLATS       | e_angle, e_dist, nradar                     | ground radar gate latitude"                               "degree_north"
-| real    | RADARHGTS       | e_azimuth, e_dist, nradar                   | ground radar gate height"                                 "m"
-| real    | RADARLHGTS      | e_azimuth, e_dist, nradar                   | ground radar gate local height"                           "m"
-| real    | RADARDIST       | e_angle, e_dist, nradar                     | ground radar horizontal distance of the grid point  |            m"
-| real    | RADARLON_BNDS   | e_angle, e_dist, nradar_coord4              | ground radar gate longitude bounds"                       "degree_east"
-| real    | RADARLAT_BNDS   | e_angle, e_dist, nradar_coord4              | ground radar gate latitude bounds"                        "degree_north"
-| real    | RADARHGT_BNDS   | e_azimuth, e_dist, nradar_coord4            | ground radar gate height bounds"                          "m"
-| real    | GATEHDIST       | west_east, south_north, nradar              | distacnce of the grid points to the position of the radar" "m"
-| integer | NGRIDRADAR      | west_east, south_north, nradar              | amount of radar cells inside the grid point"              "1"
-| integer | IJGRIDRADAR     | west_east, south_north, nradar_ngrid_coord2 | coordinates of radar cells inside the grid point  |            -"
-| real    | IJDISTGRIDRADAR | west_east, south_north, nradar_ngrid        | distance of radar cells inside the grid point to its center" "m"
+| type    | name            | dimensions                                  | description                                                 | units |
+| integer | ijraddbg        | iit                                         | i,j-grid points from londbg,latdbg for simrad.AR debugging  | - |
+| integer | inradar         | west_east, south_north                      | pertinence of the grid cell to any radar (1: yes)           | 1 |
+| integer | radarnum        | west_east, south_north, nradar              | pertinence of the grid cell inside a given radar area       | 1 |
+| real    | RADARS_DIST     | e_dist, nradar                              | ground radar gate distances to their center                 | m |
+| real    | RADARS_ANGLE    | e_angle, nradar                             | ground radar gate horizontal angles to emit beams           | m |
+| real    | RADARS_AZIMUTH  | e_angle, nradar                             | ground radar gate vertical angles to emit beams             | m |
+| real    | RADARLONS       | e_angle, e_dist, nradar                     | ground radar gate longitude                                 | degree_east |
+| real    | RADARLATS       | e_angle, e_dist, nradar                     | ground radar gate latitude                                  | degree_north |
+| real    | RADARHGTS       | e_azimuth, e_dist, nradar                   | ground radar gate height                                    | m |
+| real    | RADARLHGTS      | e_azimuth, e_dist, nradar                   | ground radar gate local height                              | m |
+| real    | RADARDIST       | e_angle, e_dist, nradar                     | ground radar horizontal distance of the grid point          | m |
+| real    | RADARLON_BNDS   | e_angle, e_dist, nradar_coord4              | ground radar gate longitude bounds                          | degree_east |
+| real    | RADARLAT_BNDS   | e_angle, e_dist, nradar_coord4              | ground radar gate latitude bounds                           | degree_north |
+| real    | RADARHGT_BNDS   | e_azimuth, e_dist, nradar_coord4            | ground radar gate height bounds                             | m |
+| real    | GATEHDIST       | west_east, south_north, nradar              | distacnce of the grid points to the position of the radar   | m |
+| integer | NGRIDRADAR      | west_east, south_north, nradar              | amount of radar cells inside the grid point                 | 1 |
+| integer | IJGRIDRADAR     | west_east, south_north, nradar_ngrid_coord2 | coordinates of radar cells inside the grid point            | - |
+| real    | IJDISTGRIDRADAR | west_east, south_north, nradar_ngrid        | distance of radar cells inside the grid point to its center | m |
+| real    | ZH_RAIN         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Rain                                       | dBz |
+| real    | ZDR_RAIN        | e_angle, e_azimuth, nradar_dist             | ZDR for Rain                                                | dBz |
+| real    | KDP_RAIN        | e_angle, e_azimuth, nradar_dist             | KDP for Rain                                                | degree/km |
+| real    | ZH_SNOW         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Snow                                       | dBz |
+| real    | ZDR_SNOW        | e_angle, e_azimuth, nradar_dist             | ZDR for Snow                                                | dBz |
+| real    | KDP_SNOW        | e_angle, e_azimuth, nradar_dist             | KDP for Snow                                                | degree/km |
+| real    | ZH_GRAU         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Graupel                                    | dBz |
+| real    | ZDR_GRAU        | e_angle, e_azimuth, nradar_dist             | ZDR for Graupel                                             | dBz |
+| real    | KDP_GRAU        | e_angle, e_azimuth, nradar_dist             | KDP for Graupel                                             | degree/km |
+| real    | ZH_ICE          | e_angle, e_azimuth, nradar_dist             | Reflectivity for cloud Ice                                  | dBz |
+| real    | ZDR_ICE         | e_angle, e_azimuth, nradar_dist             | ZDR for cloud Ice                                           | dBz |
+| real    | KDP_ICE         | e_angle, e_azimuth, nradar_dist             | KDP for cloud Ice                                           | degree/km |
+| real    | ZH_HAIL         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Hail                                       | dBz |
+| real    | ZDR_HAIL        | e_angle, e_azimuth, nradar_dist             | ZDR for Hail                                                | dBz |
+| real    | KDP_HAIL        | e_angle, e_azimuth, nradar_dist             | KDP for Hail                                                | degree/km |
+| real    | ZH_TOTAL        | e_angle, e_azimuth, nradar_dist             | Reflectivity for all species                                | dBz |
+| real    | ZDR_TOTAL       | e_angle, e_azimuth, nradar_dist             | ZDR for all species                                         | dBz |
+| real    | KDP_TOTAL       | e_angle, e_azimuth, nradar_dist             | KDP for all species                                         | degree/km |
+| real    | TV_RAIN         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Rain                                  | ms-1 |
+| real    | TV_SNOW         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Snow                                  | ms-1 |
+| real    | TV_GRAU         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Graupel                               | ms-1 |
+| real    | TV_ICE          | e_angle, e_azimuth, nradar_dist             | terminal velocity for cloud Ice                             | ms-1 |
+| real    | TV_HAIL         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Hail                                  | ms-1 |
+| real    | TV_WGT          | e_angle, e_azimuth, nradar_dist             | weighted terminal velocity                                  | ms-1 |
+| real    | VR              | e_angle, e_azimuth, nradar_dist             | Doppler velocity                                            | ms-1 |
 
-# radar band values
-| real    | ZH_RAIN         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Rain"                                    "dBZ"
-| real    | ZDR_RAIN        | e_angle, e_azimuth, nradar_dist             | ZDR for Rain"                                             "dBz"
-| real    | KDP_RAIN        | e_angle, e_azimuth, nradar_dist             | KDP for Rain"                                             "degree/km"
-| real    | ZH_SNOW         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Snow"                                    "dBZ"
-| real    | ZDR_SNOW        | e_angle, e_azimuth, nradar_dist             | ZDR for Snow"                                             "dBz"
-| real    | KDP_SNOW        | e_angle, e_azimuth, nradar_dist             | KDP for Snow"                                             "degree/km"
-| real    | ZH_GRAU         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Graupel"                                 "dBZ"
-| real    | ZDR_GRAU        | e_angle, e_azimuth, nradar_dist             | ZDR for Graupel"                                          "dBz"
-| real    | KDP_GRAU        | e_angle, e_azimuth, nradar_dist             | KDP for Graupel"                                          "degree/km"
-| real    | ZH_ICE          | e_angle, e_azimuth, nradar_dist             | Reflectivity for cloud Ice"                               "dBZ"
-| real    | ZDR_ICE         | e_angle, e_azimuth, nradar_dist             | ZDR for cloud Ice"                                        "dBz"
-| real    | KDP_ICE         | e_angle, e_azimuth, nradar_dist             | KDP for cloud Ice"                                        "degree/km"
-| real    | ZH_HAIL         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Hail"                                    "dBZ"
-| real    | ZDR_HAIL        | e_angle, e_azimuth, nradar_dist             | ZDR for Hail"                                             "dBz"
-| real    | KDP_HAIL        | e_angle, e_azimuth, nradar_dist             | KDP for Hail"                                             "degree/km"
-| real    | ZH_TOTAL        | e_angle, e_azimuth, nradar_dist             | Reflectivity for all species"                             "dBZ"
-| real    | ZDR_TOTAL       | e_angle, e_azimuth, nradar_dist             | ZDR for all species"                                      "dBz"
-| real    | KDP_TOTAL       | e_angle, e_azimuth, nradar_dist             | KDP for all species"                                      "degree/km"
-| real    | TV_RAIN         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Rain"                               "ms-1"
-| real    | TV_SNOW         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Snow"                               "ms-1"
-| real    | TV_GRAU         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Graupel"                            "ms-1"
-| real    | TV_ICE          | e_angle, e_azimuth, nradar_dist             | terminal velocity for cloud Ice"                          "ms-1"
-| real    | TV_HAIL         | e_angle, e_azimuth, nradar_dist             | terminal velocity for Hail"                               "ms-1"
-| real    | TV_WGT          | e_angle, e_azimuth, nradar_dist             | weighted terminal velocity"                               "ms-1"
-| real    | VR              | e_angle, e_azimuth, nradar_dist             | Doppler velocity"                                         "ms-1"
+NOTE:
+ WRF can not provide 5-dimensional output variables. Here amount of radars and vertical coordinate are collapsed into different dimensions, therefore outputs will be
+    IJDISTGRIDRADAR(e_we,e_sn,nradar_ngrid,Time) therefore it will be needed to decompress the nradar, ngrid_radar dimensions IJDISTGRIDRADAR(e_we,e_sn,ngrid_radar,nradar,Time)
+    IJGRIDRADAR(e_we,e_sn,nradar_ngrid_coord2,Time) --> IJGRIDRADAR(e_we,e_sn,ngrid_radar,coord2,nradar,Time)
+    RADARLON_BNDS(e_angle,e_dist,nradar_coord4,Time) --> RADARLON_BNDS(e_angle,e_dist,coord4,nradar,Time)
+    RADARLAT_BNDS(e_angle,e_dist,nradar_coord4,Time) --> RADARLAT_BNDS(e_angle,e_dist,coord4,nradar,Time)
+    RADARHGT_BNDS(e_azimuth,e_dist,nradar_coord4,Time) --> RADARHGT_BNDS(e_azimuth,e_dist,coord4,nradar,Time)
+    ZH_RAIN(e_angle,e_azimuth,nradar_dist,Time) --> RADARHGT_BNDS(e_angle,e_azimuth,e_dist,nradar,Time)
+  For example:
+  DO ia=1, e_angle
+    DO id=1, e_dist
+      DO ir=1, nradar
+        DO j=1, coord4
+          irj = (ir-1)*coord4 + j
+          radarlon_bnds(ia,id,irj) = lon_bnds(ia,id,j,ir)
+        END DO
+      END DO
+    END DO
+  END DO
 
 
 == Installation ==
