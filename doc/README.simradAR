@@ -18,5 +18,107 @@ https://git.cima.fcen.uba.ar/lluis.fita/simradar/-/wikis/home
 
 This code is available from Lluis Fita's WRF fork (git@github.com:LluisFB/WRF.git) in branch 'simradAR'
 
+== Usage ==
+A new section into the WRF's namelist calles 'simradar' has to be set up
+
+=== namelist ===
+simradar&
+/
+
+integer  nradar        1     amount of surface radar"                                ""
+integer  e_dist        namelist,simradar     1              800     rh{11}    "e_dist"            "radar grid points along the radii"                      ""
+integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
+integer  e_azimuth     namelist,simradar     1               15     rh{11}    "e_azimuth"         "radar amount of azimuths"                               ""
+integer  ngrid_radar   namelist,simradar     1             1500     rh{11}    "ngrid_radar"       "amount of radar cells into a given WRF grid point"      ""
+integer  ngrid3_radar  namelist,simradar     1            25000     rh{11}    "ngrid3_radar"      "amount of vertical radar cells into a given WRF grid point"      ""
+integer  nradar_ngrid  namelist,simradar     1            30000     rh{11}    "nradar_ngrid"      "nradar*ngrid_radar"                                     ""
+integer  nradar_ngrid_coord2  namelist,simradar 1         60000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
+integer  nradar_coord2 namelist,simradar     1               40     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
+integer  nradar_coord4 namelist,simradar     1              160     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
+integer  ngrid_coord2  namelist,simradar     1            60000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
+integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
+integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
+
+integer  Nbands        namelist,simradar     1                3     rh{11}    "Nbands"            "amount of radar bands"                                  ""
+integer  Nluticebins   namelist,simradar     1              200     rh{11}    "Nluticebins"       "amount of ice bins for LUT interpolations"              "#"
+integer  Nlutqxbins    namelist,simradar     1            50000     rh{11}    "Nlutqxbins"        "amount of water species bins for LUT interpolations"    "#"
+integer  Nlutlevs      namelist,simradar     1               15     rh{11}    "Nlutlevs"          "amount of azimuths for LUT interpolations"              ""
+
+character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
+real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
+real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
+real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
+character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
+integer  radar_scan    namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "radar_scan" "type of scan 1:"      ""
+real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar"  "km"
+real     radar_hgtmax  namelist,simradar     max_nradar    (/20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20./) rh{11}    "radar_hgtmax"           "maximum height from radar"  "km"
+integer  em_ray        namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "em_ray"     "type of propagation of em ray. 1: 4/3 Ref"                                          ""
+real     radards       namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./)    rh{11}    "radards"           "nominal horizontal resolution of radar values in m"     ""
+integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
+real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
+integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
+real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
+integer  doppler_scheme namelist,simradar    1                1     rh{11}    "doppler_scheme"    "method to compute the doppler velocities"               ""
+
+integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
+real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
+real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
+
+# LUT options (maybe from netCDF file!)
+character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc"    -    "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
+real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
+real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
+real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
+real     qn_rain_max   namelist,simradar     1             2.6e6    rh{11}    "qn_rain_max"       "maximum amount of nuclii for rain to consider"        "#"
+real     q_snow_min    namelist,simradar     1              1e-7    rh{11}    "q_snow_min"        "minimum snow mixing ratio to consider"                "kgkg-1"
+real     q_snow_max    namelist,simradar     1             0.018    rh{11}    "q_snow_max"        "maximum snow mixing ratio to consider"                "kgkg-1"
+real     qn_snow_min   namelist,simradar     1              1e-7    rh{11}    "qn_snow_min"       "minimum amount of nuclii for snow to consider"        "#"
+real     qn_snow_max   namelist,simradar     1             2.6e6    rh{11}    "qn_snow_max"       "maximum amount of nuclii for snow to consider"        "#"
+real     q_grau_min    namelist,simradar     1              1e-7    rh{11}    "q_grau_min"        "minimum grau mixing ratio to consider"                "kgkg-1"
+real     q_grau_max    namelist,simradar     1             0.018    rh{11}    "q_grau_max"        "maximum grau mixing ratio to consider"                "kgkg-1"
+real     qn_grau_min   namelist,simradar     1              1E-7    rh{11}    "qn_grau_min"       "minimum amount of nuclii for grau to consider"        "#"
+real     qn_grau_max   namelist,simradar     1             2.6e6    rh{11}    "qn_grau_max"       "maximum amount of nuclii for grau to consider"        "#"
+real     q_ice_min     namelist,simradar     1              1e-7    rh{11}    "q_ice_min"         "minimum cloud ice mixing ratio to consider"           "kgkg-1"
+real     q_ice_max     namelist,simradar     1             0.001    rh{11}    "q_ice_max"         "maximum cloud ice mixing ratio to consider"           "kgkg-1"
+real     qn_ice_min    namelist,simradar     1              1e-8    rh{11}    "qn_ice_min"        "minimum amount of nuclii for cloud ice to consider"   "#"
+real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for cloud ice to consider"   "#"
+real     q_hail_min    namelist,simradar     1            -9999.    rh{11}    "q_hail_min"        "minimum hail mixing ratio to consider"                "kgkg-1"
+real     q_hail_max    namelist,simradar     1            -9999.    rh{11}    "q_hail_max"        "maximum hail mixing ratio to consider"                "kgkg-1"
+real     qn_hail_min   namelist,simradar     1            -9999.    rh{11}    "qn_hail_min"       "minimum amount of nuclii for hail to consider"        "#"
+real     qn_hail_max   namelist,simradar     1            -9999.    rh{11}    "qn_hail_max"       "maximum amount of nuclii for hail to consider"        "#"
+real     q_clou_min    namelist,simradar     1             1e-10    rh{11}    "q_clou_min"        "minimum clou mixing ratio to consider"                "kgkg-1"
+real     q_clou_max    namelist,simradar     1             0.013    rh{11}    "q_clou_max"        "maximum clou mixing ratio to consider"                "kgkg-1"
+integer  dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
+integer  Nqxbins       namelist,simradar     1             50000    rh{11}    "Nqxbins"           "dimension for water species bins"                     "-"
+
+
+== Installation ==
+
+1.- Get the repository from a $WORKDIR
+git clone git@github.com:LluisFB/WRF.git
+
+2.- getting submoules
+git submodule update --init --recursive
+
+3.- Switching to the simrad.AR branch
+git checkout simradAR
+
+4.- Preparing installation (remember to define WRFIO_NCD_LARGE_FILE_SUPPORT=1 and NETCDF)
+./configure
+
+5.- Editing configure.wrf to add -DSIMRADAR pre-compilation flag
+cp configure.wrf configure.simradAR.orig
+cp configure.wrf configure.simradAR.wrf
+vim configure.simradAR.wrf
+diff configure.wrf.orig configure.simradAR.wrf
+216c216
+<                        \
+---
+>                       -DSIMRADAR \
+cp configure.simradAR.wrf configure.wrf
+
+6.- Compile as usual
+./compile em_real >& compile.log
+
 
 
