@@ -281,8 +281,8 @@ MODULE module_simradar_tools
     IMPLICIT NONE
    
     INTEGER, INTENT(in)                                  :: Ndim
-    REAL), INTENT(in)                                    :: pt
-    REAL, DIMENSION(Ndim), INTENT(in)                     :: coords, vals
+    REAL, INTENT(in)                                     :: pt
+    REAL, DIMENSION(Ndim), INTENT(in)                    :: coords, vals
     ! 0: no error; 1: error
 !    INTEGER, INTENT(out)                                 :: statv
    
@@ -319,13 +319,13 @@ MODULE module_simradar_tools
       refi = Ndim-1
       signv = 1.
     ELSE IF (pt == minc) THEN
-      lin_interpolate_1DD = vals(1)
+      lin_interpolate_1RR = vals(1)
       refi = 1
       signv = 1.
       
       RETURN 
     ELSE IF (pt == maxc) THEN
-      lin_interpolate_1DD = vals(Ndim)
+      lin_interpolate_1RR = vals(Ndim)
       refi = Ndim-1
       signv = 1.
 
@@ -333,7 +333,7 @@ MODULE module_simradar_tools
     ELSE
       DO icor=1, Ndim-1
         IF (pt == coords(icor)) THEN
-          lin_interpolate_1DD = vals(icor)
+          lin_interpolate_1RR = vals(icor)
           RETURN
         ELSE IF (pt >= coords(icor) .AND. pt < coords(icor+1)) THEN
           a = vals(icor)
@@ -347,8 +347,8 @@ MODULE module_simradar_tools
 !    statv = 0
     IF (refi == -1) THEN
       WRITE (diag_message , * ) &
-      TRIM(errormsg) // ":   " //TRIM(fname)// ": No interpolation found for: " // TRIM(DtoS(pt)) //  &
-        ' within range: [' // TRIM(DtoS(minc)) // ', ' // TRIM(DtoS(maxc))
+      TRIM(errormsg) // ":   " //TRIM(fname)// ": No interpolation found for: " // TRIM(RtoS(pt)) //  &
+        ' within range: [' // TRIM(RtoS(minc)) // ', ' // TRIM(RtoS(maxc))
       CALL wrf_error_fatal ( diag_message )
     END IF
 
@@ -445,7 +445,7 @@ MODULE module_simradar_tools
     REAL, DIMENSION(dimv), INTENT(in)                    :: q_log_vec
     REAL, DIMENSION(Nbins), INTENT(in)                   :: Zh_x, Zdr_x, KDP_x
     LOGICAL, OPTIONAL                                    :: idbg
-    REAL), INTENT(out)                                   :: Zh_out, Zdr_out, KDP_out
+    REAL, INTENT(out)                                    :: Zh_out, Zdr_out, KDP_out
     
     ! Local
     LOGICAL                                              :: dbg
@@ -464,7 +464,7 @@ MODULE module_simradar_tools
     ! Zh_x: values of 'Zh' for the specific water specie
     ! Zdr_x: values of 'Zdr' for the specific water specie
     ! KDP_x: values of 'KDP' for the specific water specie
-    fname = 'Polarimetrics_fromLUT_1D'
+    fname = 'Polarimetrics_fromLUT_1R'
     
     IF (dbg) THEN
       PRINT *, '  ' // TRIM(fname) // ": q_log_vec 1 a 5:", q_log_vec(1:5)
@@ -483,7 +483,7 @@ MODULE module_simradar_tools
                   
     RETURN
   
-  END SUBROUTINE Polarimetrics_fromLUT_1D
+  END SUBROUTINE Polarimetrics_fromLUT_1R
  
   REAL(kind=rr8) FUNCTION calc_vt(a, b, lambdax)
   ! Function to compute terminal velocity after a gamma function
@@ -527,7 +527,7 @@ MODULE module_simradar_tools
 
     IMPLICIT NONE
     
-    REAL(kind=rr8), INTENT(in)                           :: qr, qs, qg, qh, p, T
+    REAL, INTENT(in)                                     :: qr, qs, qg, qh, p, T
     TYPE(lut_vars), INTENT(in)                           :: lutgrid
     REAL(kind=rr8), INTENT(out)                          :: v_rain, v_snow, v_grau, v_hail
     
