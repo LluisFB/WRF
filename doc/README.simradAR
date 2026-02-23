@@ -25,71 +25,68 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 simradar&
 /
 
-integer  nradar        1     amount of surface radar"                                ""
-integer  e_dist        namelist,simradar     1              800     rh{11}    "e_dist"            "radar grid points along the radii"                      ""
-integer  e_angle       namelist,simradar     1              376     rh{11}    "e_angle"           "radar amount of horizontal angles"                      ""
-integer  e_azimuth     namelist,simradar     1               15     rh{11}    "e_azimuth"         "radar amount of azimuths"                               ""
-integer  ngrid_radar   namelist,simradar     1             1500     rh{11}    "ngrid_radar"       "amount of radar cells into a given WRF grid point"      ""
-integer  ngrid3_radar  namelist,simradar     1            25000     rh{11}    "ngrid3_radar"      "amount of vertical radar cells into a given WRF grid point"      ""
-integer  nradar_ngrid  namelist,simradar     1            30000     rh{11}    "nradar_ngrid"      "nradar*ngrid_radar"                                     ""
-integer  nradar_ngrid_coord2  namelist,simradar 1         60000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
-integer  nradar_coord2 namelist,simradar     1               40     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
-integer  nradar_coord4 namelist,simradar     1              160     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
-integer  ngrid_coord2  namelist,simradar     1            60000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
-integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
-integer  nradar_dist   namelist,simradar     1             1600     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
-
-integer  Nbands        namelist,simradar     1                3     rh{11}    "Nbands"            "amount of radar bands"                                  ""
-integer  Nluticebins   namelist,simradar     1              200     rh{11}    "Nluticebins"       "amount of ice bins for LUT interpolations"              "#"
-integer  Nlutqxbins    namelist,simradar     1            50000     rh{11}    "Nlutqxbins"        "amount of water species bins for LUT interpolations"    "#"
-integer  Nlutlevs      namelist,simradar     1               15     rh{11}    "Nlutlevs"          "amount of azimuths for LUT interpolations"              ""
-
-character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
-real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
-real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
-real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
-character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
-integer  radar_scan    namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "radar_scan" "type of scan 1:"      ""
-real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar"  "km"
-real     radar_hgtmax  namelist,simradar     max_nradar    (/20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20.,20./) rh{11}    "radar_hgtmax"           "maximum height from radar"  "km"
-integer  em_ray        namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "em_ray"     "type of propagation of em ray. 1: 4/3 Ref"                                          ""
-real     radards       namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./)    rh{11}    "radards"           "nominal horizontal resolution of radar values in m"     ""
-integer  radinterp     namelist,simradar     1                1     rh{11}    "radinterp"         "method of interpolation to the radar space (1: lineal)" ""
-real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
-integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
-real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
-integer  doppler_scheme namelist,simradar    1                1     rh{11}    "doppler_scheme"    "method to compute the doppler velocities"               ""
-
-integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
-real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
-real     latdbg        namelist,simradar     1             -999.    rh{11}    "latdbg"            "latitude of grid-point debugging (-999., not used)"   "degree"
-
-# LUT options (maybe from netCDF file!)
-character lutfilen     namelist,simradar     1  "TMATRIX_WRF_WSM6.nc"    -    "lutfilen"          "name of the netCDF file with the T-Matrix lool-up-tables" ""
-real     q_rain_min    namelist,simradar     1              1e-7    rh{11}    "q_rain_min"        "minimum rain mixing ratio to consider"                "kgkg-1"
-real     q_rain_max    namelist,simradar     1              0.02    rh{11}    "q_rain_max"        "maximum rain mixing ratio to consider"                "kgkg-1"
-real     qn_rain_min   namelist,simradar     1              1e-8    rh{11}    "qn_rain_min"       "minimum amount of nuclii for rain to consider"        "#"
-real     qn_rain_max   namelist,simradar     1             2.6e6    rh{11}    "qn_rain_max"       "maximum amount of nuclii for rain to consider"        "#"
-real     q_snow_min    namelist,simradar     1              1e-7    rh{11}    "q_snow_min"        "minimum snow mixing ratio to consider"                "kgkg-1"
-real     q_snow_max    namelist,simradar     1             0.018    rh{11}    "q_snow_max"        "maximum snow mixing ratio to consider"                "kgkg-1"
-real     qn_snow_min   namelist,simradar     1              1e-7    rh{11}    "qn_snow_min"       "minimum amount of nuclii for snow to consider"        "#"
-real     qn_snow_max   namelist,simradar     1             2.6e6    rh{11}    "qn_snow_max"       "maximum amount of nuclii for snow to consider"        "#"
-real     q_grau_min    namelist,simradar     1              1e-7    rh{11}    "q_grau_min"        "minimum grau mixing ratio to consider"                "kgkg-1"
-real     q_grau_max    namelist,simradar     1             0.018    rh{11}    "q_grau_max"        "maximum grau mixing ratio to consider"                "kgkg-1"
-real     qn_grau_min   namelist,simradar     1              1E-7    rh{11}    "qn_grau_min"       "minimum amount of nuclii for grau to consider"        "#"
-real     qn_grau_max   namelist,simradar     1             2.6e6    rh{11}    "qn_grau_max"       "maximum amount of nuclii for grau to consider"        "#"
-real     q_ice_min     namelist,simradar     1              1e-7    rh{11}    "q_ice_min"         "minimum cloud ice mixing ratio to consider"           "kgkg-1"
-real     q_ice_max     namelist,simradar     1             0.001    rh{11}    "q_ice_max"         "maximum cloud ice mixing ratio to consider"           "kgkg-1"
-real     qn_ice_min    namelist,simradar     1              1e-8    rh{11}    "qn_ice_min"        "minimum amount of nuclii for cloud ice to consider"   "#"
-real     qn_ice_max    namelist,simradar     1             2.6e6    rh{11}    "qn_ice_max"        "maximum amount of nuclii for cloud ice to consider"   "#"
-real     q_hail_min    namelist,simradar     1            -9999.    rh{11}    "q_hail_min"        "minimum hail mixing ratio to consider"                "kgkg-1"
-real     q_hail_max    namelist,simradar     1            -9999.    rh{11}    "q_hail_max"        "maximum hail mixing ratio to consider"                "kgkg-1"
-real     qn_hail_min   namelist,simradar     1            -9999.    rh{11}    "qn_hail_min"       "minimum amount of nuclii for hail to consider"        "#"
-real     qn_hail_max   namelist,simradar     1            -9999.    rh{11}    "qn_hail_max"       "maximum amount of nuclii for hail to consider"        "#"
-real     q_clou_min    namelist,simradar     1             1e-10    rh{11}    "q_clou_min"        "minimum clou mixing ratio to consider"                "kgkg-1"
-real     q_clou_max    namelist,simradar     1             0.013    rh{11}    "q_clou_max"        "maximum clou mixing ratio to consider"                "kgkg-1"
-integer  dim_ice       namelist,simradar     1               200    rh{11}    "dim_ice"           "dimension for ice bins"                               "-"
-integer  Nqxbins       namelist,simradar     1             50000    rh{11}    "Nqxbins"           "dimension for water species bins"                     "-"
+| type     | name                | default value       | description                                                        | units |
+| ---- | ---- | ---- | ---- | ---- |
+|integer   | nradar              | 1                   | amount of surface radar                                            | # |
+|integer   | e_dist              | 800                 | radar grid points along the radii                                  | # |
+|integer   | e_angle             | 376                 | radar amount of horizontal angles                                  | # |
+|integer   | e_azimuth           | 15                  | radar amount of azimuths                                           | # |
+|integer   | ngrid_radar         | 1500                | maximum amount of radar cells into a given WRF grid point          | # |
+|integer   | ngrid3_radar        | 25000               | maximum amount of vertical radar cells into a given WRF grid point | # | 
+|integer   | nradar_ngrid        | 30000               | nradar*ngrid_radar                                                 | # |
+|integer   | nradar_ngrid_coord2 | 60000               | nradar_ngrid_coord2                                                | # |
+|integer   | nradar_coord2       | 40                  | nradar*coord2                                                      | # |
+|integer   | nradar_coord4       | 160                 | nradar*coord4                                                      | # |
+|integer   | ngrid_coord2        | 60000               | ngrid_radar*coord2                                                 | # |
+|integer   | nradar_azimuth      | 300                 | nradar*e_azimuth                                                   | # |
+|integer   | nradar_dist         | 1600                | nradar*e_dist                                                      | # |
+|integer   | Nbands              | 3                   | amount of radar bands                                              | # |
+|integer   | Nluticebins         | 200                 | amount of ice bins for LUT interpolations                          | # |
+|integer   | Nlutqxbins          | 50000               | amount of water species bins for LUT interpolations                | # |
+|integer   | Nlutlevs            | 15                  | amount of azimuths for LUT interpolations                          | # |
+|character | radar_name          | '-'                 | name of the radar [one per radar]                                  | - |
+|real      | radar_clon          | 0.0                 | longitude of the location of the radar    [one per radar]          | degree_east  |
+|real      | radar_clat          | 0.0                 | latitude of the location of the radar [one per radar]              | degree_north |
+|real      | radar_chgt          | 0.0                 | height of the location of the radar  [one per radar]               | m |
+|character | radar_band          | '-'                 | band of the radar: 'c', 's', or 'x'  [one per radar]               | - |
+|integer   | radar_scan          | 1                   | type of scan 1:             [one per radar]                        | - |
+|real      | radar_distmax       | 250.                | maximum distance from radar [one per radar]                        | km |
+|real      | radar_hgtmax        | 20.                 | maximum height from radar  [one per radar]                         | km |
+|integer   | em_ray              | 1                   | type of propagation of em ray. 1: 4/3 Ref [one per radar]          | - |
+|real      | radards             | 250.                | nominal horizontal resolution of radar values [one per radar]      | m |
+|integer   | radinterp           | 1                   | method of interpolation to the radar space (1: inverted distance weighted) | - |
+|real      | radii_dist          | 15.                 | radii at which arc resolution is the same as minimum radards       | km |
+|integer   | eloption            | 1                   | Ellipsoide                                                         | - |
+|real      | missing_value       | 1.e20               | missing value                                                      | - |
+|integer   | doppler_scheme      | 1                   | method to compute the doppler velocities                           | - |
+|integer   | timedbg             | 720                 | frecuency of time-debugging                                        | minute |
+|real      | londbg              | -999.               | longitude of grid-point debugging (-999., not used)                | degree_east  |
+|real      | latdbg              | -999.               | latitude of grid-point debugging (-999., not used)                 | degree_north |
+|character | lutfilen            | TMATRIX_WRF_WSM6.nc | name of the netCDF file with the T-Matrix lool-up-tables           | - |
+|real      | q_rain_min          | 1e-7                | minimum rain mixing ratio to consider                              | kgkg-1" |
+|real      | q_rain_max          | 0.02                | maximum rain mixing ratio to consider                              | kgkg-1 |
+|real      | qn_rain_min         | 1e-8                | minimum amount of nuclii for rain to consider                      | # |
+|real      | qn_rain_max         | 2.6e6               | maximum amount of nuclii for rain to consider                      | # |
+|real      | q_snow_min          | 1e-7                | minimum snow mixing ratio to consider                              | kgkg-1 |
+|real      | q_snow_max          | 0.018               | maximum snow mixing ratio to consider"                             | kgkg-1 |
+|real      | qn_snow_min         | 1e-7                | minimum amount of nuclii for snow to consider"                     | # |
+|real      | qn_snow_max         | 2.6e6               | maximum amount of nuclii for snow to consider"                     | # |
+|real      | q_grau_min          | 1e-7                | minimum grau mixing ratio to consider"                             | kgkg-1 |
+|real      | q_grau_max          | 0.018               | maximum grau mixing ratio to consider"                             | kgkg-1 |
+|real      | qn_grau_min         | 1E-7                | minimum amount of nuclii for grau to consider"                     | # |
+|real      | qn_grau_max         | 2.6e6               | maximum amount of nuclii for grau to consider"                     | # |
+|real      | q_ice_min           | 1e-7                | minimum cloud ice mixing ratio to consider"                        | kgkg-1 |
+|real      | q_ice_max           | 0.001               | maximum cloud ice mixing ratio to consider"                        | kgkg-1 |
+|real      | qn_ice_min          | 1e-8                | minimum amount of nuclii for cloud ice to consider"                | # |
+|real      | qn_ice_max          | 2.6e6               | maximum amount of nuclii for cloud ice to consider"                | # |
+|real      | q_hail_min          | -9999.              | minimum hail mixing ratio to consider"                             | kgkg-1 |
+|real      | q_hail_max          | -9999.              | maximum hail mixing ratio to consider"                             | kgkg-1 |
+|real      | qn_hail_min         | -9999.              | minimum amount of nuclii for hail to consider"                     | # |
+|real      | qn_hail_max         | -9999.              | maximum amount of nuclii for hail to consider"                     | # |
+|real      | q_clou_min          | 1e-10               | minimum clou mixing ratio to consider"                             | kgkg-1 |
+|real      | q_clou_max          | 0.013               | maximum clou mixing ratio to consider"                             | kgkg-1 |
+|integer   | dim_ice             | 200                 | dimension for ice bins"                                            | - |
+|integer   | Nqxbins             | 50000               | dimension for water species bins"                                  | - |
 
 
 == Installation ==
