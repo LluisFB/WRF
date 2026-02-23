@@ -64,6 +64,7 @@ CONTAINS
 #ifdef SIMRADAR
 ! simrad.AR CIMA Feb. 26
       USE module_utility
+      USE module_simradar, ONLY: simradar_calc
       USE module_simradar_tools, ONLY: lut_vars
 #else
       USE module_utility, ONLY : WRFU_Time
@@ -1263,8 +1264,8 @@ CONTAINS
 
       IF (is_output_t_simradar) THEN
         CALL simradar_calc(                                                                           &
-             IS_RESTART=config_flags%restart,                                                         &
-             IS_OUTPUT_TIME=is_output_t_simradar, NSTEPS=grid%nsteps,                                 & 
+             IS_RESTART=config_flags%restart, IS_OUTPUT_TIME=is_output_t_simradar,                    &
+             NSTEPS=grid%nsteps,                                                                      & 
              DT=grid%dt, XTIME=grid%xtime, CURR_SECS2=curr_secs2,                                     &
                       
              TIMEDBG=config_flags%timedbg,                                                            &
@@ -1274,7 +1275,7 @@ CONTAINS
              ! Input
              N_MOIST=num_moist,                                                                       &
              MOIST=grid%moist,                                                                        &
-             PARAM_FIRST_SCALAR=param_first_scalar,                                                   &             
+             PRM_FIRST_SCALAR=param_first_scalar,                                                     &
              M_QV=P_QV, M_QC=P_QC, M_QR=P_QR, M_QS=P_QS, M_QI=P_QI, M_QG=P_QG, M_QH=P_QH,             &
              M_QNG=P_QNG, M_QNH=P_QNH, M_QNR=P_QNR, M_QVOLG=P_QVOLG,                                  &
 !             M_QG=F_QV, F_QC, F_QI, F_QS,                                                             &
@@ -1286,7 +1287,7 @@ CONTAINS
              SINA=grid%sina, COSA=grid%cosa,                                                          &
              U=grid%u_phy, V=grid%v_phy, W=grid%w_2,                                                  &
              P=grid%p, PB=grid%pb,                                                                    &
-             T=grid%t_phy, PH=grid%ph_2, PHB=grid%phb,                                                &
+             TA=grid%t_phy, PH=grid%ph_2, PHB=grid%phb,                                               &
              NRADAR=config_flags%nradar, NGRID_RADAR=config_flags%ngrid_radar,                        &
              E_ANGLE=config_flags%e_angle, E_AZIMUTH=config_flags%e_azimuth,                          &
              E_DIST=config_flags%e_dist,                                                              &
@@ -1330,7 +1331,7 @@ CONTAINS
              N_TOCOMPUTE=grid%N_tocompute, TOCOMPUTE=grid%tocompute,                                  &
              NMOIST=grid%N_tcmoist, IMOIST=grid%tcmoist,                                              &
              ! These are too big to be duplicated
-             NQXBIINS = config_flags%Nqxbins,                                                         &
+             NQXBINS = config_flags%Nqxbins,                                                          &
              Q_RAIN_VEC=grid%q_rain_vec, Q_SNOW_VEC=grid%q_snow_vec, Q_GRAU_VEC=grid%q_grau_vec,      &
              Q_ICE_VEC=grid%q_ice_vec, Q_HAIL_VEC=grid%q_hail_vec,                                    &
              LUTGRID=lutgrid,                                                                         &
