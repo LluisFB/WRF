@@ -7,27 +7,3 @@ For an overview of the WRF modeling system, along with information regarding dow
 Information regarding WRF Model citations (including a DOI) can be found here: [https://www2.mmm.ucar.edu/wrf/users/citing_wrf.html](https://www2.mmm.ucar.edu/wrf/users/citing_wrf.html).
 
 The WRF Model is open-source code in the public domain, and its use is unrestricted. The name "WRF", however, is a registered trademark of the University Corporation for Atmospheric Research. The WRF public domain notice and related information may be found here: [https://www2.mmm.ucar.edu/wrf/users/public.html](https://www2.mmm.ucar.edu/wrf/users/public.html).
-
-
-# Lluís Fita Borrell fork #
-This is the WRF repository of Lluis Fita Borrell, forked from WRF v7.1. CIMA-IFAECI, UBA-CONICET-CNRS-IRD, C. A. Buenos Aries Argentina
-
-This branch 'simradAR' is to include 'in-line' surface polarimetric radar simulator based in simrad.AR (CONGREMET XIII, Galligani et al. 2018) 
-
-## Installation ##
-
-Getting the code from the fork in a INSTDIR
-```
-$ cd $INSTDIR
-$ git clone git@github.com:LluisFB/WRF.git
-```
-
-Getting submodules
-```
-$ git submodule update --init --recursive
-```
-
-Branches (all official from WRF v7.1) and the ones created by L Fita. To switch to simradAR
-```
-$ git checkout simradAR
-```
