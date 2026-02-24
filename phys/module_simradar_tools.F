@@ -1056,7 +1056,7 @@ MODULE module_simradar_tools
       END DO
       
       ! debugging at N, W, S, E axes
-      IF (dbvg) THEN
+      IF (dbg) THEN
         IF (i== 1 .OR. i == Nangle/4 .OR. i == Nangle/2 .OR. i == 3*Nangle/4 .OR. i == Nangle) THEN
           PRINT *, '  ' // TRIM(fname) // ": values at major AXIS N;E;S;W angle = ", angle, ' _______'
           PRINT *, '  lon first:', lons(i,1), ' last: ', lons(i,Ndist)
