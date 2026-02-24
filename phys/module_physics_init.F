@@ -5942,10 +5942,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: lonmin, lonmax, latmin, latmax
     REAL                                                 :: lonrad, latrad, distrad
     REAL, DIMENSION(4)                                   :: lonvertices, latvertices
-    REAL, DIMENSION( ims:ime , jms:jme )                 :: dist, ddist, dlon, dlat
-    REAL, DIMENSION( ims:ime , jms:jme, 4 )              :: bnds_lon, bnds_lat
-    REAL, DIMENSION( ims:ime )                           :: distlon
-    REAL, DIMENSION( jms:jme )                           :: distlat
+    REAL, DIMENSION( its:ite , jts:jte )                 :: dist, ddist, dlon, dlat
+    REAL, DIMENSION( its:ite , jts:jte, 4 )              :: bnds_lon, bnds_lat
+    REAL, DIMENSION( its:ite )                           :: distlon
+    REAL, DIMENSION( jts:jte )                           :: distlat
     REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlon_bnds_NOc, radarlat_bnds_NOc,     &
       radarhgt_bnds_NOc
     INTEGER, DIMENSION(ims:ime, jms:jme, 2, ngrid_radar) :: ijgridradar_NOc
@@ -6098,7 +6098,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     mindd = MINVAL(ddist)
     
     ! Minimum distance to the debugging point
-    dist = SQRT((xlong-londbg)**2+(xlat-latdbg)**2)
+    dist = SQRT((xlong(its:ite,jts:jte)-londbg)**2+(xlat(its:ite,jts:jte)-latdbg)**2)
     mindist = MINVAL(dist)
     
     ! Set-up simrad.AR debug
@@ -6133,7 +6133,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       END DO
     END IF 
     
-    ! Boundaries of the cells
+    ! Boundaries of the cells (all space, to take into account the HALO)
     ! SW
     bnds_lon(ims:ime,jms:jme,1) = xlong_u(ims:ime,jms:jme)
     bnds_lat(ims:ime,jms:jme,1) = xlat_u(ims:ime,jms:jme)
@@ -6216,17 +6216,16 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         radarhgts(:,:,ir), radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc,                  &
         radarhgt_bnds_NOc, dbg)
         
-      PRINT *,'  Lluis after compute_radar_lonlat_radial'
-
-      ! Checking pertinence of the radar into this tile
-      CALL pertinence_polar(ims, ime, jms, jme, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
+      ! Checking pertinence of the radar into this tile (computing only in the patch)
+      CALL pertinence_polar(its, ite, jts, jte, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
           e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx,                          &
-          model_config_rec%missing_value, ngrid_radar, gatehdist(:,:,ir), inradar, radnum(:,:,ir),    &
-          ngridradar(:,:,ir), 2, ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)
+          model_config_rec%missing_value, ngrid_radar, gatehdist(its:ets,jts:jte,ir), inradar,        &
+          radnum(its:ets,jts:jte,ir), ngridradar(its:ets,jts:jte,ir), 2, ijgridradar_NOc,             &
+          ijdistgridradar_NOc, inside, dbg)
           
       ! Compressing results
-      DO i=ims, ime
-        DO j=jms, jme
+      DO i=its, ite
+        DO j=jts, jte
           DO n=1, ngridradar(i,j,ir)
             inrnn = (ir-1)*ngrid_radar + n
             ijdistgridradar(i,j,inrnn) = ijdistgridradar_NOc(i,j,n)
