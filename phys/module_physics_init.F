@@ -6214,7 +6214,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         rdistx*1000., rhgtx*1000., radars_azimuth(:,ir), a, f, elipsn, radars_angle(:,ir),            &
         radars_dist(:,ir), radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir),                &
         radarhgts(:,:,ir), radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc,                  &
-        radarhgt_bnds_NOc, dbg)     
+        radarhgt_bnds_NOc, dbg)
+        
+      PRINT *,'  Lluis after compute_radar_lonlat_radial'
 
       ! Checking pertinence of the radar into this tile
       CALL pertinence_polar(ims, ime, jms, jme, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &

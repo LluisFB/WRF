@@ -1055,19 +1055,21 @@ MODULE module_simradar_tools
         END DO
       END DO
       
-      ! debugging at N, W, S, E axes 
-      IF (i== 1 .OR. i == Nangle/4 .OR. i == Nangle/2 .OR. i == 3*Nangle/4 .OR. i == Nangle) THEN
-        PRINT *, '  ' // TRIM(fname) // ": values at major AXIS N;E;S;W angle = ", angle, ' _______'
-        PRINT *, '  lon first:', lons(i,1), ' last: ', lons(i,Ndist)
-        PRINT *, '  lat first:', lats(i,1), ' last: ', lats(i,Ndist)
-        PRINT *, '  hgt at first:', hgts(1,1), ' top: ', hgts(Nazimuth,1)
-        PRINT *, '  hgt at last:', hgts(1,Ndist), ' top: ', hgts(Nazimuth,Ndist)        
-        PRINT *, '      values idist dist lon lat invangle invdist _______'
-        DO j=1, Ndist, Ndbgfrq
-          CALL distance_between_points(lon_pt, lat_pt, lons(i,j), lats(i,j), a, f, elips, s, faz)
-          PRINT *,'      ',  j, ddist*(j-1) + ddist2, lons(i,j), lats(i,j), faz, s
+      ! debugging at N, W, S, E axes
+      IF (dbvg) THEN
+        IF (i== 1 .OR. i == Nangle/4 .OR. i == Nangle/2 .OR. i == 3*Nangle/4 .OR. i == Nangle) THEN
+          PRINT *, '  ' // TRIM(fname) // ": values at major AXIS N;E;S;W angle = ", angle, ' _______'
+          PRINT *, '  lon first:', lons(i,1), ' last: ', lons(i,Ndist)
+          PRINT *, '  lat first:', lats(i,1), ' last: ', lats(i,Ndist)
+          PRINT *, '  hgt at first:', hgts(1,1), ' top: ', hgts(Nazimuth,1)
+          PRINT *, '  hgt at last:', hgts(1,Ndist), ' top: ', hgts(Nazimuth,Ndist)        
+          PRINT *, '      values idist dist lon lat invangle invdist _______'
+          DO j=1, Ndist, Ndbgfrq
+            CALL distance_between_points(lon_pt, lat_pt, lons(i,j), lats(i,j), a, f, elips, s, faz)
+            PRINT *,'      ',  j, ddist*(j-1) + ddist2, lons(i,j), lats(i,j), faz, s
         
-        END DO
+          END DO
+        END IF
       END IF
 
     END DO angl
