@@ -6177,11 +6177,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     bnds_lon(ims:ime,jms:jme,4) = xlong_v(ims:ime,jms:jme)
     bnds_lat(ims:ime,jms:jme,4) = xlat_v(ims:ime,jms:jme)
        
-    ! Set-up simrad.AR debug
-    CALL get_wrf_debug_level( dbg_level )
-    dbg = .FALSE.
-    IF (dbg_level > 75) dbg = .TRUE.
-
     e_angle2 = e_angle / 2
     e_azimuth2 = e_azimuth / 2
     e_dist2 = e_dist / 2
@@ -6211,11 +6206,16 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! To real as member of grid
     ra = REAL(a)
     rf = REAL(f)
-    
+      
     IF (dbg) THEN
       PRINT *,'  ' // TRIM(fname) // ': looking for ', nradar, ' radars ...'    
     END IF
-    
+
+    ! Set-up simrad.AR debug
+    CALL get_wrf_debug_level( dbg_level )
+    dbg = .FALSE.
+    IF (dbg_level > 75) dbg = .TRUE.
+
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
     
