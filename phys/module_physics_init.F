@@ -6095,7 +6095,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     ddist = 1000.
     ddist = SQRT(dlon*dlon + dlat*dlat)
-    mindd = MINVAL(ddist)
+    mindd = MINVAL(ddist(its:ite-1,jts:jte-1))
     
     ! Minimum distance to the debugging point
     dist = SQRT((xlong(its:ite,jts:jte)-londbg)**2+(xlat(its:ite,jts:jte)-latdbg)**2)
