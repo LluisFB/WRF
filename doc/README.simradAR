@@ -28,20 +28,20 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 | type     | name                | default value       | description                                                         | units |
 | ---- | ---- | ---- | ---- | ---- |
 | integer   | nradar              | 1                   | amount of surface radar                                            | # |
-| integer   | e_dist              | 800                 | radar grid points along the radii [computed as                     | # |
+| integer   | e_dist              | 2000                | radar grid points along the radii [computed as                     | # |
 |           |                     |                     |    2.*max(distmax) / min(radards)]                                 | # |
 | integer   | e_angle             | 376                 | radar amount of horizontal angles  [computed as                    | # |
 |           |                     |                     |    2*pi*radii_ddist / (min(ddist))                                 | # |
 | integer   | e_azimuth           | 15                  | radar amount of azimuths (vertical angle) [same for all radars]    | # |
 | integer   | ngrid_radar         | 1500                | maximum amount of radar cells into a given WRF grid point          | # |
 | integer   | ngrid3_radar        | 25000               | maximum amount of vertical radar cells into a given WRF grid point | # | 
-| integer   | nradar_ngrid        | 30000               | nradar*ngrid_radar                                                 | # |
-| integer   | nradar_ngrid_coord2 | 60000               | nradar_ngrid_coord2                                                | # |
-| integer   | nradar_coord2       | 40                  | nradar*coord2                                                      | # |
-| integer   | nradar_coord4       | 160                 | nradar*coord4                                                      | # |
-| integer   | ngrid_coord2        | 60000               | ngrid_radar*coord2                                                 | # |
-| integer   | nradar_azimuth      | 300                 | nradar*e_azimuth                                                   | # |
-| integer   | nradar_dist         | 1600                | nradar*e_dist                                                      | # |
+| integer   | nradar_ngrid        | 1500                | nradar*ngrid_radar                                                 | # |
+| integer   | nradar_ngrid_coord2 | 3000                | nradar_ngrid_coord2                                                | # |
+| integer   | nradar_coord2       | 2                   | nradar*coord2                                                      | # |
+| integer   | nradar_coord4       | 4                   | nradar*coord4                                                      | # |
+| integer   | ngrid_coord2        | 3000                | ngrid_radar*coord2                                                 | # |
+| integer   | nradar_azimuth      | 15                  | nradar*e_azimuth                                                   | # |
+| integer   | nradar_dist         | 2000                | nradar*e_dist                                                      | # |
 | integer   | Nbands              | 3                   | amount of radar bands                                              | # |
 | integer   | Nluticebins         | 200                 | amount of ice bins for LUT interpolations                          | # |
 | integer   | Nlutqxbins          | 50000               | amount of water species bins for LUT interpolations                | # |
@@ -118,7 +118,7 @@ netcdf TMATRIX_WRF_WSM6 {
 dimensions:
         radar_band = 3 ;
         elevation = 15 ;
-        frequency = 50000 ;
+        qxbin = 50000 ;
         C1 = 1 ;
         StringLength = 256 ;
 variables:
@@ -163,99 +163,99 @@ variables:
         float n0g ;
         float rho_h ;
         float n0h ;
-        double Zh_RAIN(frequency, elevation, radar_band) ;
+        double Zh_RAIN(qxbin, elevation, radar_band) ;
                 Zh_RAIN:standard_name = "Zh_RAIN" ;
                 Zh_RAIN:long_name = "Zh for RAIN" ;
                 Zh_RAIN:units = "-" ;
-        double Zh_SNOW(frequency, elevation, radar_band) ;
+        double Zh_SNOW(qxbin, elevation, radar_band) ;
                 Zh_SNOW:standard_name = "Zh_SNOW" ;
                 Zh_SNOW:long_name = "Zh for SNOW" ;
                 Zh_SNOW:units = "-" ;
-        double Zh_GRAU(frequency, elevation, radar_band) ;
+        double Zh_GRAU(qxbin, elevation, radar_band) ;
                 Zh_GRAU:standard_name = "Zh_GRAU" ;
                 Zh_GRAU:long_name = "Zh for GRAU" ;
                 Zh_GRAU:units = "-" ;
-        double Zh_ICE(frequency, elevation, radar_band) ;
+        double Zh_ICE(qxbin, elevation, radar_band) ;
                 Zh_ICE:standard_name = "Zh_ICE" ;
                 Zh_ICE:long_name = "Zh for ICE" ;
                 Zh_ICE:units = "-" ;
-        double Zdr_RAIN(frequency, elevation, radar_band) ;
+        double Zdr_RAIN(qxbin, elevation, radar_band) ;
                 Zdr_RAIN:standard_name = "Zdr_RAIN" ;
                 Zdr_RAIN:long_name = "Zdr for RAIN" ;
                 Zdr_RAIN:units = "-" ;
-        double Zdr_SNOW(frequency, elevation, radar_band) ;
+        double Zdr_SNOW(qxbin, elevation, radar_band) ;
                 Zdr_SNOW:standard_name = "Zdr_SNOW" ;
                 Zdr_SNOW:long_name = "Zdr for SNOW" ;
                 Zdr_SNOW:units = "-" ;
-        double Zdr_GRAU(frequency, elevation, radar_band) ;
+        double Zdr_GRAU(qxbin, elevation, radar_band) ;
                 Zdr_GRAU:standard_name = "Zdr_GRAU" ;
                 Zdr_GRAU:long_name = "Zdr for GRAU" ;
                 Zdr_GRAU:units = "-" ;
-        double Zdr_ICE(frequency, elevation, radar_band) ;
+        double Zdr_ICE(qxbin, elevation, radar_band) ;
                 Zdr_ICE:standard_name = "Zdr_ICE" ;
                 Zdr_ICE:long_name = "Zdr for ICE" ;
                 Zdr_ICE:units = "-" ;
-        double LDR_RAIN(frequency, elevation, radar_band) ;
+        double LDR_RAIN(qxbin, elevation, radar_band) ;
                 LDR_RAIN:standard_name = "LDR_RAIN" ;
                 LDR_RAIN:long_name = "LDR for RAIN" ;
                 LDR_RAIN:units = "-" ;
-        double LDR_SNOW(frequency, elevation, radar_band) ;
+        double LDR_SNOW(qxbin, elevation, radar_band) ;
                 LDR_SNOW:standard_name = "LDR_SNOW" ;
                 LDR_SNOW:long_name = "LDR for SNOW" ;
                 LDR_SNOW:units = "-" ;
-        double LDR_GRAU(frequency, elevation, radar_band) ;
+        double LDR_GRAU(qxbin, elevation, radar_band) ;
                 LDR_GRAU:standard_name = "LDR_GRAU" ;
                 LDR_GRAU:long_name = "LDR for GRAU" ;
                 LDR_GRAU:units = "-" ;
-        double LDR_ICE(frequency, elevation, radar_band) ;
+        double LDR_ICE(qxbin, elevation, radar_band) ;
                 LDR_ICE:standard_name = "LDR_ICE" ;
                 LDR_ICE:long_name = "LDR for ICE" ;
                 LDR_ICE:units = "-" ;
-        double Aih_RAIN(frequency, elevation, radar_band) ;
+        double Aih_RAIN(qxbin, elevation, radar_band) ;
                 Aih_RAIN:standard_name = "Aih_RAIN" ;
                 Aih_RAIN:long_name = "Aih for RAIN" ;
                 Aih_RAIN:units = "-" ;
-        double Aih_SNOW(frequency, elevation, radar_band) ;
+        double Aih_SNOW(qxbin, elevation, radar_band) ;
                 Aih_SNOW:standard_name = "Aih_SNOW" ;
                 Aih_SNOW:long_name = "Aih for SNOW" ;
                 Aih_SNOW:units = "-" ;
-        double Aih_GRAU(frequency, elevation, radar_band) ;
+        double Aih_GRAU(qxbin, elevation, radar_band) ;
                 Aih_GRAU:standard_name = "Aih_GRAU" ;
                 Aih_GRAU:long_name = "Aih for GRAU" ;
                 Aih_GRAU:units = "-" ;
-        double Aih_ICE(frequency, elevation, radar_band) ;
+        double Aih_ICE(qxbin, elevation, radar_band) ;
                 Aih_ICE:standard_name = "Aih_ICE" ;
                 Aih_ICE:long_name = "Aih for ICE" ;
                 Aih_ICE:units = "-" ;
-        double Aiv_RAIN(frequency, elevation, radar_band) ;
+        double Aiv_RAIN(qxbin, elevation, radar_band) ;
                 Aiv_RAIN:standard_name = "Aiv_RAIN" ;
                 Aiv_RAIN:long_name = "Aiv for RAIN" ;
                 Aiv_RAIN:units = "-" ;
-        double Aiv_SNOW(frequency, elevation, radar_band) ;
+        double Aiv_SNOW(qxbin, elevation, radar_band) ;
                 Aiv_SNOW:standard_name = "Aiv_SNOW" ;
                 Aiv_SNOW:long_name = "Aiv for SNOW" ;
                 Aiv_SNOW:units = "-" ;
-        double Aiv_GRAU(frequency, elevation, radar_band) ;
+        double Aiv_GRAU(qxbin, elevation, radar_band) ;
                 Aiv_GRAU:standard_name = "Aiv_GRAU" ;
                 Aiv_GRAU:long_name = "Aiv for GRAU" ;
                 Aiv_GRAU:units = "-" ;
-        double Aiv_ICE(frequency, elevation, radar_band) ;
+        double Aiv_ICE(qxbin, elevation, radar_band) ;
                 Aiv_ICE:standard_name = "Aiv_ICE" ;
                 Aiv_ICE:long_name = "Aiv for ICE" ;
                 Aiv_ICE:units = "-" ;
-        double KDP_RAIN(frequency, elevation, radar_band) ;
+        double KDP_RAIN(qxbin, elevation, radar_band) ;
                 KDP_RAIN:standard_name = "KDP_RAIN" ;
                 KDP_RAIN:long_name = "KDP for RAIN" ;
                 KDP_RAIN:units = "-" ;
-        double KDP_SNOW(frequency, elevation, radar_band) ;
+        double KDP_SNOW(qxbin, elevation, radar_band) ;
                 KDP_SNOW:standard_name = "KDP_SNOW" ;
                 KDP_SNOW:long_name = "KDP for SNOW" ;
                 KDP_SNOW:units = "-" ;
-        double KDP_GRAU(frequency, elevation, radar_band) ;
+        double KDP_GRAU(qxbin, elevation, radar_band) ;
                 KDP_GRAU:standard_name = "KDP_GRAU" ;
                 KDP_GRAU:long_name = "KDP for GRAU" ;
                 KDP_GRAU:units = "-" ;
-        double KDP_ICE(frequency, elevation, radar_band) ;
+        double KDP_ICE(qxbin, elevation, radar_band) ;
                 KDP_ICE:standard_name = "KDP_ICE" ;
                 KDP_ICE:long_name = "KDP for ICE" ;
                 KDP_ICE:units = "-" ;
