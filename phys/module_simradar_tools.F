@@ -1204,6 +1204,8 @@ MODULE module_simradar_tools
     !IF (rlon > lonvertices(klonmin(1)) .AND. rlon < lonvertices(klonmax(1)) .AND.                     &
     !  rlat > latvertices(klonmin(1)) .AND. rlat < latvertices(klatmax(1))) THEN
     insideradar: IF (inside) THEN
+    
+      IF (dbg) PRINT *,'    ' // TRIM(fname) // ": radar inside !!"
 
       centerin = .TRUE.
 
@@ -2206,9 +2208,9 @@ MODULE module_simradar_tools
    
     IF (mindist < rdist) inside = .TRUE.
 
-    IF (dbg) PRINT *, '   ' //TRIM(fname)//' for ims,ime;jms,jme ',ims,' , ',ime,' ; ',jms,' , ',jme, &
-      ' min,max lon ', MINVAL(lon), ',', MAXVAL(lon), ' min,max lat ', MINVAL(lat), ',', MAXVAL(lat), &
-      ' mindist: ', mindist, ' inside ', inside
+!    IF (dbg) PRINT *, '   ' //TRIM(fname)//' for ims,ime;jms,jme ',ims,' , ',ime,' ; ',jms,' , ',jme, &
+!      ' min,max lon ', MINVAL(lon), ',', MAXVAL(lon), ' min,max lat ', MINVAL(lat), ',', MAXVAL(lat), &
+!      ' mindist: ', mindist, ' inside ', inside
 
     IF (ALLOCATED(distborder)) DEALLOCATE(distborder)
     
