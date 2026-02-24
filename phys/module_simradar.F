@@ -496,6 +496,7 @@ MODULE module_simradar
 
     ! Getting the overall debug level
     CALL get_wrf_debug_level( dbg_level )
+    dbg = .FALSE.
     IF (dbg_level > 75) dbg = .TRUE.
     cdone = .FALSE.
 

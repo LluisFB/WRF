@@ -6177,6 +6177,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
     ! Set-up simrad.AR debug
     CALL get_wrf_debug_level( dbg_level )
+    dbg = .FALSE.
     IF (dbg_level > 75) dbg = .TRUE.
     
     found = .FALSE.
