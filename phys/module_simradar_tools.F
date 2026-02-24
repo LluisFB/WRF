@@ -2082,10 +2082,12 @@ MODULE module_simradar_tools
     CALL is_inside(ii, ie, ji, je, lon(ii:ie,ji:je), lat(ii:ie,ji:je), rlon, rlat, rdist, inside, dbg)
 
     ! Going to the borders
-    DO ibnd=1, 4
-      CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,    &
-        rlat, rdist, inside, dbg)  
-    END DO
+    IF (.NOT.inside) THEN
+      DO ibnd=1, 4
+        CALL is_inside(ii, ie, ji, je, bnds_lon(ii:ie,ji:je,ibnd), bnds_lat(ii:ie,ji:je,ibnd), rlon,  &
+          rlat, rdist, inside, dbg)  
+      END DO
+    END IF
 
     !! S border
     IF (.NOT.inside) THEN
