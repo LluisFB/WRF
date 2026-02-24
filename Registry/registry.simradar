@@ -7,9 +7,9 @@
 # FROM Tiger's Registry documentation (https://www2.mmm.ucar.edu/wrf/WG2/software_2.0/registry_schaffer.pdf)
 ## Entry: The keyword “dimspec”
 # dimspec DimName  Order HowDefined CoordAxis DatName
-dimspec    ri         2     namelist=e_dist                  c     e_dist
-dimspec    rj         2     namelist=e_angle                 c     e_angle
-dimspec    rk         2     namelist=e_azimuth               c     e_azimuth
+dimspec    ri         2     namelist=e_dist                  z     e_dist
+dimspec    rj         2     namelist=e_angle                 x     e_angle
+dimspec    rk         2     namelist=e_azimuth               y     e_azimuth
 dimspec    rn         2     namelist=nradar                  c     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
@@ -23,7 +23,7 @@ dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
 dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
-dimspec    nrd        2     namelist=nradar_dist             c     nradar_dist
+dimspec    nrd        2     namelist=nradar_dist             z     nradar_dist
 dimspec    nbds       2     namelist=Nbands                  c     Nbands
 dimspec    lqb        2     namelist=Nlutqxbins              c     Nlutqxbins
 dimspec    ddli       2     namelist=Nluticebins             c     Nluticebins
