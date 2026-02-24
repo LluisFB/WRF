@@ -6017,119 +6017,45 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
     ! nrnn = nradar*ngrid_radar
     IF ( nrnn /= nradar * ngrid_radar) THEN
-      PRINT *, '  nrnn: ', nrnn, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
+      PRINT *, '  nradar_ngrid: ', nrnn, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, ngrid_radar " //      &
-        "and nrnn do not coincide! nrnn = nradar*ngrid_radar"
+        "and nradar_ngrid do not coincide! nradar_ngrid = nradar*ngrid_radar"
       CALL wrf_error_fatal ( diag_message )
     END IF
     ! nrcoord = nradar*2
     IF ( nrcoord /= nradar * 2) THEN
-      PRINT *, '  nrcoord: ', nrcoord, ' nradar: ', nradar
+      PRINT *, '  nradar_coord2: ', nrcoord, ' nradar: ', nradar
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar " //                   &
-        "and nrcoord do not coincide! nrcoord = nradar*2"
+        "and nradar_coord2 do not coincide! nrcoord = nradar*2"
       CALL wrf_error_fatal ( diag_message )
     END IF
     ! nrnncoord = nradar*ngrid_radar*2
     IF ( nrnncoord /= nradar * ngrid_radar * 2) THEN
-      PRINT *, '  nrrnn: ', nrnn, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
+      PRINT *, '  nradar_ngrid_coord2: ', nrnncoord, ' nradar: ', nradar, ' ngrid_radar: ', ngrid_radar
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, ngrid_radar " //      &
-        "and nrnncoord do not coincide! nrnn = nradar*ngrid_radar*2"
+        "and nradar_ngrid_coord2 do not coincide! nradar_ngrid_coord2 = nradar*ngrid_radar*2"
       CALL wrf_error_fatal ( diag_message )
     END IF
     ! nncoord = ngrid_radar*2
     IF ( nncoord /= ngrid_radar * 2) THEN
-      PRINT *, '  nrrnncoord: ', nrnncoord, ' ngrid_radar: ', ngrid_radar
+      PRINT *, ' ngrid_coord2: ', nncoord, ' ngrid_radar: ', ngrid_radar
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges ngrid_radar " //              &
-        "and nrnncoord do not coincide! nrnncoord = ngrid_radar*2"
+        "and ngrid_coord2 do not coincide! ngrid_coord2 = ngrid_radar*2"
       CALL wrf_error_fatal ( diag_message )
     END IF
     ! nr4coord = nradar*4
     IF ( nr4coord /= nradar * 4) THEN
-      PRINT *, '  nrcoord: ', nrcoord, ' nradar: ', nradar
+      PRINT *, '  nradar_coord4: ', nrcoord, ' nradar: ', nradar
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar " //                   &
-        "and nr4coord do not coincide! nrcoord = nradar*4"
+        "and nradar_coord4 do not coincide! nradar_coord4 = nradar*4"
       CALL wrf_error_fatal ( diag_message )
     END IF
     
-!    IF ( e_rna /= nradar * e_angle) THEN
-!      PRINT *, '  e_rna: ', e_rna, ' nradar: ', nradar, ' e_angle: ', e_rna
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle " //          &
-!        "and e_rna do not coincide! e_rna = nradar*e_angle"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-
-!    IF ( e_rnh /= nradar * e_azimuth) THEN
-!      PRINT *, '  e_rnh: ', e_rnh, ' nradar: ', nradar, ' e_azimuth: ', e_azimuth
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth " //        &
-!        "and e_rnh do not coincide! e_rnh = nradar*e_azimuth"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-    
-!    IF ( e_rnd /= nradar * e_dist) THEN
-!      PRINT *, '  e_rnd: ', e_rnd, ' nradar: ', nradar, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_dist " //           &
-!        "and e_rnd do not coincide! e_rnd = nradar*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-    
-!    IF ( e_rnad /= nradar * e_angle * e_dist) THEN
-!      PRINT *, '  e_rnad: ', e_rnad, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, e_dist " //  &
-!        "and e_rnad do not coincide! e_rnad = nradar*e_angle*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-    
-!    IF ( e_rnhd /= nradar * e_azimuth * e_dist) THEN
-!      PRINT *, '  e_rnhd: ', e_rnhd,' nradar: ', nradar,' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_azimuth, e_dist " //&
-!        "and e_rnhd do not coincide! e_rnhd = nradar*e_azimuth*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-    
-!    IF ( e_rnahd /= nradar * e_angle * e_azimuth * e_dist) THEN
-!      PRINT *, '  e_rnhd: ', e_rnahd, ' nradar: ', nradar, ' e_angle: ', e_angle, ' e_azimuth: ',     &
-!        e_azimuth, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges nradar, e_angle, " //         &
-!        "e_azimuth, e_dist and e_rnahd do not coincide! e_rnahd = nradar*e_angle*e_azimuth*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-   
-!    IF ( e_rad /= e_angle * e_dist) THEN
-!      PRINT *, '  e_rad: ', e_rahd, ' e_angle: ', e_angle, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_dist " //          &
-!        "and e_rad do not coincide! e_rad = e_angle*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-   
-!    IF ( e_rhd /= e_azimuth * e_dist) THEN
-!      PRINT *, '  e_rhd: ', e_rhd, ' e_azimuth: ', e_azimuth, ' e_dist: ', e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_azimuth, e_dist " //        &
-!        "and  e_rhd do not coincide! e_rhd = e_azimuth*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-
-!    IF ( e_rahd /= e_angle * e_azimuth * e_dist) THEN
-!      PRINT *, '  e_rahd: ', e_rahd, ' e_angle: ', e_angle, ' e_azimuth: ', e_azimuth, ' e_dist: ',   &
-!        e_dist
-!      WRITE (diag_message , * ) &
-!        "simrad.AR: ERROR -- error -- ERROR -- error: individual ranges e_angle, e_azimuth, " //      &
-!        "e_dist and e_rahd do not coincide! e_rahd = e_angle*e_azimuth*e_dist"
-!      CALL wrf_error_fatal ( diag_message )
-!    END IF
-
     !! Maximum radar coverage
     maxrdistmax = MAXVAL(model_config_rec%radar_distmax(1:nradar))
     minrds = MINVAL(model_config_rec%radards(1:nradar))
