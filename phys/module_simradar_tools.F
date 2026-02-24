@@ -98,7 +98,9 @@ MODULE module_simradar_tools
   INTEGER, PARAMETER                                     :: S512 = 512
   ! 1024 character String
   INTEGER, PARAMETER                                     :: S1024 = 1024
-  
+  ! 2048 character String
+  INTEGER, PARAMETER                                     :: S2048 = 2048
+
   ! Fill values
   !  !! 'B', NF_BYTE
   !  BYTE, PARAMETER                                      :: fillValueB = 255
@@ -298,7 +300,7 @@ MODULE module_simradar_tools
     REAL                                                 :: minc, maxc
     REAL                                                 :: signv, a, b
     REAL, DIMENSION(Ndim)                                :: origsing
-    CHARACTER (LEN=1000)                                 :: diag_message
+    CHARACTER (LEN=S2048)                                :: diag_message
     CHARACTER(len=Sl)                                    :: fname
 
     !!!!!!! Variables
@@ -1061,7 +1063,7 @@ MODULE module_simradar_tools
         PRINT *, '  hgt at first:', hgts(1,1), ' top: ', hgts(Nazimuth,1)
         PRINT *, '  hgt at last:', hgts(1,Ndist), ' top: ', hgts(Nazimuth,Ndist)        
         PRINT *, '      values idist dist lon lat invangle invdist _______'
-        DO j=1, Ndist, Ndist/Ndbgfrq
+        DO j=1, Ndist, Ndbgfrq
           CALL distance_between_points(lon_pt, lat_pt, lons(i,j), lats(i,j), a, f, elips, s, faz)
           PRINT *,'      ',  j, ddist*(j-1) + ddist2, lons(i,j), lats(i,j), faz, s
         
@@ -2488,7 +2490,7 @@ MODULE module_simradar_tools
     INTEGER, INTENT(in)                                  :: errN
 
     ! Local
-    CHARACTER (LEN=1000)                                 :: diag_message
+    CHARACTER (LEN=S2048)                                :: diag_message
     CHARACTER(len=S32)                                   :: emsg
 
     !!!!!!! Variables
@@ -2497,7 +2499,7 @@ MODULE module_simradar_tools
     ! errN: number of the error provided for a given FORTRAN function
 
     IF (errN /= 0) THEN
-      PRINT *,TRiM(emsg)
+      PRINT *,TRIM(emsg)
       PRINT *,'  ' // TRIM(funcn) // ': ' // TRIM(msg) // ' !!'
       PRINT *,'    error number:', errN
       STOP
@@ -3216,7 +3218,7 @@ MODULE module_simradar_tools
 
     INTEGER, INTENT(in)                                  :: st
     CHARACTER(len=*), INTENT(in)                         :: fn
-    CHARACTER (LEN=1000)                                 :: diag_message
+    CHARACTER (LEN=S2048)                                :: diag_message
 
     !!!!!!! Variables
     ! st: netCDF status number
