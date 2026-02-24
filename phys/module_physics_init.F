@@ -6092,6 +6092,30 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         dlat(i,j) = 20000.*i + 10.*j
       END DO
     END DO
+    
+    ! Getting borders of the tile
+    lonSW = xlong(its,jts)
+    lonNW = xlong(its,jte)
+    lonNE = xlong(ite,jte)
+    lonSE = xlong(ite,jts)
+    latSW = xlat(its,jts)
+    latNW = xlat(its,jte)
+    latNE = xlat(ite,jte)
+    latSE = xlat(ite,jts)
+    
+    ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
+    lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
+    latvertices = (/ latSW, latNW, latNE, latSE /)
+    lonmin = MINVAL(lonvertices)
+    lonmax = MAXVAL(lonvertices)
+    latmin = MINVAL(latvertices)
+    latmax = MAXVAL(latvertices)
+    
+    klonmin = MINLOC(lonvertices)
+    klatmin = MINLOC(latvertices)
+    klonmax = MAXLOC(lonvertices)
+    klatmax = MAXLOC(latvertices)
+    
     dlon(its:ite-1,jts:jte-1) = xlong(its:ite-1,jts:jte-1)-xlong(its+1:ite,jts+1:jte)   
     dlat(its:ite-1,jts:jte-1) = xlat(its:ite-1,jts:jte-1)-xlat(its+1:ite,jts+1:jte)
 
@@ -6102,14 +6126,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! Minimum distance to the debugging point
     dist = SQRT((xlong(its:ite,jts:jte)-londbg)**2+(xlat(its:ite,jts:jte)-latdbg)**2)
     mindist = MINVAL(dist)
-    
-    ! Set-up simrad.AR debug
-    CALL get_wrf_debug_level( dbg_level )
-    dbg = .FALSE.
-    IF (dbg_level > 75) dbg = .TRUE.
-    
+
     found = .FALSE.
-    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, ' mindist:', mindist, ' mindd:', &
+    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, 'lon,lat box SW:' lonSW, ', ',   &
+      latSW, ' NW: ',  lonNW, ', ', latNW, ' NE: ',  lonNE, ', ', latNE, ' SE: ',  lonSE, ', ', latSE
+    CALL wrf_debug(75,diag_message)
+    WRITE(diag_message,*) '  londbg, latdbg:', londbg, ', ', latdbg, ' mindist:', mindist, ' mindd:', &
       mindd
     CALL wrf_debug(75,diag_message)
     IF (mindist < mindd) THEN
@@ -6148,30 +6170,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! SW
     bnds_lon(ims:ime,jms:jme,4) = xlong_v(ims:ime,jms:jme)
     bnds_lat(ims:ime,jms:jme,4) = xlat_v(ims:ime,jms:jme)
-    
-    ! Getting borders of the tile
-    lonSW = xlong(its,jts)
-    lonNW = xlong(its,jte)
-    lonNE = xlong(ite,jte)
-    lonSE = xlong(ite,jts)
-    latSW = xlat(its,jts)
-    latNW = xlat(its,jte)
-    latNE = xlat(ite,jte)
-    latSE = xlat(ite,jts)
-    
-    ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
-    lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
-    latvertices = (/ latSW, latNW, latNE, latSE /)
-    lonmin = MINVAL(lonvertices)
-    lonmax = MAXVAL(lonvertices)
-    latmin = MINVAL(latvertices)
-    latmax = MAXVAL(latvertices)
-    
-    klonmin = MINLOC(lonvertices)
-    klatmin = MINLOC(latvertices)
-    klonmax = MAXLOC(lonvertices)
-    klatmax = MAXLOC(latvertices)
-    
+       
+    ! Set-up simrad.AR debug
+    CALL get_wrf_debug_level( dbg_level )
+    dbg = .FALSE.
+    IF (dbg_level > 75) dbg = .TRUE.
+
     e_angle2 = e_angle / 2
     e_azimuth2 = e_azimuth / 2
     e_dist2 = e_dist / 2
@@ -6210,6 +6214,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       rddist = model_config_rec%radards(ir)
       rdistx = model_config_rec%radar_distmax(ir)
       rhgtx = model_config_rec%radar_hgtmax(ir)
+      
+      IF (dbg) PRINT *,'  ' // TRIM(fname) // ": looking for the pretinence of the radar '" //        &
+        TRIM(model_config_rec%radar_name(ir)) // "': at lon,lat: ", rlon, ', ', rlat, " ..."
+      
       ! Polar coordinates of the radar space
       !!
       CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rddist,          &
