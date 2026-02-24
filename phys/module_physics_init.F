@@ -6200,7 +6200,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
     
-    IF (dbg) PRINT *,'  ' // TRIM(fname) // ": using ellopsoide '" // TRM(elipsn) // "' with a: ",    &
+    IF (dbg) PRINT *,'  ' // TRIM(fname) // ": using ellopsoide '" // TRIM(elipsn) // "' with a: ",   &
       a, ' f:', f
     
     ! To real as member of grid
