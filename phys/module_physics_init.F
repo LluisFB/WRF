@@ -6200,16 +6200,16 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
     
-    IF (dbg) PRINT *,'  ' // TRIM(fname) // ": using ellopsoide '" // TRIM(elipsn) // "' with a: ",   &
-      a, ' f:', f
+    WRITE(diag_message,*) '  ' // TRIM(fname) // ": using ellopsoide '" // TRIM(elipsn) //            &
+      "' with a: ", a, ' f:', f
+    CALL wrf_debug(75,diag_message)
     
     ! To real as member of grid
     ra = REAL(a)
     rf = REAL(f)
       
-    IF (dbg) THEN
-      PRINT *,'  ' // TRIM(fname) // ': looking for ', nradar, ' radars ...'    
-    END IF
+    WRITE(diag_message,*) '  ' // TRIM(fname) // ': looking for ', nradar, ' radars ...'    
+    CALL wrf_debug(75,diag_message)
 
     ! Set-up simrad.AR debug
     CALL get_wrf_debug_level( dbg_level )
