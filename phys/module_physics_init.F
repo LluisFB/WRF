@@ -6116,47 +6116,52 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
     
-    dlon(its:ite-1,jts:jte-1) = xlong(its:ite-1,jts:jte-1)-xlong(its+1:ite,jts+1:jte)   
-    dlat(its:ite-1,jts:jte-1) = xlat(its:ite-1,jts:jte-1)-xlat(its+1:ite,jts+1:jte)
-
-    ddist = 1000.
-    ddist = SQRT(dlon*dlon + dlat*dlat)
-    mindd = MINVAL(ddist(its:ite-1,jts:jte-1))
+    IF ( (londbg /= -999.) .AND. (latdbg /= -999.) ) THEN
     
-    ! Minimum distance to the debugging point
-    dist = SQRT((xlong(its:ite,jts:jte)-londbg)**2+(xlat(its:ite,jts:jte)-latdbg)**2)
-    mindist = MINVAL(dist)
+      dlon(its:ite-1,jts:jte-1) = xlong(its:ite-1,jts:jte-1)-xlong(its+1:ite,jts+1:jte)   
+      dlat(its:ite-1,jts:jte-1) = xlat(its:ite-1,jts:jte-1)-xlat(its+1:ite,jts+1:jte)
 
-    found = .FALSE.
-    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, 'lon,lat box SW:', lonSW, ', ',  &
-      latSW, ' NW: ', lonNW, ', ', latNW, ' NE: ',  lonNE, ', ', latNE, ' SE: ',  lonSE, ', ', latSE
-    CALL wrf_debug(75,diag_message)
-    WRITE(diag_message,*) '  londbg, latdbg:', londbg, ', ', latdbg, ' mindist:', mindist, ' mindd:', &
-      mindd
-    CALL wrf_debug(75,diag_message)
-    IF (mindist < mindd) THEN
-      DO i=its, ite
-        DO j=jts, jte
+      ddist = 1000.
+      ddist = SQRT(dlon*dlon + dlat*dlat)
+      mindd = MINVAL(ddist(its:ite-1,jts:jte-1))
+    
+      ! Minimum distance to the debugging point
+      dist = SQRT((xlong(its:ite,jts:jte)-londbg)**2+(xlat(its:ite,jts:jte)-latdbg)**2)
+      mindist = MINVAL(dist)
 
-          IF (dist(i,j) == mindist) THEN
-            idbg = i
-            jdbg = j
-            found = .TRUE.
-            WRITE(diag_message,*)'  found debugging grid point _______' 
-            CALL wrf_debug(75,diag_message)
-            WRITE(diag_message,*)'  lon,lat dbg: ', londbg, ' ,', latdbg,' mindist:', mindist
-            CALL wrf_debug(75,diag_message)
-            WRITE(diag_message,*)'  i,j dbg: ', idbg, jdbg
-            CALL wrf_debug(75,diag_message)
-            ijdbg(1) = idbg
-            ijdbg(2) = jdbg
-            EXIT
-          END IF
+      found = .FALSE.
+      WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, 'lon,lat box SW:', lonSW, ', ',  &
+        latSW, ' NW: ', lonNW, ', ', latNW, ' NE: ',  lonNE, ', ', latNE, ' SE: ',  lonSE, ', ', latSE
+      CALL wrf_debug(75,diag_message)
+      WRITE(diag_message,*) '  londbg, latdbg:', londbg, ', ', latdbg, ' mindist:', mindist, ' mindd:', &
+        mindd
+      CALL wrf_debug(75,diag_message)
+      IF (mindist < mindd) THEN
+        DO i=its, ite
+          DO j=jts, jte
+  
+            IF (dist(i,j) == mindist) THEN
+              idbg = i
+              jdbg = j
+              found = .TRUE.
+              WRITE(diag_message,*)'  found debugging grid point _______' 
+              CALL wrf_debug(75,diag_message)
+              WRITE(diag_message,*)'  lon,lat dbg: ', londbg, ' ,', latdbg,' mindist:', mindist
+              CALL wrf_debug(75,diag_message)
+              WRITE(diag_message,*)'  i,j dbg: ', idbg, jdbg
+              CALL wrf_debug(75,diag_message)
+              ijdbg(1) = idbg
+              ijdbg(2) = jdbg
+              EXIT
+            END IF
+          END DO
+          IF (found) EXIT
         END DO
-        IF (found) EXIT
-      END DO
-    END IF 
-    
+      END IF 
+    ELSE
+      IF (dbg) PRINT *, '    ' // TRIM(fname) // ': no debugging londbg,latdbg: ', londbg, ', ',      &
+        latdbg, ' point passed in namelist.input !!'
+    END IF  
     ! Boundaries of the cells (all space, to take into account the HALO)
     ! SW
     bnds_lon(ims:ime,jms:jme,1) = xlong_u(ims:ime,jms:jme)
@@ -6202,6 +6207,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ! To real as member of grid
     ra = REAL(a)
     rf = REAL(f)
+    
+    IF (dbg) THEN
+      PRINT *,'  ' // TRIM(fname) // ': looking for ', nradar, ' radars ...'    
+    END IF
     
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
