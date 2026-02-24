@@ -6128,8 +6128,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     mindist = MINVAL(dist)
 
     found = .FALSE.
-    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, 'lon,lat box SW:' lonSW, ', ',   &
-      latSW, ' NW: ',  lonNW, ', ', latNW, ' NE: ',  lonNE, ', ', latNE, ' SE: ',  lonSE, ', ', latSE
+    WRITE(diag_message,*) 'its,ite:', its,ite, ' jts,jte:', jts,jte, 'lon,lat box SW:', lonSW, ', ',  &
+      latSW, ' NW: ', lonNW, ', ', latNW, ' NE: ',  lonNE, ', ', latNE, ' SE: ',  lonSE, ', ', latSE
     CALL wrf_debug(75,diag_message)
     WRITE(diag_message,*) '  londbg, latdbg:', londbg, ', ', latdbg, ' mindist:', mindist, ' mindd:', &
       mindd
