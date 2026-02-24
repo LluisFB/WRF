@@ -653,8 +653,8 @@ MODULE module_simradar
 
               printdbg = .FALSE.
               IF (dbg) THEN
-                IF (MOD(i+j+k,10) == 0 .AND. ijkfound < 10) THEN
-                  IF (ijkfound < 10) THEN
+                IF (MOD(i+j+k,Ndbgfrq) == 0 .AND. ijkfound < Ndbg) THEN
+                  IF (ijkfound < Ndbg) THEN
                     printdbg = .TRUE.
                    ijkfound = ijkfound + 1
                   END IF

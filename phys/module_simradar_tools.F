@@ -125,6 +125,12 @@ MODULE module_simradar_tools
   
   ! simrad.AR version
   CHARACTER(len=S32)                                     :: simradARversion = '1.0'
+  
+  ! amount of times to debug values
+  INTEGER, PARAMETER                                     :: Ndbg = 1
+
+  ! frequency to debug values
+  INTEGER, PARAMETER                                     :: Ndbgfrq = 100
 
   ! 4 / 3 radar beam height 
   REAL(kind=rr8), PARAMETER                              :: ke = 4.d0 / 3.d0
@@ -720,7 +726,7 @@ MODULE module_simradar_tools
           
           printdbg = .FALSE.         
           IF (dbg) THEN
-            IF (MOD(ic+k2, 10) == 0 .AND. ijkfound < 10) THEN
+            IF (MOD(ic+k2, Ndbgfrq) == 0 .AND. ijkfound < Ndbg) THEN
               printdbg = .TRUE.
               ijkfound = ijkfound + 1
             END IF
@@ -958,9 +964,9 @@ MODULE module_simradar_tools
       DO j=1, Ndist
         printdbg = .FALSE.
         IF (dbg) THEN
-          IF (MOD(i+j,10) == 0) THEN
+          IF (MOD(i+j,Ndbgfrq) == 0) THEN
             ijfound = ijfound + 1
-            IF (ijfound < 10) printdbg = .TRUE.
+            IF (ijfound < Ndbg) printdbg = .TRUE.
           END IF
         END IF
 
@@ -1055,7 +1061,7 @@ MODULE module_simradar_tools
         PRINT *, '  hgt at first:', hgts(1,1), ' top: ', hgts(Nazimuth,1)
         PRINT *, '  hgt at last:', hgts(1,Ndist), ' top: ', hgts(Nazimuth,Ndist)        
         PRINT *, '      values idist dist lon lat invangle invdist _______'
-        DO j=1, Ndist, Ndist/10
+        DO j=1, Ndist, Ndist/Ndbgfrq
           CALL distance_between_points(lon_pt, lat_pt, lons(i,j), lats(i,j), a, f, elips, s, faz)
           PRINT *,'      ',  j, ddist*(j-1) + ddist2, lons(i,j), lats(i,j), faz, s
         
@@ -1204,7 +1210,7 @@ MODULE module_simradar_tools
 !        DO j=irdx, 10
           printdbg = .FALSE.
           IF (dbg) THEN
-            IF (MOD(i+j,10) == 0 .AND. ijfound < 10) THEN
+            IF (MOD(i+j,Ndbgfrq) == 0 .AND. ijfound < Ndbg) THEN
               printdbg = .TRUE.
               ijfound = ijfound + 1
             END IF
