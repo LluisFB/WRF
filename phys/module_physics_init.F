@@ -6161,7 +6161,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ELSE
       IF (dbg) PRINT *, '    ' // TRIM(fname) // ': no debugging londbg,latdbg: ', londbg, ', ',      &
         latdbg, ' point passed in namelist.input !!'
-    END IF  
+    END IF
+    
     ! Boundaries of the cells (all space, to take into account the HALO)
     ! SW
     bnds_lon(ims:ime,jms:jme,1) = xlong_u(ims:ime,jms:jme)
@@ -6203,6 +6204,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
           TRIM(ItoS(model_config_rec%eloption)) // " not ready !! Available ones: 1, 2"
       CALL wrf_error_fatal ( diag_message )
     END IF
+    
+    IF (dbg) PRINT *,'  ' // TRIM(fname) // ": using ellopsoide '" // TRM(elipsn) // "' with a: ",    &
+      a, ' f:', f
     
     ! To real as member of grid
     ra = REAL(a)
