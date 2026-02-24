@@ -6086,8 +6086,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
     ! Minimum grid distance
     ! Filling matrices with absurd numbers
-    DO i=ims, ime
-      DO j=jms, jme
+    DO i=its, ite
+      DO j=jts, jte
         dlon(i,j) = 10000.*i + 10.*j
         dlat(i,j) = 20000.*i + 10.*j
       END DO
@@ -6165,17 +6165,17 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
     ! Boundaries of the cells (all space, to take into account the HALO)
     ! SW
-    bnds_lon(ims:ime,jms:jme,1) = xlong_u(ims:ime,jms:jme)
-    bnds_lat(ims:ime,jms:jme,1) = xlat_u(ims:ime,jms:jme)
+    bnds_lon(its:ite,jts:jte,1) = xlong_u(its:ite,jts:jte)
+    bnds_lat(its:ite,jts:jte,1) = xlat_u(its:ite,jts:jte)
     ! NW
-    bnds_lon(ims:ime,jms:jme,2) = xlong_v(ims:ime,jms+1:jme+1)
-    bnds_lat(ims:ime,jms:jme,2) = xlat_v(ims:ime,jms+1:jme+1)
+    bnds_lon(its:ite,jts:jte,2) = xlong_v(its:ite,jts+1:jte+1)
+    bnds_lat(its:ite,jts:jte,2) = xlat_v(its:ite,jts+1:jte+1)
     ! NE
-    bnds_lon(ims:ime,jms:jme,3) = xlong_u(ims+1:ime+1,jms:jme)
-    bnds_lat(ims:ime,jms:jme,3) = xlat_u(ims+1:ime+1,jms:jme)
+    bnds_lon(its:ite,jts:jte,3) = xlong_u(its+1:ite+1,jts:jte)
+    bnds_lat(its:ite,jts:jte,3) = xlat_u(its+1:ite+1,jts:jte)
     ! SW
-    bnds_lon(ims:ime,jms:jme,4) = xlong_v(ims:ime,jms:jme)
-    bnds_lat(ims:ime,jms:jme,4) = xlat_v(ims:ime,jms:jme)
+    bnds_lon(its:ite,jts:jte,4) = xlong_v(its:ite,jts:jte)
+    bnds_lat(its:ite,jts:jte,4) = xlat_v(its:ite,jts:jte)
        
     e_angle2 = e_angle / 2
     e_azimuth2 = e_azimuth / 2
