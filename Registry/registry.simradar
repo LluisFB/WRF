@@ -44,7 +44,7 @@ rconfig   integer  nradar_ngrid_coord2  namelist,simradar 1          3000     rh
 rconfig   integer  nradar_coord2 namelist,simradar     1                2     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
 rconfig   integer  nradar_coord4 namelist,simradar     1                4     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
 rconfig   integer  ngrid_coord2  namelist,simradar     1             3000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
-rconfig   integer  nradar_azimuth namelist,simradar    1              300     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
+rconfig   integer  nradar_azimuth namelist,simradar    1               15     rh{11}    "nradar_azimuth"    "nradar*e_azimuth"                                       ""
 rconfig   integer  nradar_dist   namelist,simradar     1             2000     rh{11}    "nradar_dist"       "nradar*e_dist"                                          ""
 
 rconfig   integer  Nbands        namelist,simradar     1                3     rh{11}    "Nbands"            "amount of radar bands"                                  ""
