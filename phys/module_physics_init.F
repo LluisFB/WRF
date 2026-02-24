@@ -6061,7 +6061,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     minrds = MINVAL(model_config_rec%radards(1:nradar))
 
     IF ( e_dist /= INT(2*maxrdistmax*1000. / minrds)) THEN
-      PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds
+      PRINT *, '  e_dist: ', e_dist, ' maximum distmax: ', maxrdistmax, ' minimum radards: ', minrds, &
+        ' INT(2*maxrdistmax*1000. / minrds): ', INT(2*maxrdistmax*1000. / minrds)
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: radar range along radial-axis does not " //     &
         "coincide with the maximum maximum spatial radar range (maximum distmax) and the minimal  "// &
@@ -6071,7 +6072,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     IF ( e_angle /= INT(2.*pict*model_config_rec%radii_dist*1000./minrds)) THEN
       PRINT *, '  e_angle: ', e_angle, ' radii_ddist: ', model_config_rec%radii_dist,                 &
-        ' minimum radards: ', minrds
+        ' minimum radards: ', minrds, ' INT(2.*pi*radii_dist*1000./minrds): ',                        &
+        INT(2.*pict*model_config_rec%radii_dist*1000./minrds)
       WRITE (diag_message , * ) &
         "simrad.AR: ERROR -- error -- ERROR -- error: amount of range along radial-axis does not " // &
         "coincide with the radii at the same arc size as radial resolution (radii_dist) and the " //  &
