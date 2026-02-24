@@ -10,17 +10,17 @@
 dimspec    ri         2     namelist=e_dist                  z     e_dist
 dimspec    rj         2     namelist=e_angle                 x     e_angle
 dimspec    rk         2     namelist=e_azimuth               y     e_azimuth
-dimspec    rn         2     namelist=nradar                  c     nradar
+dimspec    rn         2     namelist=nradar                  z     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
 dimspec    cii        2     constant=2                       z     coord2
 dimspec    civ        2     constant=4                       z     coord4
 dimspec    iit        2     constant=2                       z     iit
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
-dimspec    nrnn       2     namelist=nradar_ngrid            c     nradar_ngrid
-dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     c     nradar_ngrid_coord2
-dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
-dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
+dimspec    nrnn       2     namelist=nradar_ngrid            z     nradar_ngrid
+dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     z     nradar_ngrid_coord2
+dimspec    nrcoord    2     namelist=nradar_coord2           z     nradar_coord2
+dimspec    nr4coord   2     namelist=nradar_coord4           z     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        2     namelist=nradar_dist             z     nradar_dist
