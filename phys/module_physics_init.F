@@ -6238,6 +6238,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         radars_dist(:,ir), radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir),                &
         radarhgts(:,:,ir), radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc,                  &
         radarhgt_bnds_NOc, dbg)
+      IF (dbg) PRINT *,'      radar lon, lat E:',radarlons(1,e_dist,ir), ', ', radarlats(1,e_dist,ir),&
+        'S:',radarlons(INT(e_angle/4),e_dist,ir), ', ', radarlats(INT(e_angle/4),e_dist,ir),          &
+        'W:',radarlons(INT(e_angle/2),e_dist,ir), ', ', radarlats(INT(e_angle/2),e_dist,ir),          &
+        'N:',radarlons(INT(3*e_angle/4),e_dist,ir), ', ', radarlats(INT(3*e_angle/4),e_dist,ir)
         
       ! Checking pertinence of the radar into this tile (computing only in the patch)
       CALL pertinence_polar(its, ite, jts, jte, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
