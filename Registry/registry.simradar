@@ -8,8 +8,11 @@
 ## Entry: The keyword “dimspec”
 # dimspec DimName  Order HowDefined CoordAxis DatName
 dimspec    ri         3     namelist=e_dist                  z     e_dist
+dimspec    rij        2     namelist=e_dist                  y     e_dist
+dimspec    rii        1     namelist=e_dist                  x     e_dist
 dimspec    rj         1     namelist=e_angle                 x     e_angle
 dimspec    rk         2     namelist=e_azimuth               y     e_azimuth
+dimspec    rki        1     namelist=e_azimuth               x     e_azimuth
 dimspec    rn         3     namelist=nradar                  z     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
@@ -198,21 +201,21 @@ state    real      n0h               -            misc    -       -     -       
 # All bands variables
 state    integer inradar   ij                 misc        -       -     rh{11}    "inradar"           "pertinence of the grid cell to any radar (1: yes)"        "1"
 state    integer radarnum  ij{rn}             misc        -       -     rh{11}    "radarnum"          "pertinence of the grid cell inside a given radar area"    "1"
-state    real  RADARS_DIST {ri}{rn}           misc        -       -     rh{11}    "radars_dist"       "ground radar gate distances to their center"              "m"
+state    real  RADARS_DIST {rii}{rn}          misc        -       -     rh{11}    "radars_dist"       "ground radar gate distances to their center"              "m"
 state    real  RADARS_ANGLE {rj}{rn}          misc        -       -     rh{11}    "radars_angle"      "ground radar gate horizontal angles to emit beams"        "m"
 state    real  RADARS_AZIMUTH {rj}{rn}        misc        -       -     rh{11}    "radars_azimuth"    "ground radar gate vertical angles to emit beams"          "m"
-state    real  RADARLONS   {rj}{ri}{rn}       misc        -       -     rh{11}    "radarlons"         "ground radar gate longitude"                              "degree_east"
-state    real  RADARLATS   {rj}{ri}{rn}       misc        -       -     rh{11}    "radarlats"         "ground radar gate latitude"                               "degree_north"
-state    real  RADARHGTS   {rk}{ri}{rn}       misc        -       -     rh{11}    "radarhgts"         "ground radar gate height"                                 "m"
-state    real  RADARLHGTS  {rk}{ri}{rn}       misc        -       -     rh{11}    "radarlhgts"        "ground radar gate local height"                           "m"
-state    real  RADARDIST   {rj}{ri}{rn}       misc        -       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
-state    real  RADARLON_BNDS {rj}{ri}{nr4coord} misc      -       -     rh{11}    "radarlon_bnds"     "ground radar gate longitude bounds"                       "degree_east"
-state    real  RADARLAT_BNDS {rj}{ri}{nr4coord} misc      -       -     rh{11}    "radarlat_bnds"     "ground radar gate latitude bounds"                        "degree_north"
-state    real  RADARHGT_BNDS {rk}{ri}{nr4coord} misc      -       -     rh{11}    "radarhgt_bnds"     "ground radar gate height bounds"                          "m"
-state    real  GATEHDIST   ij{rn}             misc        -       -     rh        "gatehdist"         "distacnce of the grid points to the position of the radar" "m"
-state    integer NGRIDRADAR  ij{rn}           misc        -       -     rh        "ngridradar"        "amount of radar cells inside the grid point"              "1"
-state    integer IJGRIDRADAR ij{nrnncoord}    misc        -       -     rh        "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
-state    real  IJDISTGRIDRADAR ij{nrnn}       misc        -       -     rh        "ijdistgridradar"   "distance of radar cells inside the grid point to its center" "m"
+state    real  RADARLONS   {rj}{rij}{rn}      misc        -       -     rh{11}    "radarlons"         "ground radar gate longitude"                              "degree_east"
+state    real  RADARLATS   {rj}{rij}{rn}      misc        -       -     rh{11}    "radarlats"         "ground radar gate latitude"                               "degree_north"
+state    real  RADARHGTS   {rki}{rij}{rn}     misc        -       -     rh{11}    "radarhgts"         "ground radar gate height"                                 "m"
+state    real  RADARLHGTS  {rki}{rij}{rn}     misc        -       -     rh{11}    "radarlhgts"        "ground radar gate local height"                           "m"
+state    real  RADARHDIST  {rj}{rij}{rn}      misc        -       -     rh{11}    "radarhdist"        "ground radar horizontal distance of the grid point"       "m"
+state    real  RADARLON_BNDS {rj}{rij}{nr4coord} misc     -       -     rh{11}    "radarlon_bnds"     "ground radar gate longitude bounds"                       "degree_east"
+state    real  RADARLAT_BNDS {rj}{rij}{nr4coord} misc     -       -     rh{11}    "radarlat_bnds"     "ground radar gate latitude bounds"                        "degree_north"
+state    real  RADARHGT_BNDS {rki}{rij}{nr4coord} misc    -       -     rh{11}    "radarhgt_bnds"     "ground radar gate height bounds"                          "m"
+state    real  GATEHDIST   ij{rn}             misc        -       -     rh{11}    "gatehdist"         "distacnce of the grid points to the position of the radar" "m"
+state    integer NGRIDRADAR  ij{rn}           misc        -       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
+state    integer IJGRIDRADAR ij{nrnncoord}    misc        -       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
+state    real  IJDISTGRIDRADAR ij{nrnn}       misc        -       -     rh{11}    "ijdistgridradar"   "distance of radar cells inside the grid point to its center" "m"
 
 # radar band values
 state    real  ZH_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
