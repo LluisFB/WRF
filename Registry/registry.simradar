@@ -7,23 +7,27 @@
 # FROM Tiger's Registry documentation (https://www2.mmm.ucar.edu/wrf/WG2/software_2.0/registry_schaffer.pdf)
 ## Entry: The keyword “dimspec”
 # dimspec DimName  Order HowDefined CoordAxis DatName
-dimspec    ri         2     namelist=e_dist                  z     e_dist
-dimspec    rj         2     namelist=e_angle                 x     e_angle
+dimspec    ri         3     namelist=e_dist                  z     e_dist
+dimspec    rj         1     namelist=e_angle                 x     e_angle
 dimspec    rk         2     namelist=e_azimuth               y     e_azimuth
-dimspec    rn         2     namelist=nradar                  z     nradar
+dimspec    rn         3     namelist=nradar                  z     nradar
 dimpsec    rng        2     namelist=ngrid_radar             c     ngrid_radar
 dimspec    dvh        2     namelist=Nqxbins                 c     Nqxbins
-dimspec    cii        2     constant=2                       z     coord2
-dimspec    civ        2     constant=4                       z     coord4
-dimspec    iit        2     constant=2                       z     iit
+dimspec    cii        3     constant=2                       z     coord2
+dimspec    ciii       3     constant=3                       z     coord3
+dimspec    civ        3     constant=4                       z     coord4
+dimspec    iit        3     constant=2                       z     iit
 ## L. Fita, so, WRF output will provide a (nradar*e_radhgt) 3D variable instead
-dimspec    nrnn       2     namelist=nradar_ngrid            z     nradar_ngrid
-dimspec    nrnncoord  2     namelist=nradar_ngrid_coord2     z     nradar_ngrid_coord2
-dimspec    nrcoord    2     namelist=nradar_coord2           z     nradar_coord2
-dimspec    nr4coord   2     namelist=nradar_coord4           z     nradar_coord4
+dimspec    nrnn       3     namelist=nradar_ngrid            z     nradar_ngrid
+dimspec    nrnncoord  3     namelist=nradar_ngrid_coord2     z     nradar_ngrid_coord2
+dimspec    znrnn3     3     namelist=vert_nradar_ngrid3      z     evert_nradar_ngrid3
+dimspec    znrnncoord3 3    namelist=vert_nradar_ngrid_coord3 z    evert_nradar_ngrid_coord3
+
+dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
+dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
-dimspec    nrd        2     namelist=nradar_dist             z     nradar_dist
+dimspec    nrd        3     namelist=nradar_dist             z     nradar_dist
 dimspec    nbds       2     namelist=Nbands                  c     Nbands
 dimspec    lqb        2     namelist=Nlutqxbins              c     Nlutqxbins
 dimspec    ddli       2     namelist=Nluticebins             c     Nluticebins
@@ -41,6 +45,10 @@ rconfig   integer  ngrid_radar   namelist,simradar     1             1500     rh
 rconfig   integer  ngrid3_radar  namelist,simradar     1            25000     rh{11}    "ngrid3_radar"      "amount of vertical radar cells into a given WRF grid point"      ""
 rconfig   integer  nradar_ngrid  namelist,simradar     1             1500     rh{11}    "nradar_ngrid"      "nradar*ngrid_radar"                                     ""
 rconfig   integer  nradar_ngrid_coord2  namelist,simradar 1          3000     rh{11}    "nradar_ngrid_coord2" "nradar*ngrid_radar*coord2"                            ""
+rconfig   integer  evert_nradar_ngrid3 namelist,simradar  1          1500     rh{11}    "evert_nradar_ngrid" "evert_nradar*ngrid3_radar"                             ""
+rconfig   integer  evert_nradar_ngrid3_coord3 namelist,simradar 1    3000     rh{11}    "evert_nradar_ngrid3_coord3" "e_vert_nradar*ngrid3_radar*coord3"             ""
+
+
 rconfig   integer  nradar_coord2 namelist,simradar     1                2     rh{11}    "nradar_coord2"     "nradar*coord2"                                          ""
 rconfig   integer  nradar_coord4 namelist,simradar     1                4     rh{11}    "nradar_coord4"     "nradar*coord4"                                          ""
 rconfig   integer  ngrid_coord2  namelist,simradar     1             3000     rh{11}    "ngrid_coord2"      "ngrid_radar*coord2"                                     ""
