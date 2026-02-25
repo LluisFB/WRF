@@ -1291,7 +1291,7 @@ endif
                       ,grid%radars_dist, grid%radars_angle, grid%radars_azimuth                      &
                       ,grid%ellipse_a, grid%ellipse_f, grid%ellipse_name                             &
                       ,grid%gatehdist, grid%inradar, grid%radarnum                                   &
-                      ,grid%radarlons, grid%radarlats, grid%radardist                                & 
+                      ,grid%radarlons, grid%radarlats, grid%radarhdist                               &
                       ,grid%radarhgts, grid%radarlhgts                                               &
                       ,grid%radarlon_bnds, grid%radarlat_bnds, grid%radarhgt_bnds                    &
                       ,grid%ngridradar, grid%ijgridradar, grid%ijdistgridradar                       &
