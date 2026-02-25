@@ -1053,6 +1053,7 @@ endif
       p => grid%head_statevars%next
       CALL wrf_start_io_timestep(fid, ierr)
       DO WHILE ( ASSOCIATED( p ) )
+        PRINT *,' Lluis p%ProcOrient: ', p%ProcOrient, ' Ndim: ', p%Ndim, ' VarName:', TRIM(p%VarName)
         IF ( p%ProcOrient .NE. 'X' .AND. p%ProcOrient .NE. 'Y' ) THEN   ! no I/O for xposed variables
           IF ( p%Ndim .EQ. 0 ) THEN
             IF ((p%Restart.AND.switch.EQ.restart_only).OR.on_stream(p%streams,newswitch)) THEN
