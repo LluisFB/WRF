@@ -856,17 +856,19 @@ MODULE module_simradar
                 ! Polarimetrics_fromLUT_1R(qx, iz, dimv, q_log_vec, Nbnds, Nelevs, Nfrq, Zh_x, Zdr_x,  &
                 !    KDP_x, Zh_out, Zdr_out, KDP_out)
                 ! Rain
-                CALL Polarimetrics_fromLUT_1R(iqr, iz, iband, model_config_rec%Nqxbins,                &
-                  q_rain_vec, Nlutqxbins, lutZh_RAIN(iband,iz,:), lutZdr_RAIN(iband,iz,:),             &
-                  lutKDP_RAIN(iband,iz,:), zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc, dbg)
-!                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
-!                zh_rain_NOc = REAL(dZh_q)
-!                zdr_rain_NOc = REAL(dZdr_q)
-!                kdp_rain_NOc = REAL(dKDP_q)
+                IF (iqr > 0.) THEN
+                  CALL Polarimetrics_fromLUT_1R(iqr, iz, iband, model_config_rec%Nqxbins,                &
+                    q_rain_vec, Nlutqxbins, lutZh_RAIN(iband,iz,:), lutZdr_RAIN(iband,iz,:),             &
+                    lutKDP_RAIN(iband,iz,:), zh_rain_NOc, zdr_rain_NOc, kdp_rain_NOc, dbg)
+!                    lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
+!                  zh_rain_NOc = REAL(dZh_q)
+!                  zdr_rain_NOc = REAL(dZdr_q)
+!                  kdp_rain_NOc = REAL(dKDP_q)
+                END IF
 
                 
                 ! Snow
-                IF (m_qs .GE. prm_first_scalar) THEN
+                IF (m_qs .GE. prm_first_scalar .AND. iqs > 0.) THEN
                   CALL Polarimetrics_fromLUT_1R(iqs, iz, iband, model_config_rec%Nqxbins,             &
                     q_snow_vec, Nlutqxbins, lutZh_SNOW(iband,iz,:), lutZdr_SNOW(iband,iz,:),          &
                     lutKDP_SNOW(iband,iz,:), zh_snow_NOc, zdr_snow_NOc, kdp_snow_NOc, dbg)
@@ -877,7 +879,7 @@ MODULE module_simradar
                 END IF
 
                 ! Graupel
-                IF (m_qg .GE. prm_first_scalar) THEN
+                IF (m_qg .GE. prm_first_scalar .AND. iqg > 0.) THEN
                   CALL Polarimetrics_fromLUT_1R(iqg, iz, iband, model_config_rec%Nqxbins,             &
                     q_grau_vec, Nlutqxbins, lutZh_GRAU(iband,iz,:), lutZdr_GRAU(iband,iz,:),          &
                   lutKDP_GRAU(iband,iz,:), zh_grau_NOc, zdr_grau_NOc, kdp_grau_NOc, dbg)
@@ -888,7 +890,7 @@ MODULE module_simradar
                 END IF
 
                 ! Cloud ice
-                IF (m_qi .GE. prm_first_scalar) THEN
+                IF (m_qi .GE. prm_first_scalar .AND. iqi > 0.) THEN
                   CALL Polarimetrics_fromLUT_1R(iqi, iz, iband, model_config_rec%Nqxbins,             &
                     q_ice_vec, Nlutqxbins, lutZh_ICE(iband,iz,:), lutZdr_ICE(iband,iz,:),             &
                   lutKDP_ICE(iband,iz,:), zh_ice_NOc, zdr_ice_NOc, kdp_ice_NOc, dbg)
@@ -900,7 +902,7 @@ MODULE module_simradar
                  END IF
 
                 ! Hail
-                IF (m_qh .GE. prm_first_scalar) THEN
+                IF (m_qh .GE. prm_first_scalar .AND. iqh > 0.) THEN
                   CALL Polarimetrics_fromLUT_1R(iqh, iz, iband, model_config_rec%Nqxbins,             &
                     q_hail_vec, Nlutqxbins, lutZh_HAIL(iband,iz,:), lutZdr_HAIL(iband,iz,:),          &
                   lutKDP_HAIL(iband,iz,:), zh_hail_NOc, zdr_hail_NOc, kdp_hail_NOc, dbg)
