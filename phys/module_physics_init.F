@@ -6082,8 +6082,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
 
-    ! lon, lat debugging point & getting borders of the patch
+    ! Set-up simrad.AR debug
+    CALL get_wrf_debug_level( dbg_level )
+    dbg = .FALSE.
+    !IF (model_config_rec%debug_level > 75) dbg = .TRUE.
+    IF (dbg_level > 75) dbg = .TRUE.
 
+    ! lon, lat debugging point & getting borders of the patch
     ! There are 0. in xlong, xlat matrices !?
     lonSW = fillValueR
     lonNW = fillValueR
@@ -6101,6 +6106,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       DO j=jts, jte
         dlon(i,j) = 10000.*i + 10.*j
         dlat(i,j) = 20000.*i + 10.*j
+        !! L. Fita, I do not understand why in the patch we find 0. values ¿?
+        !!   This should not be needed ¿?
         IF (xlong(i,j) == 0. .AND. xlat(i,j) == 0.) THEN
           lonlatmask(i,j) = .TRUE.
         ELSE
@@ -6163,12 +6170,15 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
 
-    PRINT *,'  Lluis ' // TRIM(fname) // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:', &
-      klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',             &
-      MINVAL(xlong, MASK=lonlatmask), ', ', MAXVAL(xlong, MASK=lonlatmask)
-    PRINT *,'  Lluis ' // TRIM(fname) // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:', &
-      klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',             &
-      MINVAL(xlat, MASK=lonlatmask), ', ', MAXVAL(xlat, MASK=lonlatmask)
+    IF (dbg) THEN
+      PRINT *,'  ' // TRIM(fname) // ' ptch lon, lat limits _______'
+      PRINT *,'      ' // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:',                &
+        klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',           &
+        MINVAL(xlong, MASK=lonlatmask), ', ', MAXVAL(xlong, MASK=lonlatmask)
+      PRINT *,'        ' // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:',              &
+        klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',           &
+        MINVAL(xlat, MASK=lonlatmask), ', ', MAXVAL(xlat, MASK=lonlatmask)
+    END IF
     
     IF ( (londbg /= -999.) .AND. (latdbg /= -999.) ) THEN
     
@@ -6264,11 +6274,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       
     WRITE(diag_message,*) '  ' // TRIM(fname) // ': looking for ', nradar, ' radars ...'    
     CALL wrf_debug(75,diag_message)
-
-    ! Set-up simrad.AR debug
-    CALL get_wrf_debug_level( dbg_level )
-    dbg = .FALSE.
-    IF (model_config_rec%debug_level > 75) dbg = .TRUE.
 
     ! Getting actual areas encompassed by a radar
     look_radar: DO ir=1, nradar
