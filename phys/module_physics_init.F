@@ -5946,6 +5946,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION( its:ite , jts:jte, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( its:ite )                           :: distlon
     REAL, DIMENSION( jts:jte )                           :: distlat
+    LOGICAL, DIMENSION( its:ite , jts:jte )              :: lonlatmask
     REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlon_bnds_NOc, radarlat_bnds_NOc,     &
       radarhgt_bnds_NOc
     INTEGER, DIMENSION(ims:ime, jms:jme, 2, ngrid_radar) :: ijgridradar_NOc
@@ -6086,22 +6087,81 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
     ! Minimum grid distance
     ! Filling matrices with absurd numbers
+    ! There are 0. in xlong, xlat matrices !?
+    lonSW = fillValueR
+    lonNW = fillValueR
+    lonNE = fillValueR
+    lonSE = fillValueR
+    latSW = fillValueR
+    latNW = fillValueR
+    latNE = fillValueR
+    latSE = fillValueR 
     DO i=its, ite
       DO j=jts, jte
         dlon(i,j) = 10000.*i + 10.*j
         dlat(i,j) = 20000.*i + 10.*j
+        IF (xlong(i,j) == 0. .AND. xlat(i,j) == 0.) THEN
+          lonlatmask(i,j) = .TRUE.
+        ELSE
+          lonlatmask(i,j) = .FALSE.
+        END IF
       END DO
+      !! Vertices
+      IF (i==its) THEN
+        !!! SW vertex
+        DO j=jts,jte
+          IF (.NOT.lonlatmask(i,j)) THEN
+            IF (lonSW == fillValueR) THEN
+              lonSW = xlong(i,j)
+              latSW = xlat(i,j)
+            END IF
+          END IF
+        END DO
+        !!! SE vertex
+        DO j=jte,jts,-1
+          IF (.NOT.lonlatmask(i,j)) THEN
+            IF (lonSE == fillValueR) THEN
+              lonSE = xlong(i,j)
+              latSE = xlat(i,j)
+            END IF
+          END IF
+        END DO
+      END IF
+      IF (i==ite) THEN
+        !!! NW vertex
+        DO j=jts,jte
+          IF (.NOT.lonlatmask(i,j)) THEN
+            IF (lonNW == fillValueR) THEN
+              lonNW = xlong(i,j)
+              latNW = xlat(i,j)
+            END IF
+          END IF
+        END DO
+        !!! NE vertex
+        DO j=jte,jts,-1
+          IF (.NOT.lonlatmask(i,j)) THEN
+            IF (lonNE == fillValueR) THEN
+              lonNE = xlong(i,j)
+              latNE = xlat(i,j)
+            END IF
+          END IF
+        END DO
+      END IF
     END DO
     
     ! Getting borders of the tile
-    lonSW = xlong(its,jts)
-    lonNW = xlong(its,jte)
-    lonNE = xlong(ite,jte)
-    lonSE = xlong(ite,jts)
-    latSW = xlat(its,jts)
-    latNW = xlat(its,jte)
-    latNE = xlat(ite,jte)
-    latSE = xlat(ite,jts)
+    DO i= its, ite 
+      PRINT '(A8,1x,I3,1x,100(F20.10,1x))', '1 lon i:', i, xlong(i,its:ite)
+    END DO
+
+    !lonSW = xlong(its,jts)
+    !lonNW = xlong(its,jte)
+    !lonNE = xlong(ite,jte)
+    !lonSE = xlong(ite,jts)
+    !latSW = xlat(its,jts)
+    !latNW = xlat(its,jte)
+    !latNE = xlat(ite,jte)
+    !latSE = xlat(ite,jts)
     
     ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
     lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
@@ -6115,6 +6175,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     klatmin = MINLOC(latvertices)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
+
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:', &
+      klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',             &
+      MINVAL(xlong, MASK=lonlatmask), ', ', MAXVAL(xlong, MASK=lonlatmask)
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:', &
+      klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',             &
+      MINVAL(xlat, MASK=lonlatmask), ', ', MAXVAL(xlat, MASK=lonlatmask)
     
     IF ( (londbg /= -999.) .AND. (latdbg /= -999.) ) THEN
     
@@ -6245,8 +6312,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         'N:',radarlons(INT(3*e_angle/4),e_dist,ir), ', ', radarlats(INT(3*e_angle/4),e_dist,ir)
         
       ! Checking pertinence of the radar into this tile (computing only in the patch)
-      CALL pertinence_polar(its, ite, jts, jte, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
-          e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx,                          &
+      CALL pertinence_polar(its, ite, jts, jte, xlong(its:ite,jts:jte), xlat(its:ite,jts:jte),        &
+        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), 1, e_dist, 1, e_angle,              &
+          radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,                             &
           model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir), inradar,        &
           radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2, ijgridradar_NOc,             &
           ijdistgridradar_NOc, inside, dbg)

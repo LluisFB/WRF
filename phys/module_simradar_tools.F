@@ -1134,7 +1134,7 @@ MODULE module_simradar_tools
     !   WRF lonlat
     ! rlon, rlat: coordinates of the r lonlathgt [degrees_east, degrees_North]
     ! crx, cry: coordinates of the center of the radial space
-    ! rmax: maximum radii from the center of the radial space
+    ! rmax: maximum radii from the center of the radial space [m]
     ! miss_v: missing value
     ! rmax: maximum possible amount of r lonlathgt cells in a single WRFlonlat grid
     !
@@ -1156,6 +1156,9 @@ MODULE module_simradar_tools
     END IF
   
     ! Getting borders of the tile
+    DO i= iwdx, ewdx
+      PRINT '(A8,1x,I3,1x,100(F20.10,1x))', '2 lon i:', i, WRFlon(i,iwdy:ewdy)
+    END DO
     lonSW = WRFlon(iwdx,iwdy)
     lonNW = WRFlon(iwdx,ewdy)
     lonNE = WRFlon(ewdx,ewdy)
@@ -1177,6 +1180,13 @@ MODULE module_simradar_tools
     klatmin = MINLOC(latvertices)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
+
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:', &
+      klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',             &
+      MINVAL(WRFlon), ', ', MAXVAL(WRFlon)
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:', &
+      klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',             &
+      MINVAL(WRFlat), ', ', MAXVAL(WRFlat)
     
     rdx2 = (erdx - irdx + 1) / 2
     rdy2 = (erdy - irdy + 1) / 2
@@ -1244,7 +1254,7 @@ MODULE module_simradar_tools
               CALL ErrMsg("For WRF's i,j: " // TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //             &
                 " too much radar cells: " // TRIM(ItoS(ngridradar(ic,jc))) // " in a WRF grid. " //   &
                 " distance to the radar: " // TRIM(RtoS(MINVAL(ijdist))) //                           &
-                "'ngrid_radar' in namelist current value: " // TRIM(ItoS(maxNcoords)), fname, -1)
+                " 'ngrid_radar' in namelist current value: " // TRIM(ItoS(maxNcoords)), fname, -1)
             END IF 
                               
             ! Coordinates of the radar cells within this WRF grid
@@ -2165,7 +2175,7 @@ MODULE module_simradar_tools
         END DO
       END DO
       mask = radnum == 1
-      IF (dbg) PRINT *,'    ' // TRIM(fname) // ": found ", SUM(radnum, mask=mask), " inside"
+      IF (dbg) PRINT *,'    ' // TRIM(fname) // ": found ", SUM(radnum, mask=mask), " WRF grids inside"
     END IF
 
     RETURN
@@ -2497,7 +2507,6 @@ MODULE module_simradar_tools
 
     ! Local
     CHARACTER (LEN=S2048)                                :: diag_message
-    CHARACTER(len=S32)                                   :: emsg
 
     !!!!!!! Variables
     ! msg: message to print with the error
@@ -2505,7 +2514,7 @@ MODULE module_simradar_tools
     ! errN: number of the error provided for a given FORTRAN function
 
     IF (errN /= 0) THEN
-      PRINT *,TRIM(emsg)
+      PRINT *,TRIM(errormsg)
       PRINT *,'  ' // TRIM(funcn) // ': ' // TRIM(msg) // ' !!'
       PRINT *,'    error number:', errN
       STOP
@@ -2519,29 +2528,29 @@ MODULE module_simradar_tools
 
   END SUBROUTINE ErrMsg
 
-  CHARACTER(len=S32)FUNCTION DtoS(Dval)
+  CHARACTER(len=S32) FUNCTION DtoS(Dval)
   ! DtoS: Function to transform a double real to String
 
     IMPLICIT NONE
 
     REAL(kind=rr8), INTENT(IN)                           :: Dval
 
-    WRITE(DtoS,'(F21.10)')Dval
+    WRITE(DtoS,'(F32.10)')Dval
 
   END FUNCTION DtoS
 
-  CHARACTER(len=S32)FUNCTION RtoS(Rval)
+  CHARACTER(len=S32) FUNCTION RtoS(Rval)
   ! RtoS: Function to transform a real to String
 
     IMPLICIT NONE
 
     REAL, INTENT(IN)                                     :: Rval
 
-    WRITE(RtoS,'(F21.10)')Rval
+    WRITE(RtoS,'(F32.10)')Rval
 
   END FUNCTION RtoS
 
-  CHARACTER(len=S32)FUNCTION ItoS(Ival)
+  CHARACTER(len=S32) FUNCTION ItoS(Ival)
   ! ItoS: Function to transform an integer to String
 
     IMPLICIT NONE
@@ -2551,7 +2560,7 @@ MODULE module_simradar_tools
     ! Local
     CHARACTER(len=S32)                                   :: itoS0
 
-    WRITE(ItoS0,'(I50)')Ival
+    WRITE(ItoS0,'(I32)')Ival
     CALL  removeNONnum(ItoS0, ItoS)
 
   END FUNCTION ItoS
