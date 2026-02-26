@@ -1280,11 +1280,12 @@ MODULE module_simradar_tools
           ijtile_rad, ' distance to the radar:', ijdist(1,1), ' degree'
       END IF
         
-      IF (totngridradar < INT((pict*(rdx/2)**2)/10)) THEN
-        CALL ErrMSg(' found radar cells in WRF grid: ' // TRIM(ItoS(totngridradar)) //                &
-          ' theoretical: ' // TRIM(ItoS(INT(pict*(rdx/2)**2))) // ' Not enough ' //                   &
-          'radar cells were found',fname,-1)
-      END IF
+!! This can not longer be verified ...
+!      IF (totngridradar < INT((pict*(rdx/2)**2)/10)) THEN
+!        CALL ErrMSg(' found radar cells in WRF grid: ' // TRIM(ItoS(totngridradar)) //                &
+!          ' theoretical: ' // TRIM(ItoS(INT(pict*(rdx/2)**2))) // ' Not enough ' //                   &
+!          'radar cells were found',fname,-1)
+!      END IF
       
     ELSE
       IF (dbg) THEN
