@@ -1723,9 +1723,9 @@ MODULE module_simradar_tools
         !*** avoid div 0
         IF (cosal2 > 0.) THEN
           costm = -2.d0*(sinu1*sinu2/eps)+cossig
-        ESLE IF (cosal2 < 0.) THEN
+        ELSE IF (cosal2 < 0.) THEN
           costm = +2.d0*(sinu1*sinu2/eps)+cossig
-        ESLE
+        ELSE
           costm = -2.d0*(sinu1*sinu2/eps)+cossig
         END IF
         !costm = -2.d0*(sinu1*sinu2/dsign(eps,cosal2))+cossig
