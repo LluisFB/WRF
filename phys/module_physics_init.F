@@ -6082,11 +6082,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       CALL wrf_error_fatal ( diag_message )
     END IF
 
-    ! lon, lat debugging point 
-    !   L. Fita, UBA-CIMA-IFAECI. This should be done as in share/wrf_timeseries.F, but it uses 
-    !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
-    ! Minimum grid distance
-    ! Filling matrices with absurd numbers
+    ! lon, lat debugging point & getting borders of the patch
+
     ! There are 0. in xlong, xlat matrices !?
     lonSW = fillValueR
     lonNW = fillValueR
@@ -6096,6 +6093,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     latNW = fillValueR
     latNE = fillValueR
     latSE = fillValueR 
+    !   L. Fita, UBA-CIMA-IFAECI. This should be done as in share/wrf_timeseries.F, but it uses 
+    !     a lot of aditional modules, that might not be worth to mess with in the phys/ folder ¿?
+    ! Minimum grid distance
+    ! Filling matrices with absurd numbers
     DO i=its, ite
       DO j=jts, jte
         dlon(i,j) = 10000.*i + 10.*j
@@ -6148,20 +6149,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         END DO
       END IF
     END DO
-    
-    ! Getting borders of the tile
-    DO i= its, ite 
-      PRINT '(A8,1x,I3,1x,100(F20.10,1x))', '1 lon i:', i, xlong(i,its:ite)
-    END DO
-
-    !lonSW = xlong(its,jts)
-    !lonNW = xlong(its,jte)
-    !lonNE = xlong(ite,jte)
-    !lonSE = xlong(ite,jts)
-    !latSW = xlat(its,jts)
-    !latNW = xlat(its,jte)
-    !latNE = xlat(ite,jte)
-    !latSE = xlat(ite,jts)
     
     ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
     lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
@@ -6313,11 +6300,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         
       ! Checking pertinence of the radar into this tile (computing only in the patch)
       CALL pertinence_polar(its, ite, jts, jte, xlong(its:ite,jts:jte), xlat(its:ite,jts:jte),        &
-        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), 1, e_dist, 1, e_angle,              &
-          radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,                             &
-          model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir), inradar,        &
-          radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2, ijgridradar_NOc,             &
-          ijdistgridradar_NOc, inside, dbg)
+        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), lonvertices(klonmin(1)),            &
+        lonvertices(klonmax(1)), latvertices(klatmin(1)), latvertices(klatmax(1)), 1, e_dist, 1,      &
+        e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,                      &
+        model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir), inradar,          &
+        radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2, ijgridradar_NOc,               &
+        ijdistgridradar_NOc, inside, dbg)
           
       ! Compressing results
       DO i=its, ite
