@@ -768,8 +768,8 @@ MODULE module_simradar_tools
           ijk21coords(ick,ijk21Ncoords(ick),1) = ici
           ijk21coords(ick,ijk21Ncoords(ick),2) = icj
           ijk21coords(ick,ijk21Ncoords(ick),3) = k2
-          totngridradar = totngridradar + 1              
-
+          totngridradar = totngridradar + 1
+          
           ! vertical 27 array as 
           !   SW
           !   -1,-1,-1,(1,1,1),[1]: bottom; -1,-1,0,(1,1,2),[2]: middle, -1,-1,1,(1,1,3),[3]: top; 
@@ -1218,10 +1218,17 @@ MODULE module_simradar_tools
             ! Closest WRF grid point to the radar cell
             ijdist=SQRT((WRFlon-rlon(i,j))**2+(WRFlat-rlat(i,j))**2)
             ijtile_rad = MINLOC(ijdist)
-            ic = ijtile_rad(1)
-            jc = ijtile_rad(2)
+            ic = ijtile_rad(1) + iwdx - 1
+            jc = ijtile_rad(2) + iwdy - 1
             totngridradar = totngridradar + 1
-              
+            
+            IF (ic < iwdx .OR. ic > ewdx) .OR. (jc < iwdy .OR. jc > ewdy) THEN
+              CALL ErrMsg("For radar's i,j: " // TRIM(ItoS(i)) //', ' // TRIM(ItoS(j)) //             &
+                " wrong WRF grid found!! ic, jc ", TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //         &
+                " outside patch range its,ite ; jts,jte: " // TRIM(ItoS(iwdx)) // ", " //             &
+                TRIM(ItoS(ewdx)) // " ; " // TRIM(ItoS(iwdy)) // ", " // TRIM(ItoS(ewdy))
+            END IF
+            
             inradar(ic,jc) = 1
             radarnum(ic,jc) = 1
             
