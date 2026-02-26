@@ -1646,7 +1646,7 @@ MODULE module_simradar_tools
     REAL(kind=rr8)                                       :: boa, l
     REAL(kind=rr8)                                       :: biga, bigb, bige, bigf, c, d, z
     REAL(kind=rr8)                                       :: cosal2, coslam, cossig, costm, costm2
-    REAL(kind=rr8)                                       :: dsig, ep2, eps
+    REAL(kind=rr8)                                       :: dsig, ep2
     REAL(kind=rr8)                                       :: prev, tem1, tem2, temp, test
     REAL(kind=rr8)                                       :: sinal, sinlam, sinsig
     REAL(kind=rr8)                                       :: beta1, sinu1, cosu1
@@ -1727,6 +1727,7 @@ MODULE module_simradar_tools
         
         !*** v11
         d=(((2.d0*costm2-1.d0)*cossig*c+costm)*sinsig*c+sig)*(1.d0-c)/rf
+        keeplooping = .FALSE.
 
         IF (kindv .eq. 1) THEN
           lam = l+d*sinal
@@ -1738,8 +1739,6 @@ MODULE module_simradar_tools
 
           IF (DABS(lam) .gt. dpict) THEN
           
-            keeplooping = .FALSE.
-
             kindv = 2
             lam = dpict
             IF (l .lt. 0.d0) lam = -lam
@@ -1779,6 +1778,7 @@ MODULE module_simradar_tools
           END IF
 
         ELSE
+          KEEPLOOPING = .TRUE.
     
           sinal= (lam-l)/d
           !*** refined converge.
@@ -1815,6 +1815,8 @@ MODULE module_simradar_tools
         ENDIF
     
       END DO
+
+      IF (.NOT.keeplooping) EXIT
 
       IF (converged) EXIT
     
