@@ -1704,7 +1704,14 @@ MODULE module_simradar_tools
       !***** sinal = cosu1*cosu2*sinlam/sinsig
       IF(dabs(sinsig).lt.eps) THEN
         !*** avoid div 0
-        sinal = cosu1*cosu2*sinlam/dsign(eps,sinsig)
+        IF (sinsig > 0.) THEN
+          sinal = cosu1*cosu2*sinlam/eps
+        ELSE IF (sinsig < 0.) THEN
+          sinal = -cosu1*cosu2*sinlam/eps
+        ELSE
+          sinal = cosu1*cosu2*sinlam/eps
+        END IF
+        !sinal = cosu1*cosu2*sinlam/dsign(eps,sinsig)
       ELSE
         sinal = cosu1*cosu2*sinlam/sinsig
       ENDIF
@@ -1714,7 +1721,14 @@ MODULE module_simradar_tools
       !***** costm = -2.d0*sinu1*sinu2/(cosal2+tol)+cossig
       IF(dabs(cosal2).lt.eps) THEN
         !*** avoid div 0
-        costm = -2.d0*(sinu1*sinu2/dsign(eps,cosal2))+cossig
+        IF (cosal2 > 0.) THEN
+          costm = -2.d0*(sinu1*sinu2/eps)+cossig
+        ESLE IF (cosal2 < 0.) THEN
+          costm = +2.d0*(sinu1*sinu2/eps)+cossig
+        ESLE
+          costm = -2.d0*(sinu1*sinu2/eps)+cossig
+        END IF
+        !costm = -2.d0*(sinu1*sinu2/dsign(eps,cosal2))+cossig
       ELSE
         costm = -2.d0*(sinu1*sinu2/cosal2)+cossig
       ENDIF
@@ -1757,7 +1771,14 @@ MODULE module_simradar_tools
             !*****     costm = -2.d0*sinu1*sinu2/(cosal2+tol)+cossig
             IF (DABS(cosal2) .lt. eps) THEN
               !*** avoid div 0
-              costm= -2.d0*(sinu1*sinu2/dsign(eps,cosal2))+cossig
+              IF (cosal2 > 0.) THEN
+                costm= -2.d0*(sinu1*sinu2/eps)+cossig
+              ELSE IF (cosal2 < 0.) THEN
+                costm= +2.d0*(sinu1*sinu2/eps)+cossig
+              ELSE
+                costm= -2.d0*(sinu1*sinu2/eps)+cossig
+              END IF
+              !costm= -2.d0*(sinu1*sinu2/dsign(eps,cosal2))+cossig
             ELSE
               costm= -2.d0*(sinu1*sinu2/cosal2)+cossig
             ENDIF
@@ -1805,7 +1826,14 @@ MODULE module_simradar_tools
           !*****   costm = -2.d0*sinu1*sinu2/(cosal2+tol)+cossig
           IF (DABS(cosal2) .lt. eps) THEN
             !*** avoid div 0
-            costm = -2.d0*(sinu1*sinu2/dsign(eps,cosal2)) + cossig
+            IF (cosal2 > 0.) THEN
+              costm = -2.d0*(sinu1*sinu2/eps) + cossig
+            ELSE IF (cosal2 < 0.) THEN
+              costm = +2.d0*(sinu1*sinu2/eps) + cossig
+            ELSE
+              costm = -2.d0*(sinu1*sinu2/eps) + cossig
+            END IF
+            !costm = -2.d0*(sinu1*sinu2/dsign(eps,cosal2)) + cossig
           ELSE
             costm = -2.d0*(sinu1*sinu2/cosal2)+cossig
           ENDIF
