@@ -1134,7 +1134,7 @@ MODULE module_simradar_tools
     !   WRF lonlat
     ! rlon, rlat: coordinates of the r lonlathgt [degrees_east, degrees_North]
     ! crx, cry: coordinates of the center of the radial space
-    ! rmax: maximum radii from the center of the radial space
+    ! rmax: maximum radii from the center of the radial space [m]
     ! miss_v: missing value
     ! rmax: maximum possible amount of r lonlathgt cells in a single WRFlonlat grid
     !
@@ -1177,6 +1177,13 @@ MODULE module_simradar_tools
     klatmin = MINLOC(latvertices)
     klonmax = MAXLOC(lonvertices)
     klatmax = MAXLOC(latvertices)
+
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:', &
+      klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',             &
+      MINVAL(WRFlon), ', ', MAXVAL(WRFlon)
+    PRINT *,'  Lluis ' // TRIM(fname) // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:', &
+      klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',             &
+      MINVAL(WRFlat), ', ', MAXVAL(WRFlat)
     
     rdx2 = (erdx - irdx + 1) / 2
     rdy2 = (erdy - irdy + 1) / 2
@@ -2519,29 +2526,29 @@ MODULE module_simradar_tools
 
   END SUBROUTINE ErrMsg
 
-  CHARACTER(len=S32)FUNCTION DtoS(Dval)
+  CHARACTER(len=S32) FUNCTION DtoS(Dval)
   ! DtoS: Function to transform a double real to String
 
     IMPLICIT NONE
 
     REAL(kind=rr8), INTENT(IN)                           :: Dval
 
-    WRITE(DtoS,'(F21.10)')Dval
+    WRITE(DtoS,'(F32.10)')Dval
 
   END FUNCTION DtoS
 
-  CHARACTER(len=S32)FUNCTION RtoS(Rval)
+  CHARACTER(len=S32) FUNCTION RtoS(Rval)
   ! RtoS: Function to transform a real to String
 
     IMPLICIT NONE
 
     REAL, INTENT(IN)                                     :: Rval
 
-    WRITE(RtoS,'(F21.10)')Rval
+    WRITE(RtoS,'(F32.10)')Rval
 
   END FUNCTION RtoS
 
-  CHARACTER(len=S32)FUNCTION ItoS(Ival)
+  CHARACTER(len=S32) FUNCTION ItoS(Ival)
   ! ItoS: Function to transform an integer to String
 
     IMPLICIT NONE
@@ -2551,7 +2558,7 @@ MODULE module_simradar_tools
     ! Local
     CHARACTER(len=S32)                                   :: itoS0
 
-    WRITE(ItoS0,'(I50)')Ival
+    WRITE(ItoS0,'(I32)')Ival
     CALL  removeNONnum(ItoS0, ItoS)
 
   END FUNCTION ItoS
