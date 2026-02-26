@@ -658,6 +658,7 @@ MODULE module_simradar_tools
     REAL, DIMENSION(Na3)                                 :: zdists, dists, wgs
     REAL, DIMENSION(id1z:ed1z)                           :: vert1mask, zdist1
     LOGICAL, DIMENSION(Na3)                              :: ijkmask
+    LOGICAL, DIMENSION(id1z:ed1z)                        :: firstijk21Ncoords
     LOGICAL                                              :: printdbg
     LOGICAL                                              :: dbg
     CHARACTER(len=Sl)                                    :: fname
@@ -686,9 +687,10 @@ MODULE module_simradar_tools
      
     dbg = set_dbg(idbg)
         
-    ijk21Ncoords = 0    
+    ijk21Ncoords = 0
     ijk21coords = fillValueI
     wghts = 0.
+    firstijk21Ncoords = .TRUE.
     
     da = a*1.D0
     df = f*1.D0
@@ -751,7 +753,13 @@ MODULE module_simradar_tools
             ici, icj, k2, ' vert1 masked:', vert1mask, ' vert2: ', vert2(k2,icj), ' zdist1: ',        &
             zdist1, ' ick:', ick, ' found: ', totngridradar+1
 
-          ijk21Ncoords(ick) = ijk21Ncoords(ick) + 1
+          !! This is not properly workking, ijk21Ncoords = 0 at the begining is not woring ¿?
+          IF (firstijk21Ncoords(ick)) THEN
+            ijk21Ncoords(ick) = 1
+            firstijk21Ncoords(ick) = .FALSE.
+          ELSE 
+            ijk21Ncoords(ick) = ijk21Ncoords(ick) + 1
+          END IF
           IF (ijk21Ncoords(ick) > maxN3coords) THEN
             CALL ErrMsg("Too much radar cells: " // TRIM(ItoS(ijk21Ncoords(ick))) //                  &
               " in a WRF grid. Increase 'ngrid_radar3' in namelist current value: " //                &
@@ -1079,8 +1087,8 @@ MODULE module_simradar_tools
   END SUBROUTINE compute_radar_lonlat_radial
 
   SUBROUTINE pertinence_polar(iwdx, ewdx, iwdy, ewdy, WRFlon, WRFlat, WRFlon_bnds, WRFlat_bnds,       &
-    irdx, erdx, irdy, erdy, rlon, rlat, crx, cry, rmax, miss_v, maxNcoords, distradar, inradar,       &
-    radarnum, ngridradar, Nc2, ijradar, ijdistradar, inside, idbg)
+    lonn, lonx, latn, latx, irdx, erdx, irdy, erdy, rlon, rlat, crx, cry, rmax, miss_v, maxNcoords,   &
+    distradar, inradar, radarnum, ngridradar, Nc2, ijradar, ijdistradar, inside, idbg)
   ! Subroutine to compute the 2-dimensional pertinence of a lonlat polar radial space (r) into 
   !   another regular lonlat (WRF)
   !    NOTE:
@@ -1092,6 +1100,7 @@ MODULE module_simradar_tools
     
     INTEGER, INTENT(in)                                  :: iwdx, ewdx, iwdy, ewdy, maxNcoords, Nc2
     INTEGER, INTENT(in)                                  :: irdx, erdx, irdy, erdy
+    REAL, INTENT(in)                                     :: lonn, lonx, latn, latx
     REAL, INTENT(in)                                     :: crx, cry, rmax, miss_v
     REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy), INTENT(in)     :: WRFlon, WRFlat
     REAL, DIMENSION(irdy:erdy,irdx:erdx), INTENT(in)     :: rlon, rlat
@@ -1111,16 +1120,14 @@ MODULE module_simradar_tools
     ! Local
     INTEGER                                              :: i, j, ir
     INTEGER                                              :: ic, jc, ijfound
-    INTEGER, DIMENSION(1)                                :: klonmin, klatmin, klonmax, klatmax, kmindist
+    INTEGER, DIMENSION(1)                                :: kmindist
     INTEGER                                              :: rdx2, rdy2, rdx
     INTEGER, DIMENSION(2)                                :: ijtile_rad
-    REAL                                                 :: lonmin, lonmax, latmin, latmax, mindist
+    REAL                                                 :: mindist
     REAL                                                 :: lonrad, latrad, distrad
     INTEGER                                              :: totngridradar
-    REAL                                                 :: lonSW, lonNW, lonNE, lonSE
-    REAL                                                 :: latSW, latNW, latNE, latSE
-    REAL, DIMENSION(4)                                   :: lonvertices, latvertices
     REAL, DIMENSION(iwdx:ewdx,iwdy:ewdy)                 :: ijdist
+    LOGICAL, DIMENSION(iwdx:ewdx,iwdy:ewdy)              :: firstngridradar
     LOGICAL                                              :: centerin
     LOGICAL                                              :: dbg, printdbg
     CHARACTER(len=Sl)                                    :: fname
@@ -1130,6 +1137,8 @@ MODULE module_simradar_tools
     ! rnum: number of radar from the list of radars to process
     ! WRFlon, WRFlat: coordinates of the WRF lonlathgt [degrees_east, degrees_North]
     ! WRFlon_bnds, WRFlat_bnds: coordinates of the vertices of the grids of the WRF lonlat
+    ! lonn, lonx, latn, latx: actual vertices of the lon, lat values within the patch from its SW, NW, 
+    !   NE, SE corners
     ! irdx, erdx, irdy, erdy: size of the polar r lonlathgt that we want to know how much fits inside
     !   WRF lonlat
     ! rlon, rlat: coordinates of the r lonlathgt [degrees_east, degrees_North]
@@ -1154,40 +1163,7 @@ MODULE module_simradar_tools
       PRINT *,'    size of WRF lonlat:', iwdx, ewdx, iwdy, ewdy
       PRINT *,'    size of r lonlat:', irdx, erdx, irdy, erdy
     END IF
-  
-    ! Getting borders of the tile
-    DO i= iwdx, ewdx
-      PRINT '(A8,1x,I3,1x,100(F20.10,1x))', '2 lon i:', i, WRFlon(i,iwdy:ewdy)
-    END DO
-    lonSW = WRFlon(iwdx,iwdy)
-    lonNW = WRFlon(iwdx,ewdy)
-    lonNE = WRFlon(ewdx,ewdy)
-    lonSE = WRFlon(ewdx,iwdy)
-    latSW = WRFlat(iwdx,iwdy)
-    latNW = WRFlat(iwdx,ewdy)
-    latNE = WRFlat(ewdx,ewdy)
-    latSE = WRFlat(ewdx,iwdy)
-    
-    ! WR lon,lat matrices can be rotated, thus matrix vertices might not coincide...
-    lonvertices = (/ lonSW, lonNW, lonNE, lonSE /)
-    latvertices = (/ latSW, latNW, latNE, latSE /)
-    lonmin = MINVAL(lonvertices)
-    lonmax = MAXVAL(lonvertices)
-    latmin = MINVAL(latvertices)
-    latmax = MAXVAL(latvertices)
-    
-    klonmin = MINLOC(lonvertices)
-    klatmin = MINLOC(latvertices)
-    klonmax = MAXLOC(lonvertices)
-    klatmax = MAXLOC(latvertices)
-
-    PRINT *,'  Lluis ' // TRIM(fname) // ": lon vertices (SW, NW, NE, SE): ", lonvertices, ' k min:', &
-      klonmin, ' max: ', klonmax, ' min,maxv: ', lonmin, ', ', lonmax, ' abs min, max: ',             &
-      MINVAL(WRFlon), ', ', MAXVAL(WRFlon)
-    PRINT *,'  Lluis ' // TRIM(fname) // ": lat vertices (SW, NW, NE, SE): ", latvertices, ' k min:', &
-      klatmin, ' max: ', klatmax, ' min,maxv: ', latmin, ', ', latmax, ' abs min, max: ',             &
-      MINVAL(WRFlat), ', ', MAXVAL(WRFlat)
-    
+      
     rdx2 = (erdx - irdx + 1) / 2
     rdy2 = (erdy - irdy + 1) / 2
   
@@ -1198,6 +1174,7 @@ MODULE module_simradar_tools
     ngridradar = 0
     ijradar = fillValueI
     ijdistradar = fillValueR
+    firstngridradar = .TRUE.
     
     !irng = 0    
     centerin = .FALSE.
@@ -1211,8 +1188,8 @@ MODULE module_simradar_tools
     
     totngridradar = 0
     ijfound = 1
-    !IF (rlon > lonvertices(klonmin(1)) .AND. rlon < lonvertices(klonmax(1)) .AND.                     &
-    !  rlat > latvertices(klonmin(1)) .AND. rlat < latvertices(klatmax(1))) THEN
+    !IF (rlon > lonn)) .AND. rlon < lonx) .AND.                     &
+    !  rlat > latn) .AND. rlat < latx) THEN
     insideradar: IF (inside) THEN
     
       IF (dbg) PRINT *,'    ' // TRIM(fname) // ": radar inside !!"
@@ -1235,21 +1212,27 @@ MODULE module_simradar_tools
           ! Avoid values outside radar range
           IF (rlon(i,j) >= fillValueR*0.95 .OR. rlat(i,j) >= fillValueR*0.95) CYCLE
 
-          ins: IF (rlon(i,j) > lonvertices(klonmin(1)) .AND. rlon(i,j) < lonvertices(klonmax(1)) .AND. &
-            rlat(i,j) > latvertices(klonmin(1)) .AND. rlat(i,j) < latvertices(klatmax(1))) THEN
+          ins: IF (rlon(i,j) > lonn) .AND. rlon(i,j) < lonx) .AND.                                    &
+            rlat(i,j) > latn) .AND. rlat(i,j) < latx)) THEN
               
-            totngridradar = totngridradar + 1
             ! Closest WRF grid point to the radar cell
             ijdist=SQRT((WRFlon-rlon(i,j))**2+(WRFlat-rlat(i,j))**2)
             ijtile_rad = MINLOC(ijdist)
             ic = ijtile_rad(1)
             jc = ijtile_rad(2)
+            totngridradar = totngridradar + 1
               
             inradar(ic,jc) = 1
             radarnum(ic,jc) = 1
             
             ! Amount of r cells in this WRF grid point
-            ngridradar(ic,jc) = ngridradar(ic,jc) + 1
+            !! This is not properly workking, ngridradar = 0 at the begining is not woring ¿?
+            IF (firstngridradar(ic,jc)) THEN
+              ngridradar(ic,jc) = 1
+              firstngridradar(ic,jc) = .FALSE.
+            ELSE 
+              ngridradar(ic,jc) = ngridradar(ic,jc) + 1
+            END IF
             IF (ngridradar(ic,jc) > maxNcoords) THEN
               CALL ErrMsg("For WRF's i,j: " // TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //             &
                 " too much radar cells: " // TRIM(ItoS(ngridradar(ic,jc))) // " in a WRF grid. " //   &
