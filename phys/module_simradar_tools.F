@@ -1222,11 +1222,11 @@ MODULE module_simradar_tools
             jc = ijtile_rad(2) + iwdy - 1
             totngridradar = totngridradar + 1
             
-            IF (ic < iwdx .OR. ic > ewdx) .OR. (jc < iwdy .OR. jc > ewdy) THEN
+            IF ( (ic < iwdx .OR. ic > ewdx) .OR. (jc < iwdy .OR. jc > ewdy) ) THEN
               CALL ErrMsg("For radar's i,j: " // TRIM(ItoS(i)) //', ' // TRIM(ItoS(j)) //             &
-                " wrong WRF grid found!! ic, jc ", TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //         &
+                " wrong WRF grid found!! ic, jc " //  TRIM(ItoS(ic)) //', ' // TRIM(ItoS(jc)) //      &
                 " outside patch range its,ite ; jts,jte: " // TRIM(ItoS(iwdx)) // ", " //             &
-                TRIM(ItoS(ewdx)) // " ; " // TRIM(ItoS(iwdy)) // ", " // TRIM(ItoS(ewdy))
+                TRIM(ItoS(ewdx)) // " ; " // TRIM(ItoS(iwdy)) // ", " // TRIM(ItoS(ewdy)), fname, -1)
             END IF
             
             inradar(ic,jc) = 1
