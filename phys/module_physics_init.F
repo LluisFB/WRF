@@ -6302,14 +6302,22 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         'S:',radarlons(INT(e_angle/4),e_dist,ir), ', ', radarlats(INT(e_angle/4),e_dist,ir),          &
         'W:',radarlons(INT(e_angle/2),e_dist,ir), ', ', radarlats(INT(e_angle/2),e_dist,ir),          &
         'N:',radarlons(INT(3*e_angle/4),e_dist,ir), ', ', radarlats(INT(3*e_angle/4),e_dist,ir)
-        
+
+
+!      SUBROUTINE pertinence_polar(iwdx, ewdx, iwdy, ewdy, WRFlon, WRFlat,    6
+!        WRFlon_bnds, WRFlat_bnds, lonn, lonx, latn, latx,                    6
+!        irdx, erdx, irdy, erdy, rlon, rlat, crx, cry, rmax,                  9
+!        miss_v, maxNcoords, distradar,                                       3
+!        inradar, radarnum, ngridradar, Nc2,                                  4
+!        ijradar, ijdistradar, inside, idbg)                                  4
+
       ! Checking pertinence of the radar into this tile (computing only in the patch)
-      CALL pertinence_polar(its, ite, jts, jte, xlong(its:ite,jts:jte), xlat(its:ite,jts:jte),        &
-        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), lonmin, lonmax, latmin,  latmax,    &
-        1, e_dist, 1, e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,        &
-        model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir), inradar,          &
-        radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2, ijgridradar_NOc,               &
-        ijdistgridradar_NOc, inside, dbg)
+      CALL pertinence_polar(its, ite, jts, jte, xlong(its:ite,jts:jte), xlat(its:ite,jts:jte),        & 6
+        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), lonmin, lonmax, latmin, latmax,     & 6
+        1, e_dist, 1, e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,        & 9
+        model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir),                   & 3
+        inradar(its:ite,jts:jte), radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2,      & 4
+        ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg)                                              4
           
       ! Compressing results
       DO i=its, ite
