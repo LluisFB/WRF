@@ -1260,8 +1260,8 @@ MODULE module_simradar_tools
       rdx = erdx-irdx+1
       IF (dbg) THEN
         PRINT *,'    WRF lonlat box ...'
-        PRINT *,'      SW:', lonvertices(klonmin(1)), latvertices(klatmin(1))
-        PRINT *,'      NE:', lonvertices(klonmax(1)), latvertices(klatmax(1))
+        PRINT *,'      SW:', lonmin, latmin
+        PRINT *,'      NE:', lonmax, latmax
         PRINT *,'  ' // TRIM(fname) // ": with radar at ", crx,', ',cry,  "; amount of " //           &
           "radar cells in WRF grid: ", totngridradar, ' theoretical value:',                          &
           INT(pict*((rdx)/2)**2), INT(SUM(ngridradar))
@@ -1283,8 +1283,8 @@ MODULE module_simradar_tools
       IF (dbg) THEN
         PRINT *,'  ' // TRIM(fname) // ": radar at ", crx,', ', cry, "; outside WRF grid !!"
         PRINT *,'    WRF lonlat box ...'
-        PRINT *,'      SW:', lonvertices(klonmin(1)), latvertices(klatmin(1))
-        PRINT *,'      NE:', lonvertices(klonmax(1)), latvertices(klatmax(1))
+        PRINT *,'      SW:', lonmin, latmin
+        PRINT *,'      NE:', lonmax, latmax
       END IF
       
     END IF insideradar
