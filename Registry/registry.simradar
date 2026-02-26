@@ -27,7 +27,7 @@ dimspec    znrnn3     3     namelist=vert_nradar_ngrid3      z     evert_nradar_
 dimspec    znrnncoord3 3    namelist=vert_nradar_ngrid_coord3 z    evert_nradar_ngrid_coord3
 
 dimspec    nrcoord    2     namelist=nradar_coord2           c     nradar_coord2
-dimspec    nr4coord   2     namelist=nradar_coord4           c     nradar_coord4
+dimspec    nr4coord   3     namelist=nradar_coord4           z     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        3     namelist=nradar_dist             z     nradar_dist
