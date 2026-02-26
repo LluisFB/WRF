@@ -6311,8 +6311,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         'N:',radarlons(INT(3*e_angle/4),e_dist,ir), ', ', radarlats(INT(3*e_angle/4),e_dist,ir)
         
       ! Checking pertinence of the radar into this tile (computing only in the patch)
-      CALL pertinence_polar(its, ite, jts, jte, xlong, xlat, bnds_lon, bnds_lat, 1, e_dist, 1,        &
-          e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,                    &
+      CALL pertinence_polar(its, ite, jts, jte, xlong(its:ite,jts:jte), xlat(its:ite,jts:jte),        &
+        bnds_lon(its:ite,jts:jte,:), bnds_lat(its:ite,jts:jte,:), 1, e_dist, 1, e_angle,              &
+          radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,                             &
           model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir), inradar,        &
           radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2, ijgridradar_NOc,             &
           ijdistgridradar_NOc, inside, dbg)
