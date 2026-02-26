@@ -1212,8 +1212,8 @@ MODULE module_simradar_tools
           ! Avoid values outside radar range
           IF (rlon(i,j) >= fillValueR*0.95 .OR. rlat(i,j) >= fillValueR*0.95) CYCLE
 
-          ins: IF (rlon(i,j) > lonn) .AND. rlon(i,j) < lonx) .AND.                                    &
-            rlat(i,j) > latn) .AND. rlat(i,j) < latx)) THEN
+          ins: IF (rlon(i,j) >= lonn .AND. rlon(i,j) < lonx .AND.                                     &
+            rlat(i,j) >= latn .AND. rlat(i,j) < latx) THEN
               
             ! Closest WRF grid point to the radar cell
             ijdist=SQRT((WRFlon-rlon(i,j))**2+(WRFlat-rlat(i,j))**2)
