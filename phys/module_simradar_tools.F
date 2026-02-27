@@ -120,6 +120,7 @@ MODULE module_simradar_tools
   ! error tolerance
   REAL(kind=rr8), PARAMETER                              :: tol=1.d-14
   ! Epsilon
+  REAL, PARAMETER                                        :: reps=1.e-15
   REAL(kind=rr8), PARAMETER                              :: eps=1.d-15
 
   ! Maximum rank of a Frotran variable
