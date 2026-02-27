@@ -6322,7 +6322,11 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
             ijgridradar(i,j,inrnncoord) = ijgridradar_NOc(i,j,n,l)
             END DO
           END DO
+        END DO
+      END DO
         
+      DO i=1, ite
+        DO j=jts, jte
           DO l=1, 4
             inr4coord = (ir-1)*4 + l
             radarlon_bnds(i,j,inr4coord) = radarlon_bnds_NOc(i,j,l)
@@ -6332,6 +6336,25 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         END DO
       END DO
       
+      DO i=1, e_angle
+        DO j=1, e_dist
+          DO l=1, 4
+            inr4coord = (ir-1)*4 + l
+            radarlon_bnds(i,j,inr4coord) = radarlon_bnds_NOc(i,j,l)
+            radarlat_bnds(i,j,inr4coord) = radarlat_bnds_NOc(i,j,l)
+          END DO
+        END DO
+      END DO
+
+      DO i=1, e_azimuth
+        DO j=1, e_dist
+          DO l=1, 4
+            inr4coord = (ir-1)*4 + l
+            radarhgt_bnds(i,j,inr4coord) = radarhgt_bnds_NOc(i,j,l)
+          END DO
+        END DO
+      END DO
+
     END DO look_radar
     
     !! Looking for the specees to interpolate and use
