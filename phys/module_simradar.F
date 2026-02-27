@@ -446,11 +446,12 @@ MODULE module_simradar
     ! radar 3-dimensional
     INTEGER                                              :: ijkNtot
     INTEGER, DIMENSION(kms:kme)                          :: ijkngridradar
-    INTEGER, DIMENSION(kms:kme, coord3, ngrid3_radar)    :: ijkgridradar
-    REAL, DIMENSION(kms:kme, around3, ngrid3_radar)      :: wghts
+    INTEGER, DIMENSION(kms:kme, ngrid3_radar, coord3)    :: ijkgridradar
+    REAL, DIMENSION(kms:kme, ngrid3_radar, around3)      :: wghts
     
     INTEGER                                              :: ii2, ii3, iqm, iicv, ic
     INTEGER                                              :: ei2, ei3
+    INTEGER                                              :: iwi, iwe, jwi, jwe, kwi, kwe
     INTEGER                                              :: i123
     INTEGER                                              :: ijkfound
     REAL, DIMENSION(around3,Ntotvarsinterp)              :: cvals
@@ -625,10 +626,26 @@ MODULE module_simradar
             ei1 = i1+1
             ij1 = j1-1
             ej1 = j1+1
-            IF (i == ims) ii1 = i
-            IF (i == ime) ei1 = i
-            IF (j == jms) ij1 = j
-            IF (j == jme) ej1 = j
+            iwi = -1
+            iwe = 1
+            jwi = -1
+            jwe = 1
+            IF (i == ims) THEN
+              ii1 = i
+              iwi = 0
+            END IF
+            IF (i == ime) THEN
+              ei1 = i
+              iwe = 0
+            END IF
+            IF (j == jms) THEN
+              ij1 = j
+              jwi = 0
+            END IF
+            IF (j == jme) THEN
+              ej1 = j
+              jwe = 0
+            END IF
 
             ! Decompressing
             DO n=1, ngridradar(i,j,ir)
@@ -667,58 +684,26 @@ MODULE module_simradar
               ! 27 values around reference space at i,j,k
               i123 = 1
               cvals = 0.
-              IF (k==kms) THEN
-                DO ii1=-1,1
-                  DO ii2=-1,1
-                    DO ii3=0,1
-                      DO iqm=1, Nmoist
-                        iicv = tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
-                      END DO
-                      cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,10) = w(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
-                      i123 = i123 + 1
+              kwi = -1
+              kwe = 1
+              IF (k==kms) kwi = 0
+              IF (k==kme) kwe = 0
+               DO ii1=iwi, iwe
+                DO ii2=jwi, jwe
+                  DO ii3=kwi, kwe
+                    DO iqm=1, Nmoist
+                      iicv = tocompute(iqm)
+                      cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
                     END DO
+                    cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,10) = w(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
+                    i123 = i123 + 1
                   END DO
                 END DO
-              ELSE IF (k1==kme) THEN
-                DO ii1=-1,1
-                  DO ii2=-1,1
-                    DO ii3=-1,0
-                      DO iqm=1, Nmoist
-                        iicv = tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
-                      END DO
-                      cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,10) = w(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
-                      i123 = i123 + 1
-                    END DO
-                  END DO    
-                END DO
-              ELSE
-                DO ii1=-1,1
-                  DO ii2=-1,1
-                    DO ii3=-1,1
-                      DO iqm=1, Nmoist
-                        iicv = tocompute(iqm)
-                        cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
-                      END DO
-                      cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,10) = w(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
-                      cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
-                      i123 = i123 + 1
-                    END DO
-                  END DO
-                END DO
-              END IF
+              END DO
           
               ! Removing too small values...
               DO ii1=1, around3
@@ -813,7 +798,7 @@ MODULE module_simradar
                   ' int. value: ', iqv
                                             
                 ! Avoiding wasting time
-                IF (dqr+dqs+dqg+dqh == 0.d0) THEN
+                IF (iqr+iqs+iqg+iqh == 0.) THEN
                   zh_rain_NOc = 0.
                   zdr_rain_NOc = 0.
                   kdp_rain_NOc = 0.               
