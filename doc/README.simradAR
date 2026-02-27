@@ -105,7 +105,9 @@ Output is expected at the 11th auxiliary history output, therefore standard set-
  auxhist11_outname = "wrfsimradar_d<domain>_<date>"
  auxhist11_interval = 10, 10,
  frames_per_auxhist11 = 6, 6,
- io_form_auxhist11 = 2
+ io_form_auxhist11 = 102
+ 
+ * NOTE: io_form_auxhist11= 102 needs to be used, since radar space is defined at very high resolution (default values resolution: 250. m, 376 angles radii: 200 km). This means that each processor will write its patch creating a 'wrfsimradar' file for each processor. Of course, it will depend on HPC resources, factibility to use parallel-netCDF, ... At least, with scarce resources with '102' it works.
 
 === LUT values ===
 A series of look-up tables have to be prepared for each different microphysics scheme. There,via the use of the T-matrix method, conversion of mixing ratio values for each species are computed. All this information has to be prepared in advance and kept in a netCDF file.
