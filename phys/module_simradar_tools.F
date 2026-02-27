@@ -1273,11 +1273,11 @@ MODULE module_simradar_tools
           "radar cells in WRF grid: ", totngridradar, ' theoretical value:',                          &
           INT(pict*((rdx)/2)**2), INT(SUM(ngridradar))
         ijtile_rad = MAXLOC(ngridradar)
-        ic = ijtile_rad(1)
-        jc = ijtile_rad(2)
+        ic = ijtile_rad(1) + iwdx - 1
+        jc = ijtile_rad(2) + iwdy - 1
         ijdist=SQRT((WRFlon(ic,jc)-crx)**2+(WRFlat(ic,jc)-cry)**2)
         PRINT *,'      largest amount radar cells in a WRF grid:', MAXVAL(ngridradar), ' found at: ', &
-          ijtile_rad, ' distance to the radar:', ijdist(1,1), ' degree'
+          ijtile_rad, ' distance to the radar:', ijdist(iwdx,iwdy), ' degree'
       END IF
         
 !! This can not longer be verified ...
