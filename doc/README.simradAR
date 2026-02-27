@@ -50,7 +50,7 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 | real      | radar_clon          | 0.0                 | longitude of the location of the radar    [one per radar]          | degree_east  |
 | real      | radar_clat          | 0.0                 | latitude of the location of the radar [one per radar]              | degree_north |
 | real      | radar_chgt          | 0.0                 | height of the location of the radar  [one per radar]               | m |
-| character | radar_band          | '-'                 | band of the radar: 'c', 's', or 'x'  [one per radar]               | - |
+| character | radar_band          | '-'                 | band of the radar: 'C', 'S', or 'X'  [one per radar]               | - |
 | integer   | radar_scan          | 1                   | type of scan 1:             [one per radar]                        | - |
 | real      | radar_distmax       | 250.                | maximum distance from radar [one per radar]                        | km |
 | real      | radar_hgtmax        | 20.                 | maximum height from radar  [one per radar]                         | km |
