@@ -708,8 +708,6 @@ MODULE module_simradar
               ! Removing too small values...
               DO ii1=1, around3
                 DO ii2=1, 12
-                  PRINT *, ' Lluis ii1, ii2:', ii1, ', ', ii2, ' reps: ', reps
-                  PRINT *, ' Lluis cvals:',cvals(ii1,ii2)
                   IF (cvals(ii1,ii2) < reps) cvals(ii1,ii2) = 0. 
                 END DO
               END DO
