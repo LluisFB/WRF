@@ -5949,7 +5949,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     LOGICAL, DIMENSION( its:ite , jts:jte )              :: lonlatmask
     REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlon_bnds_NOc, radarlat_bnds_NOc,     &
       radarhgt_bnds_NOc
-    INTEGER, DIMENSION(ims:ime, jms:jme, 2, ngrid_radar) :: ijgridradar_NOc
+    INTEGER, DIMENSION(ims:ime, jms:jme, ngrid_radar, 2) :: ijgridradar_NOc
     REAL, DIMENSION(ims:ime, jms:jme, ngrid_radar)       :: ijdistgridradar_NOc
     CHARACTER (LEN=1000)                                 :: diag_message
     LOGICAL                                              :: found, inside, dbg
