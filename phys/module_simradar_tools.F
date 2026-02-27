@@ -649,6 +649,7 @@ MODULE module_simradar_tools
     ! Local
     INTEGER                                              :: k1, ic, i2, j2, k2, kk2, ij, ijk
     INTEGER                                              :: ici, icj, ick
+    INTEGER                                              :: ii1i, ii1e, ii2i, ii2e, ii3i, ii3e
     INTEGER                                              :: ijkfound
     REAL                                                 :: ijkvert1, sumdists, totwght
     REAL(kind=rr8)                                       :: da, df
@@ -695,6 +696,16 @@ MODULE module_simradar_tools
     da = a*1.D0
     df = f*1.D0
 
+    ! Capping run of 9 weights if they lay in the border
+    ii1i = -1
+    ii1e = 1
+    ii2i = -1
+    ii2e = 1
+    IF (i1 == id1x) ii1i = 0
+    IF (i1 == ed1x) ii1e = 0
+    IF (j1 == id1y) ii2i = 0
+    IF (j1 == ed1y) ii2e = 0
+
     IF (dbg) PRINT *,'  ' // TRIM(fname) // ": Compute 3-dimensional weights at ", i1, ', ', j1 ,     &
       ' with ', ij21Ncoords, " radar cells horizontally"
     
@@ -707,20 +718,24 @@ MODULE module_simradar_tools
       ici = ij21coords(ic,1)
       !! dist
       icj = ij21coords(ic,2)
-              
+
       ! computing distances from 3x3 horizontal grid (the already computed is only for i1,j1)
       ! horizontal 3x3 array as 
       !   -1,-1,(1,1)[1]: SW; 0,-1,(2,1)[2]: SC, 1,-1,(3,1)[3]: SE; 
       !    -1,0,(1,2)[4]: CW;  0,0,(2,2)[5]: CC;  1,0,(3,2)[6]: CE;
       !    -1,1,(1,3)[7]: NW;  0,1,(2,3)[8]: NC;  1,1,(3,3)[9]: NE;
       ij = 1
-      DO i2=-1,1
-        DO j2=-1,1
+      ijlon1 = 0.
+      ijlat1 = 0.
+      DO i2=ii1i,ii1e
+        DO j2=ii2i,ii2e
           ijlon1(ij) = lon1(i1+i2,j1+j2)
           ijlat1(ij) = lat1(i1+i2,j1+j2)
           ij = ij + 1
         END DO
       END DO
+
+      PRINT *,' Lluis ici,icj:', ici, ', ', icj, ii1i, ii1e, ii2i, ii2e
       
       CALL real_distances(1, 3, 1, 3, ijlon1, ijlat1, lon2(ici,icj), lat2(ici,icj), ijdists)
 
@@ -780,59 +795,25 @@ MODULE module_simradar_tools
           ijk = 1
           dists = fillValueR
           ijkmask = .FALSE.
-          IF (ick == 1) THEN
-            IF (printdbg) PRINT *, '  ' // TRIM(fname) // ": radar height ", vert2(k2,icj),       &
-              " at first WRF level ", ick, ' hgt= ', vert1(i1,j1,ick), ' m'
-            DO i2=-1,1
-              DO j2=-1,1
-                DO kk2=0,1
-                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
-                  IF (ijkvert1 /= miss_v1) THEN
-                    ! 3-dimensional distance
-                    !   dist = SQRT(hdist**2 + zdist**2)
-                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
-                    ijkmask(ijk) = .TRUE.
-                  END IF
-                  ijk = ijk + 1
-                END DO
-                ij = ij + 1
+          ii3i = -1
+          ii3e = -1
+          IF (ick == 1) ii3i = 0
+          IF (ick == ed1z) ii3e = 0
+          DO i2=ii1i,ii1e
+            DO j2=ii2i,ii2e
+              DO kk2=ii3i,ii3e
+                ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
+                IF (ijkvert1 /= miss_v1) THEN
+                  ! 3-dimensional distance
+                  !   dist = SQRT(hdist**2 + zdist**2)
+                  dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
+                  ijkmask(ijk) = .TRUE.
+                END IF
+                ijk = ijk + 1
               END DO
+              ij = ij + 1
             END DO
-          ELSE IF (ick == ed1z) THEN
-            IF (printdbg) PRINT *, '  ' // TRIM(fname) // ": radar height ", vert2(k2,icj),       &
-              " at last WRF level ", ed1z, ' hgt= ', vert1(i1,j1,ed1z), ' m'
-            DO i2=-1,1
-              DO j2=-1,1
-                DO kk2=-1,0
-                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
-                  IF (ijkvert1 /= miss_v1) THEN
-                    ! 3-dimensional distance
-                    !   dist = SQRT(hdist**2 + zdist**2)
-                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
-                    ijkmask(ijk) = .TRUE.
-                  END IF
-                  ijk = ijk + 1
-                END DO
-                ij = ij + 1
-              END DO
-            END DO
-          ELSE
-            DO i2=-1,1
-              DO j2=-1,1
-                DO kk2=-1,1
-                  ijkvert1 = vert1(i1+i2,j1+j2,ick+kk2)
-                  IF (ijkvert1 /= miss_v1) THEN
-                    ! 3-dimensional distance
-                    !   dist = SQRT(hdist**2 + zdist**2)
-                    dists(ijk) = SQRT(ijdists(ij)**2 + (ijkvert1-vert2(k2,icj))**2)
-                    ijkmask(ijk) = .TRUE.
-                  END IF
-                  ijk = ijk + 1
-                END DO
-                ij = ij + 1
-              END DO
-            END DO              
-          END IF
+          END DO              
               
           ! Filtering for dist == 0!!
           wgs = 0.
