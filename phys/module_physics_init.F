@@ -6309,7 +6309,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         1, e_dist, 1, e_angle, radarlons(:,:,ir), radarlats(:,:,ir), rlon, rlat, rdistx*1000.,        &
         model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir),                   &
         inradar(its:ite,jts:jte), radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2,      &
-        ijgridradar_NOc, ijdistgridradar_NOc, inside, dbg) !4
+        ijgridradar_NOc(its:ite,jts:jte,:,:), ijdistgridradar_NOc(its:ite,jts:jte,:), inside, dbg) !4
           
       ! Compressing results
       DO i=its, ite
@@ -6319,7 +6319,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
             ijdistgridradar(i,j,inrnn) = ijdistgridradar_NOc(i,j,n)
             DO l=1, 2
               inrnncoord = (ir-1)*ngrid_radar*2 + (n-1)*2 + l
-            ijgridradar(i,j,inrnncoord) = ijgridradar_NOc(i,j,n,l)
+              ijgridradar(i,j,inrnncoord) = ijgridradar_NOc(i,j,n,l)
             END DO
           END DO
         END DO
