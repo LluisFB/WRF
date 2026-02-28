@@ -434,7 +434,7 @@ MODULE module_simradar
     REAL                                                 :: prv
     
     LOGICAL, EXTERNAL                                    :: wrf_dm_on_monitor
-    CHARACTER(len=256)                                   :: msg
+    CHARACTER(len=S1024)                                 :: msg
     LOGICAL                                              :: ijdbg, cdone
     INTEGER                                              :: dbg_level
  
@@ -454,7 +454,7 @@ MODULE module_simradar
     INTEGER                                              :: iwi, iwe, jwi, jwe, kwi, kwe
     INTEGER                                              :: i123
     INTEGER                                              :: ijkfound
-    REAL, DIMENSION(around3,Ntotvarsinterp)              :: cvals
+    REAL, DIMENSION(Ntotvarsinterp,around3)              :: cvals
     CHARACTER(len=1), DIMENSION(Nbands)                  :: availrband
 
     REAL, DIMENSION(ims:ime,kms:kme,jms:jme)             :: zg, press, unua, unva, ua, va
@@ -482,6 +482,13 @@ MODULE module_simradar
     LOGICAL                                              :: dbg, printdbg
     CHARACTER(len=S32)                                   :: fname
 
+!!!!!!! Local Variables
+! cvals(Nvars, Naround3): array with grid WRF values to be used for the interpolation to the radar space
+!    The indices of the moist values are kept in imoist, and prepared in phys/module_initi_physics.F
+!    Naround3: 3-dimensional amount of grids around a single grid (27)
+!    Nvars: amount of variables to interpolate
+!      1: qvapor     2: qcloud     3: qrain     4: qice     5: qsnow     6: qgraupel   7: 1hail 
+!      8: unstag. u  9: unstag. v 10: w        11: t_phy   12: pressure (P+PB)
     fname = 'simradar_calc'
 
     ! Showing version of the module
@@ -693,22 +700,32 @@ MODULE module_simradar
                   DO ii3=kwi, kwe
                     DO iqm=1, Nmoist
                       iicv = tocompute(iqm)
-                      cvals(i123,iicv) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
+                      cvals(iicv,i123) = moist(i+ii1,k+ii3,j+ii2,imoist(iqm))
                     END DO
-                    cvals(i123,8) = ua(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,9) = va(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,10) = w(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,11) = ta(i+ii1,k+ii3,j+ii2)
-                    cvals(i123,12) = press(i+ii1,k+ii3,j+ii2)
+                    cvals(8,i123) = ua(i+ii1,k+ii3,j+ii2)
+                    cvals(9,i123) = va(i+ii1,k+ii3,j+ii2)
+                    cvals(10,i123) = w(i+ii1,k+ii3,j+ii2)
+                    cvals(11,i123) = ta(i+ii1,k+ii3,j+ii2)
+                    cvals(12,i123) = press(i+ii1,k+ii3,j+ii2)
                     i123 = i123 + 1
                   END DO
                 END DO
               END DO
           
               ! Removing too small values...
-              DO ii1=1, around3
-                DO ii2=1, 12
+              DO ii1=1, 12
+                DO ii2=1, around3
+                  PRINT *, ' Lluis ii1, ii2:', ii1, ', ', ii2, ' reps: ', reps
+                  PRINT *, ' Lluis cvals:',cvals(ii1,ii2)
                   IF (cvals(ii1,ii2) < reps) cvals(ii1,ii2) = 0. 
+                  IF (cvals(ii1,ii2) /= cvals(ii1,ii2)) THEN
+                    PRINT *,'     around 27 values [1: bottom, SW], ..., 27: top, NE]:', cvals(ii1,:)
+                    WRITE (msg , * ) &
+                      "simrad.AR: " // TRIM(errormsg) // " " // TRIM(fname) // " NaN value found " // &
+                      "for variable '" // TRIM(cvals_varn(ii1)) // " around point i,j,k: " //         &
+                      TRIM(ItoS(i)) // ", " // TRIM(ItoS(j)) // ", " // TRIM(ItoS(k))
+                    CALL wrf_error_fatal ( msg )
+                  END IF
                 END DO
               END DO
   
@@ -731,25 +748,25 @@ MODULE module_simradar
               
                 ! Let's be memory constrained (might be ofered for output checks?)
                 ! Assuming we will always have, vapour, clouds and rain
-                iqv = SUM(cvals(:,1)*wghts(k,ic,:))
+                iqv = SUM(cvals(1,:)*wghts(k,ic,:))
 
                 !! Computing radar diagnostics
                 ! Avoiding masked values
                 IF (iqv > 0.9*fillValueR) CYCLE
 
-                iqc = SUM(cvals(:,2)*wghts(k,ic,:))
+                iqc = SUM(cvals(2,:)*wghts(k,ic,:))
                 ! Filtering to 0.
                 IF (iqc .lt. model_config_rec%q_clou_min) THEN
                   iqc = 0.
                 END IF
 
-                iqr = SUM(cvals(:,3)*wghts(k,ic,:))
+                iqr = SUM(cvals(3,:)*wghts(k,ic,:))
                 IF (iqr .lt. model_config_rec%q_rain_min) THEN
                   iqr = 0.
                 END IF
 
                 IF (m_qi .GE. prm_first_scalar) THEN
-                  iqi = SUM(cvals(:,4)*wghts(k,ic,:))
+                  iqi = SUM(cvals(4,:)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqi .LT. model_config_rec%q_ice_min) THEN
                     iqi = 0.
@@ -759,7 +776,7 @@ MODULE module_simradar
                 END IF
 
                 IF (m_qs .GE. prm_first_scalar) THEN
-                  iqs = SUM(cvals(:,5)*wghts(k,ic,:))
+                  iqs = SUM(cvals(5,:)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqs .LT. model_config_rec%q_snow_min) THEN
                     iqs = 0.d0
@@ -769,7 +786,7 @@ MODULE module_simradar
                 END IF
 
                 IF (m_qg .GE. prm_first_scalar) THEN
-                  iqg = SUM(cvals(:,6)*wghts(k,ic,:))
+                  iqg = SUM(cvals(6,:)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqg .LT. model_config_rec%q_grau_min) THEN
                     iqg = 0.
@@ -779,7 +796,7 @@ MODULE module_simradar
                 END IF
 
                 IF (m_qh .GE. prm_first_scalar) THEN
-                  iqh = SUM(cvals(:,7)*wghts(k,ic,:))
+                  iqh = SUM(cvals(7,:)*wghts(k,ic,:))
                   ! Filtering to 0
                   IF (iqh .LT. model_config_rec%q_hail_min) THEN
                     iqh = 0.
@@ -788,13 +805,13 @@ MODULE module_simradar
                   iqh = 0.
                 END IF
 
-                iua = SUM(cvals(:,8)*wghts(k,ic,:))
-                iva = SUM(cvals(:,9)*wghts(k,ic,:))
-                iwa = SUM(cvals(:,10)*wghts(k,ic,:))
-                ita = SUM(cvals(:,11)*wghts(k,ic,:))
-                ipress = SUM(cvals(:,12)*wghts(k,ic,:))
+                iua = SUM(cvals(8,:)*wghts(k,ic,:))
+                iva = SUM(cvals(9,:)*wghts(k,ic,:))
+                iwa = SUM(cvals(10,:)*wghts(k,ic,:))
+                ita = SUM(cvals(11,:)*wghts(k,ic,:))
+                ipress = SUM(cvals(12,:)*wghts(k,ic,:))
           
-                IF (printdbg ) PRINT *, '       27values: ', cvals(:,1), ' 27wghts: ', wghts(k,ic,:), &
+                IF (printdbg ) PRINT *, '       27values: ', cvals(1,:), ' 27wghts: ', wghts(k,ic,:), &
                   ' int. value: ', iqv
                                             
                 ! Avoiding wasting time
