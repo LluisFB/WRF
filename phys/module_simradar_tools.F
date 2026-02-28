@@ -9,6 +9,7 @@ MODULE module_simradar_tools
 ! beam_height: Function to compute the height of the beam
 ! calc_tvelocities_1D: Subroutine to compute terminal velocities for water species 1D version
 ! calc_vt: Function to compute terminal velocity after a gamma function
+! cvals_varn: Function to provide the name of the variable accordingly its index from cvals array
 ! com_gamma: Gamma function
 ! compute_radar_lonlat_radial: Subroutine to copmute lon, lat, hgt coordinates in the radar matrix 
 !   following polar coordinates
@@ -234,6 +235,61 @@ MODULE module_simradar_tools
   END TYPE lut_vars
 
   CONTAINS
+
+  CHARACTER(len=S32) FUNCTION cvals_varn(icval)
+  ! Function to provide the name of the variable accordingly its index from cvals array
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(in)                                  :: icval
+    
+    ! Local
+    INTEGER                                              :: icvalmax
+    CHARACTER (LEN=S2048)                                :: diag_message
+    CHARACTER(len=S32)                                   :: fname
+    !!!!!!! Variables
+    ! icval: index of the variable in 'cvals' (see phys/module_simradar.F) 
+
+    fname = 'cvals_varn'
+
+    icvalmax = 12
+
+    cvals_varn = ''
+
+    IF (icval == 1) THEN
+      cvals_varn = 'QVAPOR'
+    ELSE IF (icval == 2) THEN
+      cvals_varn = 'QCLOUD'
+    ELSE IF (icval == 3) THEN
+      cvals_varn = 'QRAIN'
+    ELSE IF (icval == 4) THEN
+      cvals_varn = 'QICE'
+    ELSE IF (icval == 5) THEN
+      cvals_varn = 'QSNOW'
+    ELSE IF (icval == 6) THEN
+      cvals_varn = 'QGRAUPEL'
+    ELSE IF (icval == 7) THEN
+      cvals_varn = 'QHAIL'
+    ELSE IF (icval == 8) THEN
+      cvals_varn = 'U'
+    ELSE IF (icval == 9) THEN
+      cvals_varn = 'V'
+    ELSE IF (icval == 10) THEN
+      cvals_varn = 'W'
+    ELSE IF (icval == 11) THEN
+      cvals_varn = 'T_PHY'
+    ELSE IF (icval == 12) THEN
+      cvals_varn = 'PRESS (P+PB)'
+    ELSE
+      WRITE(diag_message, *) &
+      TRIM(errormsg) // ":   " //TRIM(fname)// ": icval: " // TRIM(ItoS(icval)) // " not ready !!"//  &
+        " It has to be between 1 and " // TRIM(ItoS(icvalmax))
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+
+    RETURN    
+
+  END FUNCTION cvals_varn
   
   SUBROUTINE create_logarithmic_scaled_vectorsD(vec_min, vec_max, Nvals, logvec, idbg)
   ! Function to create logarithmic-based equi-spaced scaled double Real vectors
