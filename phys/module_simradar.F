@@ -424,6 +424,7 @@ MODULE module_simradar
     ! LOCAL  VAR
     INTEGER                                              :: i, j, k, l, m, n, its, ite, jts, jte, ij
     INTEGER                                              :: idp, jdp, dimz, dimz1, dz1
+    INTEGER                                              :: iv, iar
     INTEGER                                              :: i1, i_1, j1, j_1, k1, k2, tdbg
     INTEGER                                              :: ii1, ei1, ij1, ej1
     INTEGER, DIMENSION(num_tiles)                        :: i2, j2
@@ -560,18 +561,21 @@ MODULE module_simradar
       RETURN
     ELSE        
       !! Getting standard atmospheric variables
+      !$OMP PARALLEL DO   &
+      !$OMP PRIVATE ( ij )
       DO ij = 1 , num_tiles
         DO i = i_start(ij), i_end(ij)
           DO j = j_start(ij), j_end(ij)
             zg(i,:,j) = (ph(i,:,j) + phb(i,:,j))/9.81
             press(i,:,j) = p(i,:,j) + pb(i,:,j)
             unua(i,:,j) = 0.5*(u(i+1,:,j) + u(i,:,j))
-            unva(i,:,j) = 0.5*(u(i,:,j+1) + u(i,:,j))
+            unva(i,:,j) = 0.5*(v(i,:,j+1) + v(i,:,j))
             ua(i,:,j) = unua(i,:,j)*cosa(i,j) - unva(i,:,j)*sina(i,j)
             va(i,:,j) = unua(i,:,j)*cosa(i,j) + unva(i,:,j)*sina(i,j)
           END DO
         END DO
       END DO 
+      !$OMP END PARALLEL DO
     END IF
 
     ! For test purposes
@@ -713,19 +717,33 @@ MODULE module_simradar
               END DO
           
               ! Removing too small values...
-              DO ii1=1, 12
-                DO ii2=1, around3
-                  PRINT *, ' Lluis ii1, ii2:', ii1, ', ', ii2, ' reps: ', reps
-                  PRINT *, ' Lluis cvals:',cvals(ii1,ii2)
-                  IF (cvals(ii1,ii2) < reps) cvals(ii1,ii2) = 0. 
-                  IF (cvals(ii1,ii2) /= cvals(ii1,ii2)) THEN
-                    PRINT *,'     around 27 values [1: bottom, SW], ..., 27: top, NE]:', cvals(ii1,:)
+              DO iv=1, 12
+                DO iar=1, around3
+                  PRINT *, ' Lluis iv, ia:', iv, ', ', iar, ' reps: ', reps
+                  PRINT *,'    i,j,k_', i, ', ', j, ', ', k
+                  IF (cvals(iv,iar) /= cvals(iv,iar)) THEN
+                    IF (TRIM(cvals_varn(iv)) == 'V') THEN
+                      DO ii1=iwi, iwe
+                        DO ii2=jwi, jwe
+                          PRINT *,'      Lluis around NaN i,j:', i+ii1,', ', j+ii2 , ' cosa, sina:', cosa(i+ii1,j+ii2), &
+                            ', ', sina(i+ii1,j+ii2)
+                          DO ii3=kwi, kwe
+                            PRINT *,'      k:', k+ii3,' unua, unva:', unua(i+ii1,k+ii3,j+ii2), ', ', unva(i+ii1,k+ii3,j+ii2), &
+                           ' u, v:', u(i+ii1,k+ii3,j+ii2), ', ', v(i+ii1,k+ii3,j+ii2)
+
+                          END DO
+                        END DO
+                      END DO
+                    END IF
+                    PRINT *,'     around 27 values [1: bottom, SW], ..., 27: top, NE]:', cvals(iv,:)
                     WRITE (msg , * ) &
                       "simrad.AR: " // TRIM(errormsg) // " " // TRIM(fname) // " NaN value found " // &
-                      "for variable '" // TRIM(cvals_varn(ii1)) // " around point i,j,k: " //         &
+                      "for variable '" // TRIM(cvals_varn(iv)) // " around point i,j,k: " //          &
                       TRIM(ItoS(i)) // ", " // TRIM(ItoS(j)) // ", " // TRIM(ItoS(k))
                     CALL wrf_error_fatal ( msg )
                   END IF
+                  IF (cvals(iv,iar) < reps) cvals(iv,iar) = 0. 
+                  PRINT *, ' Lluis cvals:',cvals(iv,iar)
                 END DO
               END DO
   
