@@ -559,22 +559,24 @@ MODULE module_simradar
       tv_wgt = model_config_rec%missing_value
       vr = model_config_rec%missing_value    
       RETURN
-    ELSE        
-      !! Getting standard atmospheric variables
+    ELSE
+      !! Computing standard variables. I am not sure if it can be done wihtin the wmain loop
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij )
       DO ij = 1 , num_tiles
         DO i = i_start(ij), i_end(ij)
           DO j = j_start(ij), j_end(ij)
-            zg(i,:,j) = (ph(i,:,j) + phb(i,:,j))/9.81
-            press(i,:,j) = p(i,:,j) + pb(i,:,j)
-            unua(i,:,j) = 0.5*(u(i+1,:,j) + u(i,:,j))
-            unva(i,:,j) = 0.5*(v(i,:,j+1) + v(i,:,j))
-            ua(i,:,j) = unua(i,:,j)*cosa(i,j) - unva(i,:,j)*sina(i,j)
-            va(i,:,j) = unua(i,:,j)*cosa(i,j) + unva(i,:,j)*sina(i,j)
+            DO k=kms, kme
+              zg(i,k,j) = (ph(i,k,j) + phb(i,k,j))/9.81
+              press(i,k,j) = p(i,k,j) + pb(i,k,j)
+              unua(i,k,j) = 0.5*(u(i,k,j) + u(i+1,k,j))
+              unva(i,k,j) = 0.5*(v(i,k,j) + v(i,k,j+1))
+              ua(i,k,j) = unua(i,k,j)*cosa(i,j) - unva(i,k,j)*sina(i,j)
+              va(i,k,j) = unua(i,k,j)*sina(i,j) + unva(i,k,j)*cosa(i,j)
+            END DO
           END DO
         END DO
-      END DO 
+      END DO
       !$OMP END PARALLEL DO
     END IF
 
@@ -632,6 +634,7 @@ MODULE module_simradar
             j_1 = MAX(j-1,j_start(ij))
           
             IF (ngridradar(i,j,ir) == 0) CYCLE
+
                     
             ii1 = i1-1
             ei1 = i1+1
@@ -725,12 +728,17 @@ MODULE module_simradar
                     IF (TRIM(cvals_varn(iv)) == 'V') THEN
                       DO ii1=iwi, iwe
                         DO ii2=jwi, jwe
+                          PRINT *,'      Lluis ims,ime; jms,jme; kms,kme:', ims, ', ', ime, '; ',     &
+                            jms, ', ', jme, '; ', kms, ', ', kme
+                          PRINT *,'      Lluis iwi,iwe; jwi,jwe; kwi,kwe:', iwi, ', ', iwe, '; ',     &
+                            jwi, ', ', jwe, '; ', kwi, ', ', kwe
                           PRINT *,'      Lluis around NaN i,j:', i+ii1,', ', j+ii2 , ' cosa, sina:', cosa(i+ii1,j+ii2), &
                             ', ', sina(i+ii1,j+ii2)
                           DO ii3=kwi, kwe
                             PRINT *,'      k:', k+ii3,' unua, unva:', unua(i+ii1,k+ii3,j+ii2), ', ', unva(i+ii1,k+ii3,j+ii2), &
-                           ' u, v:', u(i+ii1,k+ii3,j+ii2), ', ', v(i+ii1,k+ii3,j+ii2)
-
+                           ' u, v:', u(i+ii1,k+ii3,j+ii2), ', ', v(i+ii1,k+ii3,j+ii2), ' earth rot.:', &
+                           u(i+ii1,k+ii3,j+ii2)*cosa(i+ii1,j+ii2)-v(i+ii1,k+ii3,j+ii2)*sina(i+ii1,j+ii2), &
+                           u(i+ii1,k+ii3,j+ii2)*sina(i+ii1,j+ii2)+v(i+ii1,k+ii3,j+ii2)*cosa(i+ii1,j+ii2)
                           END DO
                         END DO
                       END DO
