@@ -32,10 +32,11 @@ dimspec    nr4coord   3     namelist=nradar_coord4           z     nradar_coord4
 dimspec    nncoord    2     namelist=ngrid_coord2            c     ngrid_coord2
 #dimspec    nrh        2     namelist=nradar_azimuth          c     nradar_azimuth
 dimspec    nrd        3     namelist=nradar_dist             z     nradar_dist
-dimspec    nbds       2     namelist=Nbands                  c     Nbands
-dimspec    lqb        2     namelist=Nlutqxbins              c     Nlutqxbins
+dimspec    nbds       1     namelist=Nbands                  x     Nbands
+dimspec    lqb        3     namelist=Nlutqxbins              z     Nlutqxbins
 dimspec    ddli       2     namelist=Nluticebins             c     Nluticebins
-dimspec    lnl        2     namelist=Nlutlevs                c     Nlutlevs
+dimspec    lnl        2     namelist=Nlutlevs                y     Nlutlevs
+dimspec    lnli       1     namelist=Nlutlevs                x     Nlutlevs
 dimspec    xiid       -     constant=12                      c     xiid
 
 # simrad.AR package namelist options
@@ -141,41 +142,41 @@ state    real      ellipse_f       -              misc    -       -     -       
 state    character ellipse_name    -              misc    -       -     -         "ellipse_name"      "name of the ellipsoide"                                     "-"
 
 # Specific variables for the interpolation-integration of radar values retrieved from the T-MATRIX netCDF file 'lutfilen'
-state    real      lutelevations {lnl}        misc        -       -     -         "lutelevations"     "azimuths used for T-MATRIX LUT interpolations"              "degree"
-state    real      lut_Zh_RAIN   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zh_RAIN"       "Zh rain values used for T-MATRIX LUT interpolations"        ""
-state    real      lut_Zdr_RAIN  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zdr_RAIN"      "Zdr rain values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_LDR_RAIN  {nbds}{lqb}{lnl} misc    -       -     -         "lut_LDR_RAIN"      "LDR rain values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aih_RAIN  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aih_RAIN"      "Aih rain values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aiv_RAIN  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aiv_RAIN"      "Aiv rain values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_KDP_RAIN  {nbds}{lqb}{lnl} misc    -       -     -         "lut_KDP_RAIN"      "KDP rain values used for T-MATRIX LUT interpolations"       ""
+state    real      lutelevations {lnli}       misc        -       -     -         "lutelevations"     "azimuths used for T-MATRIX LUT interpolations"              "degree"
+state    real      lut_Zh_RAIN   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zh_RAIN"       "Zh rain values used for T-MATRIX LUT interpolations"        ""
+state    real      lut_Zdr_RAIN  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zdr_RAIN"      "Zdr rain values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_LDR_RAIN  {nbds}{lnl}{lqb} misc    -       -     -         "lut_LDR_RAIN"      "LDR rain values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aih_RAIN  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aih_RAIN"      "Aih rain values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aiv_RAIN  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aiv_RAIN"      "Aiv rain values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_KDP_RAIN  {nbds}{lnl}{lqb} misc    -       -     -         "lut_KDP_RAIN"      "KDP rain values used for T-MATRIX LUT interpolations"       ""
 
-state    real      lut_Zh_SNOW   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zh_SNOW"       "Zh snow values used for T-MATRIX LUT interpolations"        ""
-state    real      lut_Zdr_SNOW  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zdr_SNOW"      "Zdr snow values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_LDR_SNOW  {nbds}{lqb}{lnl} misc    -       -     -         "lut_LDR_SNOW"      "LDR snow values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aih_SNOW  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aih_SNOW"      "Aih snow values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aiv_SNOW  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aiv_SNOW"      "Aiv snow values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_KDP_SNOW  {nbds}{lqb}{lnl} misc    -       -     -         "lut_KDP_SNOW"      "KDP snow values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Zh_SNOW   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zh_SNOW"       "Zh snow values used for T-MATRIX LUT interpolations"        ""
+state    real      lut_Zdr_SNOW  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zdr_SNOW"      "Zdr snow values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_LDR_SNOW  {nbds}{lnl}{lqb} misc    -       -     -         "lut_LDR_SNOW"      "LDR snow values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aih_SNOW  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aih_SNOW"      "Aih snow values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aiv_SNOW  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aiv_SNOW"      "Aiv snow values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_KDP_SNOW  {nbds}{lnl}{lqb} misc    -       -     -         "lut_KDP_SNOW"      "KDP snow values used for T-MATRIX LUT interpolations"       ""
 
-state    real      lut_Zh_GRAU   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zh_GRAU"       "Zh graupel values used for T-MATRIX LUT interpolations"     ""
-state    real      lut_Zdr_GRAU  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zdr_GRAU"      "Zdr graupel values used for T-MATRIX LUT interpolations"    ""
-state    real      lut_LDR_GRAU  {nbds}{lqb}{lnl} misc    -       -     -         "lut_LDR_GRAU"      "LDR graupel values used for T-MATRIX LUT interpolations"    ""
-state    real      lut_Aih_GRAU  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aih_GRAU"      "Aih graupel values used for T-MATRIX LUT interpolations"    ""
-state    real      lut_Aiv_GRAU  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aiv_GRAU"      "Aiv graupel values used for T-MATRIX LUT interpolations"    ""
-state    real      lut_KDP_GRAU  {nbds}{lqb}{lnl} misc    -       -     -         "lut_KDP_GRAU"      "KDP graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      lut_Zh_GRAU   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zh_GRAU"       "Zh graupel values used for T-MATRIX LUT interpolations"     ""
+state    real      lut_Zdr_GRAU  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zdr_GRAU"      "Zdr graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      lut_LDR_GRAU  {nbds}{lnl}{lqb} misc    -       -     -         "lut_LDR_GRAU"      "LDR graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      lut_Aih_GRAU  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aih_GRAU"      "Aih graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      lut_Aiv_GRAU  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aiv_GRAU"      "Aiv graupel values used for T-MATRIX LUT interpolations"    ""
+state    real      lut_KDP_GRAU  {nbds}{lnl}{lqb} misc    -       -     -         "lut_KDP_GRAU"      "KDP graupel values used for T-MATRIX LUT interpolations"    ""
 
-state    real      lut_Zh_ICE    {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zh_ICE"        "Zh cloud ice values used for T-MATRIX LUT interpolations"   ""
-state    real      lut_Zdr_ICE   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zdr_ICE"       "Zdr cloud ice values used for T-MATRIX LUT interpolations"  ""
-state    real      lut_LDR_ICE   {nbds}{lqb}{lnl} misc    -       -     -         "lut_LDR_ICE"       "LDR cloud ice values used for T-MATRIX LUT interpolations"  ""
-state    real      lut_Aih_ICE   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aih_ICE"       "Aih cloud ice values used for T-MATRIX LUT interpolations"  ""
-state    real      lut_Aiv_ICE   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aiv_ICE"       "Aiv cloud ice values used for T-MATRIX LUT interpolations"  ""
-state    real      lut_KDP_ICE   {nbds}{lqb}{lnl} misc    -       -     -         "lut_KDP_ICE"       "KDP cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      lut_Zh_ICE    {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zh_ICE"        "Zh cloud ice values used for T-MATRIX LUT interpolations"   ""
+state    real      lut_Zdr_ICE   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zdr_ICE"       "Zdr cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      lut_LDR_ICE   {nbds}{lnl}{lqb} misc    -       -     -         "lut_LDR_ICE"       "LDR cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      lut_Aih_ICE   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aih_ICE"       "Aih cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      lut_Aiv_ICE   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aiv_ICE"       "Aiv cloud ice values used for T-MATRIX LUT interpolations"  ""
+state    real      lut_KDP_ICE   {nbds}{lnl}{lqb} misc    -       -     -         "lut_KDP_ICE"       "KDP cloud ice values used for T-MATRIX LUT interpolations"  ""
 
-state    real      lut_Zh_HAIL   {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zh_HAIL"       "Zh hail values used for T-MATRIX LUT interpolations"        ""
-state    real      lut_Zdr_HAIL  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Zdr_HAIL"      "Zdr hail values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_LDR_HAIL  {nbds}{lqb}{lnl} misc    -       -     -         "lut_LDR_HAIL"      "LDR hail values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aih_HAIL  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aih_HAIL"      "Aih hail values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_Aiv_HAIL  {nbds}{lqb}{lnl} misc    -       -     -         "lut_Aiv_HAIL"      "Aiv hail values used for T-MATRIX LUT interpolations"       ""
-state    real      lut_KDP_HAIL  {nbds}{lqb}{lnl} misc    -       -     -         "lut_KDP_HAIL"      "KDP hail values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Zh_HAIL   {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zh_HAIL"       "Zh hail values used for T-MATRIX LUT interpolations"        ""
+state    real      lut_Zdr_HAIL  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Zdr_HAIL"      "Zdr hail values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_LDR_HAIL  {nbds}{lnl}{lqb} misc    -       -     -         "lut_LDR_HAIL"      "LDR hail values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aih_HAIL  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aih_HAIL"      "Aih hail values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_Aiv_HAIL  {nbds}{lnl}{lqb} misc    -       -     -         "lut_Aiv_HAIL"      "Aiv hail values used for T-MATRIX LUT interpolations"       ""
+state    real      lut_KDP_HAIL  {nbds}{lnl}{lqb} misc    -       -     -         "lut_KDP_HAIL"      "KDP hail values used for T-MATRIX LUT interpolations"       ""
 
 state    integer   N_tocompute   -                misc    -       -     -         "N_tocompute"       "Amount of variables to interpolate / use"                   ""
 state    integer   tocompute     {xiid}           misc    -       -     -         "tocompute"         "Indices of variables to interpolate / use"                  ""
