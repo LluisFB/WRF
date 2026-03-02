@@ -1347,7 +1347,7 @@ MODULE module_simradar_tools
   
     CHARACTER(len=S256), INTENT(in)                      :: lutfilen
     LOGICAL, OPTIONAL                                    :: idbg
-    TYPE(lut_vars), INTENT(out)                          :: lutgrid
+    TYPE(lut_vars), INTENT(inout)                        :: lutgrid
     
     ! Local
     INTEGER                                              :: lutid, ierr
