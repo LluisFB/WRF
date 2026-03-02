@@ -1323,9 +1323,10 @@ endif
 
    CALL wrf_debug ( 100 , 'start_domain_em: After call to phy_init' )
 
-#ifdef SIRADAR
+#ifdef SIMRADAR
     !! Filling grid with lutgrid values
-    grid%lutelevations = grid%elevations
+    grid%lutelevations = lutgrid%elevations
+    PRINT *,' Lluis UB: grid%lut_Zh_RAIN:', UBOUND(grid%lut_Zh_RAIN), ' lutgrid:', UBOUND(lutgrid%Zh_RAIN)
     grid%lut_Zh_RAIN = lutgrid%Zh_RAIN
     grid%lut_Zdr_RAIN = lutgrid%Zdr_RAIN
     grid%lut_LDR_RAIN = lutgrid%LDR_RAIN
@@ -1370,7 +1371,7 @@ endif
     grid%q_snow_vec = lutgrid%q_snow_vec
     grid%q_grau_vec = lutgrid%q_grau_vec
     grid%q_ice_vec = lutgrid%q_ice_vec
-    grid%q_hail_vec = lutgrid%q_rhail_vec
+    grid%q_hail_vec = lutgrid%q_hail_vec
     
     ! microphysics-derived Denisities
     grid%rhoo = lutgrid%rhoo

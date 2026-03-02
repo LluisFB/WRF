@@ -6427,6 +6427,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     lutgrid%tocompute(lutgrid%N_tocompute) = 11
     lutgrid%N_tocompute = lutgrid%N_tocompute + 1
     lutgrid%tocompute(lutgrid%N_tocompute) = 12
+
+    IF (dbg) THEN
+      PRINT *, '    ' // TRIM(fname) // ": ", lutgrid%N_tocompute, ' variables to interpolate: ',      &
+        (lutgrid%tocompute(i), ' ', TRIM(cvals_varn(i)), ', ', i=1, lutgrid%N_tocompute)
+      PRINT *, '      Amount of moist species to interpolate:', lutgrid%Nmoist,                        &
+        (lutgrid%imoist(i), ', ', i=1, lutgrid%Nmoist)
+    END IF
         
     !! Look-up tables space for T-matrix
     CALL read_lut(model_config_rec%lutfilen, lutgrid, dbg)
