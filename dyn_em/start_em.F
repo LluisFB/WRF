@@ -1327,51 +1327,94 @@ endif
     !! Filling grid with lutgrid values
     grid%lutelevations = lutgrid%elevations
     PRINT *,' Lluis UB: grid%lut_Zh_RAIN:', UBOUND(grid%lut_Zh_RAIN), ' lutgrid:', UBOUND(lutgrid%Zh_RAIN)
+    PRINT *,'     Lluis lutgrid%Zh_RAIN(:,1,1:5):', lutgrid%Zh_RAIN(:,1,1:5)
     grid%lut_Zh_RAIN = lutgrid%Zh_RAIN
     grid%lut_Zdr_RAIN = lutgrid%Zdr_RAIN
     grid%lut_LDR_RAIN = lutgrid%LDR_RAIN
     grid%lut_Aih_RAIN = lutgrid%Aih_RAIN
     grid%lut_Aiv_RAIN = lutgrid%Aiv_RAIN
     grid%lut_KDP_RAIN = lutgrid%KDP_RAIN
-    
-    grid%lut_Zh_SNOW = lutgrid%Zh_SNOW
-    grid%lut_Zdr_SNOW = lutgrid%Zdr_SNOW
-    grid%lut_LDR_SNOW = lutgrid%LDR_SNOW
-    grid%lut_Aih_SNOW = lutgrid%Aih_SNOW
-    grid%lut_Aiv_SNOW = lutgrid%Aiv_SNOW
-    grid%lut_KDP_SNOW = lutgrid%KDP_SNOW
+    grid%q_rain_vec = lutgrid%q_rain_vec
 
-    grid%lut_Zh_GRAU = lutgrid%Zh_GRAU
-    grid%lut_Zdr_GRAU = lutgrid%Zdr_GRAU
-    grid%lut_LDR_GRAU = lutgrid%LDR_GRAU
-    grid%lut_Aih_GRAU = lutgrid%Aih_GRAU
-    grid%lut_Aiv_GRAU = lutgrid%Aiv_GRAU
-    grid%lut_KDP_GRAU = lutgrid%KDP_GRAU
+    IF (p_qs .GE. PARAM_FIRST_SCALAR) THEN
+      grid%lut_Zh_SNOW = lutgrid%Zh_SNOW
+      grid%lut_Zdr_SNOW = lutgrid%Zdr_SNOW
+      grid%lut_LDR_SNOW = lutgrid%LDR_SNOW
+      grid%lut_Aih_SNOW = lutgrid%Aih_SNOW
+      grid%lut_Aiv_SNOW = lutgrid%Aiv_SNOW
+      grid%lut_KDP_SNOW = lutgrid%KDP_SNOW
+      grid%q_snow_vec = lutgrid%q_snow_vec
+    ELSE
+      grid%lut_Zh_SNOW = 0.
+      grid%lut_Zdr_SNOW = 0.
+      grid%lut_LDR_SNOW = 0.
+      grid%lut_Aih_SNOW = 0.
+      grid%lut_Aiv_SNOW = 0.
+      grid%lut_KDP_SNOW = 0.
+      grid%q_snow_vec = 0.
+    END IF
 
-    grid%lut_Zh_ICE = lutgrid%Zh_ICE
-    grid%lut_Zdr_ICE = lutgrid%Zdr_ICE
-    grid%lut_LDR_ICE = lutgrid%LDR_ICE
-    grid%lut_Aih_ICE = lutgrid%Aih_ICE
-    grid%lut_Aiv_ICE = lutgrid%Aiv_ICE
-    grid%lut_KDP_ICE = lutgrid%KDP_ICE
+    IF (p_qg .GE. PARAM_FIRST_SCALAR) THEN
+      grid%lut_Zh_GRAU = lutgrid%Zh_GRAU
+      grid%lut_Zdr_GRAU = lutgrid%Zdr_GRAU
+      grid%lut_LDR_GRAU = lutgrid%LDR_GRAU
+      grid%lut_Aih_GRAU = lutgrid%Aih_GRAU
+      grid%lut_Aiv_GRAU = lutgrid%Aiv_GRAU
+      grid%lut_KDP_GRAU = lutgrid%KDP_GRAU
+      grid%q_grau_vec = lutgrid%q_grau_vec
+    ELSE
+      grid%lut_Zh_GRAU = 0.
+      grid%lut_Zdr_GRAU = 0.
+      grid%lut_LDR_GRAU = 0.
+      grid%lut_Aih_GRAU = 0.
+      grid%lut_Aiv_GRAU = 0.
+      grid%lut_KDP_GRAU = 0.
+      grid%q_grau_vec = 0.
+    END IF
 
-    grid%lut_Zh_HAIL = lutgrid%Zh_HAIL
-    grid%lut_Zdr_HAIL = lutgrid%Zdr_HAIL
-    grid%lut_LDR_HAIL = lutgrid%LDR_HAIL
-    grid%lut_Aih_HAIL = lutgrid%Aih_HAIL
-    grid%lut_Aiv_HAIL = lutgrid%Aiv_HAIL
-    grid%lut_KDP_HAIL = lutgrid%KDP_HAIL
+    IF (p_qi .GE. PARAM_FIRST_SCALAR) THEN
+      grid%lut_Zh_ICE = lutgrid%Zh_ICE
+      grid%lut_Zdr_ICE = lutgrid%Zdr_ICE
+      grid%lut_LDR_ICE = lutgrid%LDR_ICE
+      grid%lut_Aih_ICE = lutgrid%Aih_ICE
+      grid%lut_Aiv_ICE = lutgrid%Aiv_ICE
+      grid%lut_KDP_ICE = lutgrid%KDP_ICE
+      grid%q_ice_vec = lutgrid%q_ice_vec
+    ELSE
+      grid%lut_Zh_ICE = 0.
+      grid%lut_Zdr_ICE = 0.
+      grid%lut_LDR_ICE = 0.
+      grid%lut_Aih_ICE = 0.
+      grid%lut_Aiv_ICE = 0.
+      grid%lut_KDP_ICE = 0.
+      grid%q_ice_vec = 0.
+    END IF
+
+    IF (p_qh .GE. PARAM_FIRST_SCALAR) THEN
+      grid%lut_Zh_HAIL = lutgrid%Zh_HAIL
+      grid%lut_Zdr_HAIL = lutgrid%Zdr_HAIL
+      grid%lut_LDR_HAIL = lutgrid%LDR_HAIL
+      grid%lut_Aih_HAIL = lutgrid%Aih_HAIL
+      grid%lut_Aiv_HAIL = lutgrid%Aiv_HAIL
+      grid%lut_KDP_HAIL = lutgrid%KDP_HAIL
+      grid%q_hail_vec = lutgrid%q_hail_vec
+    ELSE
+      grid%lut_Zh_HAIL = 0.
+      grid%lut_Zdr_HAIL = 0.
+      grid%lut_LDR_HAIL = 0.
+      grid%lut_Aih_HAIL = 0.
+      grid%lut_Aiv_HAIL = 0.
+      grid%lut_KDP_HAIL = 0.
+      grid%q_hail_vec = 0.
+    END IF
 
     grid%N_tocompute = lutgrid%N_tocompute
     grid%tocompute = lutgrid%tocompute
     grid%N_tcmoist = lutgrid%Nmoist
     grid%tcmoist = lutgrid%imoist
 
-    grid%q_rain_vec = lutgrid%q_rain_vec
-    grid%q_snow_vec = lutgrid%q_snow_vec
-    grid%q_grau_vec = lutgrid%q_grau_vec
-    grid%q_ice_vec = lutgrid%q_ice_vec
-    grid%q_hail_vec = lutgrid%q_hail_vec
+    PRINT *,'  Lluis in start_em.F grid N_tocompute:', grid%N_tocompute , 'N_tcmoist:', grid%N_tcmoist 
+    PRINT *,'  Lluis in start_em.F lutgrid N_tocompute:', lutgrid%N_tocompute , 'Nmoist:', lutgrid%Nmoist 
     
     ! microphysics-derived Denisities
     grid%rhoo = lutgrid%rhoo
