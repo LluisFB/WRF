@@ -723,7 +723,8 @@ MODULE module_simradar
               DO iv=1, 12
                 DO iar=1, around3
                   PRINT *, ' Lluis iv, ia:', iv, ', ', iar, ' reps: ', reps
-                  PRINT *,'    i,j,k_', i, ', ', j, ', ', k
+                  PRINT *,'    i,j,k:', i, ', ', j, ', ', k
+                  PRINT *,'    tocompute:', tocompute(1:Nmoist)
                   IF (cvals(iv,iar) /= cvals(iv,iar)) THEN
                     IF (TRIM(cvals_varn(iv)) == 'V') THEN
                       DO ii1=iwi, iwe
