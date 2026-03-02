@@ -564,8 +564,10 @@ MODULE module_simradar
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij )
       DO ij = 1 , num_tiles
+        PRINT *,'  Lluis itile:', ij, ' i range:', i_start(ij), i_end(ij), ' j: ', j_start(ij), j_end(ij)
         DO i = i_start(ij), i_end(ij)
           DO j = j_start(ij), j_end(ij)
+
             DO k=kms, kme
               zg(i,k,j) = (ph(i,k,j) + phb(i,k,j))/9.81
               press(i,k,j) = p(i,k,j) + pb(i,k,j)
@@ -644,19 +646,19 @@ MODULE module_simradar
             iwe = 1
             jwi = -1
             jwe = 1
-            IF (i == ims) THEN
+            IF (i == its) THEN
               ii1 = i
               iwi = 0
             END IF
-            IF (i == ime) THEN
+            IF (i == ite) THEN
               ei1 = i
               iwe = 0
             END IF
-            IF (j == jms) THEN
+            IF (j == jts) THEN
               ij1 = j
               jwi = 0
             END IF
-            IF (j == jme) THEN
+            IF (j == jte) THEN
               ej1 = j
               jwe = 0
             END IF
