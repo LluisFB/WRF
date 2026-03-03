@@ -282,6 +282,7 @@ CONTAINS
 #ifdef SIMRADAR
 ! simrad.AR
                          ,i_start, i_end, j_start, j_end, num_tiles               &
+                         ,hgt                                                     &
                          ,xlong_v, xlat_u                                         &
                          ,nradar                                                  &
                          ,e_angle, e_azimuth, e_dist                              &
@@ -942,7 +943,7 @@ CHARACTER(LEN=8) :: name
   INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, e_azimuth,       &
     nr4coord, nrnncoord, nrnn, nncoord, nrd
   REAL, INTENT(in)                                       :: londbg, latdbg
-  REAL, DIMENSION(ims:ime, jms:jme), INTENT(in)          :: xlong_v, xlat_u
+  REAL, DIMENSION(ims:ime, jms:jme), INTENT(in)          :: xlong_v, xlat_u, hgt
   INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
   REAL, INTENT(out)                                      :: ra, rf
   CHARACTER(len=256),INTENT(out)                         :: elipsn
@@ -1803,7 +1804,7 @@ CHARACTER(LEN=8) :: name
 #ifdef SIMRADAR
 !     CALL simradar_init(model_config_rec                                                              &
 !       ,xlong_u, xlat_u                                                                               &
-     CALL simradar_init(xlong, xlat                                                                   &
+     CALL simradar_init(xlong, xlat, hgt                                                              &
        ,xlong_u, xlat_u                                                                               &
        ,xlong_v, xlat_v                                                                               &
        ,londbg, latdbg                                                                                &
@@ -5842,7 +5843,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
   END SUBROUTINE shalwater_init
 
 #ifdef SIMRADAR
-  SUBROUTINE simradar_init(xlong, xlat                                                                &
+  SUBROUTINE simradar_init(xlong, xlat, hgt                                                           &
     ,xlong_u, xlat_u                                                                                  &
     ,xlong_v, xlat_v                                                                                  &
     ,londbg, latdbg                                                                                   &
@@ -5890,7 +5891,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(num_tiles), INTENT(in)            :: i_start, i_end, j_start, j_end
     INTEGER, INTENT(in)                                  :: param_first_scalar
     INTEGER, INTENT(in)                                  :: p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh
-    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat, hgt
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_u, xlat_u
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong_v, xlat_v
     REAL, INTENT(in)                                     :: londbg, latdbg
@@ -5978,6 +5979,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
 !!!!!!!! Variables
 ! xlong, xlat: matrices of longitudes and latitudes
+! hgt: matrix of topography
 ! xlong_u/v, xlat_u/v: u/vstaggered matrices of longitudes and latitudes
 ! londbg, latdbg: coordinates of the debugging grid point
 ! ids, ide, jds, jde, kds, kde: extension of the matrices
