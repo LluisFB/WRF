@@ -5922,9 +5922,9 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(out) :: radarhgts, radarlhgts
     REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlon_bnds, radarlat_bnds
     REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
+                                                         :: radarhgt_bnds
     INTEGER, DIMENSION(e_angle, e_azimuth, nrd),                                                      &
       INTENT(out)                                        :: radartopomask
-                                                         :: radarhgt_bnds
     INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
       INTENT(out)                                        :: ngridradar
     INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                  &
