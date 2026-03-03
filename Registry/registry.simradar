@@ -218,6 +218,8 @@ state    real  GATEHDIST   ij{rn}             misc        -       -     rh{11}  
 state    integer NGRIDRADAR  ij{rn}           misc        -       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
 state    integer IJGRIDRADAR ij{nrnncoord}    misc        -       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
 state    real  IJDISTGRIDRADAR ij{nrnn}       misc        -       -     rh{11}    "ijdistgridradar"   "distance of radar cells inside the grid point to its center" "m"
+state    real  RADARTOPO   {rj}{rk}{nrd}      misc        -       -     rh{11}    "RADARTOPO"         "Radar relative topography HGT-HGT_radar+radar_chgt"       "m"
+state    integer RADARTOPOMASK {rj}{rk}{nrd}  misc        -       -     hh{11}    "RADARTOPOMASK"     "Radar shadow from topography (RADARHGTS < RADARTOPO --> 1: shaodow)" "0/1"
 
 # radar band values
 state    real  ZH_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"
