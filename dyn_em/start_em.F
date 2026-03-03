@@ -1285,7 +1285,7 @@ endif
                       ,grid%j_start, min(grid%j_end, jde-1)                                          &
                       ,grid%num_tiles                                                                &
                       ,grid%xlong_v, grid%xlat_u                                                     &
-                      ,grid%hgt                                                                      &
+                      ,grid%ht                                                                       &
                       ,config_flags%nradar                                                           &
                       ,config_flags%e_angle, config_flags%e_azimuth, config_flags%e_dist             &
                       ,config_flags%nradar_coord4, config_flags%nradar_ngrid_coord2                  &
