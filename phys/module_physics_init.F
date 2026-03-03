@@ -5938,7 +5938,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: ir, ij12
     INTEGER                                              :: ii1, ei1, ii2, ei2
     INTEGER                                              :: iwi, iwe, jwi, jwe
-    INTEGER                                              :: ix, iy, iz, inrd
+    INTEGER                                              :: ix, iy, iz
     INTEGER                                              :: ierr
     INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
       inr4coord, inrd
