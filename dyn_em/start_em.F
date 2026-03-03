@@ -1281,9 +1281,9 @@ endif
                       ,grid%aeropcu,grid%EFCG,grid%EFCS,grid%EFIG,grid%EFIS,grid%EFSG,grid%EFSS      &
 #ifdef SIMRADAR
 ! simrad.AR
-                      ,grid%i_start, min(grid%i_end, ide-1),                                         &
-                      ,grid%j_start, min(grid%j_end, jde-1),                                         &
-                      ,num_tiles                                                                     &
+                      ,grid%i_start, min(grid%i_end, ide-1)                                          &
+                      ,grid%j_start, min(grid%j_end, jde-1)                                          &
+                      ,grid%num_tiles                                                                &
                       ,grid%xlong_v, grid%xlat_u                                                     &
                       ,grid%hgt                                                                      &
                       ,config_flags%nradar                                                           &

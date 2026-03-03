@@ -282,8 +282,8 @@ CONTAINS
 #ifdef SIMRADAR
 ! simrad.AR
                          ,i_start, i_end, j_start, j_end, num_tiles               &
-                         ,hgt                                                     &
                          ,xlong_v, xlat_u                                         &
+                         ,hgt                                                     &
                          ,nradar                                                  &
                          ,e_angle, e_azimuth, e_dist                              &
                          ,nr4coord, nrnncoord                                     &
