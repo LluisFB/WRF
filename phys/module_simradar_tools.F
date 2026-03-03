@@ -653,6 +653,8 @@ MODULE module_simradar_tools
     ! Zdr_x: values of 'Zdr' for the specific water specie
     ! KDP_x: values of 'KDP' for the specific water specie
     fname = 'Polarimetrics_fromLUT_1R'
+ 
+    dbg = set_dbg(idbg)
     
     IF (dbg) THEN
       PRINT *, '  ' // TRIM(fname) // ": q_log_vec 1 a 5:", q_log_vec(1:5)
