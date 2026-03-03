@@ -5935,7 +5935,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     TYPE(lut_vars), INTENT(out)                          :: lutgrid
 
     ! Local
-    INTEGER                                              :: ir, ij12
+    INTEGER                                              :: ir, ij12, ic
     INTEGER                                              :: ii1, ei1, ii2, ei2
     INTEGER                                              :: iwi, iwe, jwi, jwe
     INTEGER                                              :: ix, iy, iz
@@ -6345,75 +6345,69 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         tiles_loop: DO ij = 1 , num_tiles
           DO i = i_start(ij), i_end(ij)
             DO j = j_start(ij), j_end(ij)
-              IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
-                i1 = MIN(i+1,i_end(ij))
-                i_1 = MAX(i-1,i_start(ij))
-                j1 = MIN(j+1,j_end(ij))
-                j_1 = MAX(j-1,j_start(ij))
           
-                IF (ngridradar(i,j,ir) == 0) CYCLE
+              IF (ngridradar(i,j,ir) == 0) CYCLE
+              ii1 = i1-1
+              ei1 = i1+1
+              ij1 = j1-1
+              ej1 = j1+1
+              iwi = -1
+              iwe = 1
+              jwi = -1
+              jwe = 1
+              IF (i == its) THEN
+                ii1 = i
+                iwi = 0
+              END IF
+              IF (i == ite) THEN
+                ei1 = i
+                iwe = 0
+              END IF
+              IF (j == jts) THEN
+                ij1 = j
+                jwi = 0
+              END IF
+              IF (j == jte) THEN
+                ej1 = j
+                jwe = 0
+              END IF
 
-                ii1 = i1-1
-                ei1 = i1+1
-                ij1 = j1-1
-                ej1 = j1+1
-                iwi = -1
-                iwe = 1
-                jwi = -1
-                jwe = 1
-                IF (i == ips) THEN
-                  ii1 = i
-                  iwi = 0
-                END IF
-                IF (i == ipe) THEN
-                  ei1 = i
-                  iwe = 0
-                END IF
-                IF (j == jps) THEN
-                  ij1 = j
-                  jwi = 0
-                END IF
-                IF (j == jpe) THEN
-                  ej1 = j
-                  jwe = 0
-                END IF
+              ! Computing 27 weights around each WRF i,j,k for all radar cells
+              CALL weights_9pts_passed1coords_ellipsoide_1D(i, j, its, ite, jts, jte, a, f, elipsn, &
+                xlong(its:ite,jts:jte), xlat(its:ite,jts:jte), ngrid_radar, ngridradar(i,j,ir), 2,  &
+                ijgridradar_NOc(i,j,:,:), 1, e_dist, 1, e_angle, rlon, rlat, 9, wghts_NOc, dbg)
 
-                ! Computing 27 weights around each WRF i,j,k for all radar cells
-                CALL weights_9pts_passed1coords_ellipsoide(i, j, ips, ipe, jps, jpe, a, f, elips,     &
-                  xlong(its:ite,jts:jte), xlat(its:ite,jts:jte), ngrid_radar, ngridradar(i,j,ir), 2,  &
-                  ijgridradar_NOc(i,j,:,:), 1, e_dist, 1, e_angle, rlon, rlat, 9, wghts_NOc, dbg)
-
-                hvals = 0.
-                ij12 = 1
-                ! Interpolating radar relative height HGT-HGT_radar+radar_chgt
-                DO ii1=iwi, iwe
-                  DO ii2=jwi, jwe
-                    hvals(ij12) = hgt(i+ii1,j+ii2)
-                    ij12 = ij12 + 1
-                  END DO
+              hvals = 0.
+              ij12 = 1
+              ! Interpolating radar relative height HGT-HGT_radar+radar_chgt
+              DO ii1=iwi, iwe
+                DO ii2=jwi, jwe
+                  hvals(ij12) = hgt(i+ii1,j+ii2)
+                  ij12 = ij12 + 1
                 END DO
-                
-                DO ic=1, ngridradar(i,j,ir)
-                  !! Angle
-                  iy = ijgridradar_NOc(i,j,ic,1)
-                  !! Dist
-                  ix = ijgridradar_NOc(i,j,ic,2)
+              END DO
+
+              DO ic=1, ngridradar(i,j,ir)
+                !! Angle
+                iy = ijgridradar_NOc(i,j,ic,1)
+                !! Dist
+                ix = ijgridradar_NOc(i,j,ic,2)
           
-                  radartopo(iy,ix,ir) = SUM(hvals*wghts_NOc(ic,:)) + rhgt - rtopo
-                  ! Shadowing by topography the tile can not know if along a given beam in previous 
-                  !   tiles there was a high mountain. We can only shadow inside the tile, not even 
-                  !   along a beam
-                  DO iz=1, e_azimuth
-                    IF (radarhgts(iz,ix,ir) < radartopo(iy,ix,ir)) radartopomask_NOc(iy,ix,iz) = 1
-                    !! Compressing 
-                    inrd = (ir-1)*e_dist + ix
-                    radartopomask(iy,iz,inrd) = radartopomask_NOc(iy,ix,iz)
-                  END DO
+                radartopo(iy,ix,ir) = SUM(hvals*wghts_NOc(ic,:)) + rhgt - rtopo
+                ! Shadowing by topography the tile can not know if along a given beam in previous 
+                !   tiles there was a high mountain. We can only shadow inside the tile, not even 
+                !   along a beam
+                DO iz=1, e_azimuth
+                  IF (radarhgts(iz,ix,ir) < radartopo(iy,ix,ir)) radartopomask_NOc(iy,ix,iz) = 1
+                  !! Compressing 
+                  inrd = (ir-1)*e_dist + ix
+                  radartopomask(iy,iz,inrd) = radartopomask_NOc(iy,ix,iz)
                 END DO
-                
+              END DO
+              
             END DO
           END DO
-        END DO tiles
+        END DO tiles_loop
         !$OMP END PARALLEL DO
         
       END IF      
