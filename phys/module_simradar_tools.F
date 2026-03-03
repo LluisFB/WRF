@@ -34,6 +34,9 @@ MODULE module_simradar_tools
 !   point
 ! real_distances_ellipsoide: Subroutine to compute the diferential of coordinattes of a distance from 
 !   a given point on an ellipsoide
+! weights_9pts_passed1coords_ellipsoide_1D: Subroutine to compute the weights of a inverse distance 
+!   weighted interpolation using the 3x3 grid points when already passing the coordinates of the 
+!   target space at each reference point on an ellipsoide
 ! weights_hcoordsR27around_polar_ellipsoide_1D:  Subroutine to compute weights of the 27 around grid 
 !   points to 3-dimensional interpolate to a new space using the list of cells on the horizontal of 
 !   the targeted space that lay within each grid cell of the reference space with the values to 
@@ -235,6 +238,126 @@ MODULE module_simradar_tools
   END TYPE lut_vars
 
   CONTAINS
+
+  SUBROUTINE weights_9pts_passed1coords_ellipsoide_1D(i1, j1, id1x, ed1x, id1y, ed1y, a, f, elips,    &
+    lon1, lat1, MaxNcoords, ij21Ncoords, Nc2, ij21coords, id2x, ed2x, id2y, ed2y, lon2, lat2, Na2,    &
+    wghts, idbg)
+  ! Subroutine to compute the weights of a inverse distance weighted interpolation using the
+  !   3x3 grid points when already passing the coordinates of the target space at each reference point 
+  !   on an ellipsoide
+  !     lon1,lat1: space with data to interpolate (reference)
+  !     lon2,lat2: space towards which interpolate (target)
+  
+    IMPLICIT NONE
+    
+    INTEGER, INTENT(in)                                  :: id1x, ed1x, id1y, ed1y, MaxNcoords, Nc2,  &
+      Na2
+    REAL(kind=rr8), INTENT(in)                           :: a, f
+    CHARACTER(len=30), INTENT(in)                        :: elips
+    INTEGER, INTENT(in)                                  :: id2x, ed2x, id2y, ed2y
+    REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
+    INTEGER, DIMENSION, INTENT(in)                       :: ij21Ncoords
+    INTEGER, DIMENSION(MaxNcoords,Nc2), INTENT(in)       :: ij21coords
+    REAL, DIMENSION(id2x:ed2x,id2y:ed2y), INTENT(in)     :: lon2, lat2
+    LOGICAL, OPTIONAL                                    :: idbg
+    REAL, DIMENSION(MaxNcoords,Na2), INTENT(out)         :: wghts
+    
+    ! Local
+    INTEGER                                              :: i1, j1, ic, i2, j2, ij, icc
+    INTEGER                                              :: iwi, iwe, jwi, jwe
+    REAL                                                 :: sumdists, totwght
+    INTEGER, DIMENSION(Nc2)                              :: imaxwght, izero
+    REAL, DIMENSION(3,3)                                 :: ijlon1, ijlat1, dists, wgs
+    REAL, DIMENSION(Na2)                                 :: dist9
+    LOGICAL                                              :: dbg
+    CHARACTER(len=Sl)                                    :: fname
+    
+    !!!!!!! Variables
+    ! id1x, ed1x, id1y, ed1y: Extent of the reference space
+    ! lon1, lat1: coordinates of the reference space
+    ! MaxNcoords: maximum amount of target space grid points in a single reference grid point
+    ! ij21Ncoords: amount of target grid points in a single reference grid point
+    ! Nc2: amount of coordinates in a 2-dimensional space
+    ! ij21coords: coordinates of the target grid points in a single reference grid point
+    ! id2x, ed2x, id2y, ed2y: Extent of the target space
+    ! lon2, lat2: coordinates of the target space
+    ! Na2: amount of coordinates around in a 2-dimensional space
+    ! wghts: weights to use to interpolate values of a target grid point to its closest 3x3 grid 
+    !   points in the reference space
+    ! ij21dists: distances of a target grid point to its closest 3x3 grid points in the reference space
+    fname = 'weights_9pts_passed1coords_ellipsoide_1D'
+    
+    wghts = 0.
+    
+    dbg = set_dbg(idbg)
+    
+    icc = 1
+    IF (ij21Ncoords == 0) CYCLE
+    DO ic=1, ij21Ncoords(i1,j1)
+      iwi = -1
+      iwe = -1
+      jwi = -1
+      jwe = -1
+    
+      IF (i1 == id1x) iwi = 0
+      IF (i1 == ed1x) iwe = 0
+      IF (j1 == id1y) jwi = 0
+      IF (j1 == ed1y) jwe = 0
+      ijlon1 = 0.
+      ijlat1 = 0.
+      ! 3x3 array as 
+      !   -1,-1,(1,1): SW; 0,-1,(2,1): SC, 1,-1,(3,1): SE; 
+      !    -1,0,(1,2): CW;  0,0,(2,2): CC;  1,0,(3,2): CE;
+      !    -1,1,(1,3): NW;  0,1,(2,3): NC;  1,1,(3,3): NE;
+      DO i2=iwi, iwe
+        DO j2=jwi, jwe
+          ijlon1(i2+2,j2+2) = lon1(i1+i2,j1+j2)
+          ijlat1(i2+2,j2+2) = lat1(i1+i2,j1+j2)
+        END DO
+      END DO
+      CALL real_distances_ellipsoide(1, 3, 1, 3, a, f, elips, ijlon1, ijlat1,                         &
+        lon2(ij21coords(ic,1),ij21coords(ic,2)), lat2(ij21coords(ic,1),ij21coords(ic,2)), dists)
+       ! Filtering for dist == 0!!
+      IF (ANY(dists == 0.)) THEN
+        izero = MINLOC(dists)
+        wgs = 0.
+        wgs(izero(1), izero(2)) = 1.
+        sumdists = 1.
+      ELSE
+        sumdists = SUM(1./dists)
+        wgs = 0.
+        wgs = 1./dists/sumdists
+        totwght = SUM(wgs)
+
+        ! Fixing
+        IF (totwght < 1.) THEN
+          imaxwght = MAXLOC(wgs)
+          wgs(imaxwght(1),imaxwght(2)) = wgs(imaxwght(1),imaxwght(2)) + 1. - totwght
+        END IF
+      END IF
+          
+      ij = 1
+      dist9 = 0.          
+      wghts(ic,:) = 0.
+      DO i2=1,3
+        DO j2=1,3
+          dist9(ij) = dists(i2,j2)
+          wghts(ic,ij) = wgs(i2,j2)
+          ij = ij + 1
+        END DO
+      END DO
+          
+      IF (dbg .AND. icc < 10) PRINT *, '  ' // TRIM(fname) // ": i,j,ic ", i1,j1, ic, ':',            &
+        lon1(i1,j1), lat1(i1,j1), ' 2: ', lon2(ij21coords(ic,1),ij21coords(ic,2)),                    &
+        lat2(ij21coords(ic,1),ij21coords(ic,2)), ' dists: ', dist9, ' wghts: ',                       &
+        wghts(ic,:), ' totw ', SUM(wghts(ic,:))
+      icc = icc + 1
+                      
+    END DO
+    
+    RETURN
+    
+  END SUBROUTINE weights_9pts_passed1coords_ellipsoide_1D
 
   CHARACTER(len=S32) FUNCTION cvals_varn(icval)
   ! Function to provide the name of the variable accordingly its index from cvals array
