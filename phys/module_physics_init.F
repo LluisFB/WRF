@@ -6023,6 +6023,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 
     fname = 'simradar_init'
     
+    PRINT *,'    ' // TRIM(fname) // ": initialization of simrad.AR version: " // TRIM(simradARversion)
+
     ! Initializing outputs
     inradar = 0
     radnum = 0
