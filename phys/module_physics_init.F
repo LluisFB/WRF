@@ -5936,8 +5936,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     TYPE(lut_vars), INTENT(out)                          :: lutgrid
 
     ! Local
-    INTEGER                                              :: ir, ij12, ic
-    INTEGER                                              :: ii1, ei1, ii2, ei2
+    INTEGER                                              :: ir, ij12, i1, j1, ic
+    INTEGER                                              :: ii1, ei1, ii2, ei2, ij1, ej1
     INTEGER                                              :: iwi, iwe, jwi, jwe
     INTEGER                                              :: ix, iy, iz
     INTEGER                                              :: ierr
@@ -6377,7 +6377,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
               ! Computing 27 weights around each WRF i,j,k for all radar cells
               CALL weights_9pts_passed1coords_ellipsoide_1D(i, j, its, ite, jts, jte, a, f, elipsn, &
                 xlong(its:ite,jts:jte), xlat(its:ite,jts:jte), ngrid_radar, ngridradar(i,j,ir), 2,  &
-                ijgridradar_NOc(i,j,:,:), 1, e_dist, 1, e_angle, rlon, rlat, 9, wghts_NOc, dbg)
+                ijgridradar_NOc(i,j,:,:), 1, e_dist, 1, e_angle, radarlons(:,:,ir),                 &
+                radarlats(:,:,ir), 9, wghts_NOc, dbg)
 
               hvals = 0.
               ij12 = 1
