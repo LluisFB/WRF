@@ -281,6 +281,7 @@ CONTAINS
 
 #ifdef SIMRADAR
 ! simrad.AR
+                         ,i_start, i_end, j_start, j_end, num_tiles               &
                          ,xlong_v, xlat_u                                         &
                          ,nradar                                                  &
                          ,e_angle, e_azimuth, e_dist                              &
@@ -936,6 +937,8 @@ CHARACTER(LEN=8) :: name
 
 #ifdef SIMRADAR
 ! simrad.AR
+  INTEGER, INTENT(in)                                    :: num_tiles
+  INTEGER, DIMENSION(num_tiles), INTENT(in)              :: i_start, i_end, j_start, j_end
   INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, e_azimuth,       &
     nr4coord, nrnncoord, nrnn, nncoord, nrd
   REAL, INTENT(in)                                       :: londbg, latdbg
@@ -1807,6 +1810,7 @@ CHARACTER(LEN=8) :: name
        ,ids, ide, jds, jde, kds, kde                                                                  &
        ,ims, ime, jms, jme, kms, kme                                                                  &
        ,its, ite, jts, jte, kts, kte                                                                  &
+       ,i_start, i_end, j_start, j_end, num_tiles                                                     &
        ,param_first_scalar                                                                            &
        ,p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh                                                      &
 
