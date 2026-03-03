@@ -256,7 +256,7 @@ MODULE module_simradar_tools
     CHARACTER(len=30), INTENT(in)                        :: elips
     INTEGER, INTENT(in)                                  :: id2x, ed2x, id2y, ed2y
     REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
-    INTEGER, DIMENSION, INTENT(in)                       :: ij21Ncoords
+    INTEGER, INTENT(in)                                  :: ij21Ncoords
     INTEGER, DIMENSION(MaxNcoords,Nc2), INTENT(in)       :: ij21coords
     REAL, DIMENSION(id2x:ed2x,id2y:ed2y), INTENT(in)     :: lon2, lat2
     LOGICAL, OPTIONAL                                    :: idbg
