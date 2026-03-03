@@ -5845,6 +5845,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,ids, ide, jds, jde, kds, kde                                                                     &
     ,ims, ime, jms, jme, kms, kme                                                                     &
     ,its, ite, jts, jte, kts, kte                                                                     &
+    ,i_start, i_end, j_start, j_end, num_tiles                                                        &
     ,param_first_scalar                                                                               &
     ,p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh                                                         &
     ,nradar, ngrid_radar                                                                              &
@@ -5881,6 +5882,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, INTENT(in)                                  :: ids, ide, jds, jde, kds, kde
     INTEGER, INTENT(in)                                  :: ims, ime, jms, jme, kms, kme
     INTEGER, INTENT(in)                                  :: its, ite, jts, jte, kts, kte
+    INTEGER, INTENT(in)                                  :: num_tiles
+    INTEGER, DIMENSION(num_tiles), INTENT(in)            :: i_start, i_end, j_start, j_end
     INTEGER, INTENT(in)                                  :: param_first_scalar
     INTEGER, INTENT(in)                                  :: p_qv, p_qc, p_qr, p_qs, p_qi, p_qg, p_qh
     REAL, DIMENSION( ims:ime , jms:jme ), INTENT(in)     :: xlong, xlat
@@ -5935,7 +5938,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER                                              :: ierr
     INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
       inr4coord, inrd
-    INTEGER                                              :: i,j,k,l,n
+    INTEGER                                              :: ij, i,j,k,l,n
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
     INTEGER                                              :: e_angle2, e_azimuth2, e_dist2
@@ -5944,8 +5947,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: mindist
     REAL                                                 :: ddlon, ddlat, mindd
     CHARACTER(len=256)                                   :: rband
-    REAL                                                 :: rlon, rlat, rhgt, rtype, rddist, rdistx,  &
-      rhgtx
+    REAL                                                 :: rlon, rlat, rhgt, rtopo, rtype, rddist,   &
+      rdistx, rhgtx
     REAL(kind=rr8)                                       :: a, f
     REAL                                                 :: maxrdistmax, maxrhgtmax, minrds
     REAL                                                 :: lonSW, lonNW, lonNE, lonSE
