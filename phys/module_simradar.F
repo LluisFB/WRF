@@ -646,19 +646,19 @@ MODULE module_simradar
             iwe = 1
             jwi = -1
             jwe = 1
-            IF (i == its) THEN
+            IF (i == ips) THEN
               ii1 = i
               iwi = 0
             END IF
-            IF (i == ite) THEN
+            IF (i == ipe) THEN
               ei1 = i
               iwe = 0
             END IF
-            IF (j == jts) THEN
+            IF (j == jps) THEN
               ij1 = j
               jwi = 0
             END IF
-            IF (j == jte) THEN
+            IF (j == jpe) THEN
               ej1 = j
               jwe = 0
             END IF
@@ -681,7 +681,7 @@ MODULE module_simradar
               radarlats(:,:,ir), radarhgts(:,:,ir), model_config_rec%missing_value, ngrid3_radar,     &
               ijkngridradar, coord3, ijkgridradar, ijkNtot, around3, wghts, dbg)
            
-            loop_z: DO k=kms, kme
+            loop_z: DO k=kps, kpe
               IF (ijkngridradar(k) == 0) CYCLE
 
               printdbg = .FALSE.
@@ -702,8 +702,8 @@ MODULE module_simradar
               cvals = 0.
               kwi = -1
               kwe = 1
-              IF (k==kms) kwi = 0
-              IF (k==kme) kwe = 0
+              IF (k==kps) kwi = 0
+              IF (k==kpe) kwe = 0
                DO ii1=iwi, iwe
                 DO ii2=jwi, jwe
                   DO ii3=kwi, kwe
@@ -732,8 +732,8 @@ MODULE module_simradar
                     IF (TRIM(cvals_varn(iv)) == 'V') THEN
                       DO ii1=iwi, iwe
                         DO ii2=jwi, jwe
-                          PRINT *,'      Lluis ims,ime; jms,jme; kms,kme:', ims, ', ', ime, '; ',     &
-                            jms, ', ', jme, '; ', kms, ', ', kme
+                          PRINT *,'      Lluis ips,ipe; jps,jpe; kps,kpe:', ips, ', ', ipe, '; ',     &
+                            jps, ', ', jpe, '; ', kps, ', ', kpe
                           PRINT *,'      Lluis iwi,iwe; jwi,jwe; kwi,kwe:', iwi, ', ', iwe, '; ',     &
                             jwi, ', ', jwe, '; ', kwi, ', ', kwe
                           PRINT *,'      Lluis around NaN i,j:', i+ii1,', ', j+ii2 , ' cosa, sina:', cosa(i+ii1,j+ii2), &
