@@ -66,9 +66,10 @@ rconfig   integer  Nlutqxbins    namelist,simradar     1            50000     rh
 rconfig   integer  Nlutlevs      namelist,simradar     1               15     rh{11}    "Nlutlevs"          "amount of azimuths for LUT interpolations"              ""
 
 rconfig   character radar_name   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_name"     "name of the radar"            ""
-rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"           "longitude of the location of the radar"  ""
-rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"           "latitude of the location of the radar"  ""
-rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"           "height of the location of the radar"      ""
+rconfig   real     radar_clon    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clon"     "longitude of the location of the radar"  ""
+rconfig   real     radar_clat    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_clat"     "latitude of the location of the radar"  ""
+rconfig   real     radar_ctopo   namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_ctopo"    "topographical height of the location of the radar"  "m"
+rconfig   real     radar_chgt    namelist,simradar     max_nradar    (/0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/) rh{11}    "radar_chgt"     "height above ground of the location of the radar"   "m"
 rconfig   character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
 rconfig   integer  radar_scan    namelist,simradar     max_nradar    (/1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1/)     rh{11}    "radar_scan" "type of scan 1:"      ""
 rconfig   real     radar_distmax namelist,simradar     max_nradar    (/250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250.,250./) rh{11}    "radar_distmax"           "maximum distance from radar"  "km"
@@ -218,8 +219,8 @@ state    real  GATEHDIST   ij{rn}             misc        -       -     rh{11}  
 state    integer NGRIDRADAR  ij{rn}           misc        -       -     rh{11}    "ngridradar"        "amount of radar cells inside the grid point"              "1"
 state    integer IJGRIDRADAR ij{nrnncoord}    misc        -       -     rh{11}    "ijgridradar"       "coordinates of radar cells inside the grid point"         "-"
 state    real  IJDISTGRIDRADAR ij{nrnn}       misc        -       -     rh{11}    "ijdistgridradar"   "distance of radar cells inside the grid point to its center" "m"
-state    real  RADARTOPO   {rj}{rk}{nrd}      misc        -       -     rh{11}    "RADARTOPO"         "Radar relative topography HGT-HGT_radar+radar_chgt"       "m"
-state    integer RADARTOPOMASK {rj}{rk}{nrd}  misc        -       -     hh{11}    "RADARTOPOMASK"     "Radar shadow from topography (RADARHGTS < RADARTOPO --> 1: shaodow)" "0/1"
+state    real  RADARTOPO   {rj}{rk}{nrd}      misc        -       -     rh{11}    "RADARTOPO"         "Radar hegiht relative to ground HGT-radar_ctopo+radar_chgt" "m"
+state    integer RADARTOPOMASK {rj}{rk}{nrd}  misc        -       -     rh{11}    "RADARTOPOMASK"     "Radar shadow from topography (RADARHGTS < RADARTOPO --> 1: shadow)" "0/1"
 
 # radar band values
 state    real  ZH_RAIN     {rj}{rk}{nrd}      misc        1       -      h{11}    "ZH_RAIN"           "Reflectivity for Rain"                                    "dBZ"

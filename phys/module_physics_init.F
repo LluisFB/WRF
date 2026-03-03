@@ -285,13 +285,14 @@ CONTAINS
                          ,nradar                                                  &
                          ,e_angle, e_azimuth, e_dist                              &
                          ,nr4coord, nrnncoord                                     &
-                         ,nrnn, nncoord                                           &
+                         ,nrnn, nncoord, nrd                                      &
                          ,londbg, latdbg                                          &
                          ,ijdbg                                                   &
                          ,radars_dist, radars_angle, radars_azimuth               &
                          ,ra, rf, elipsn                                          &
                          ,gatehdist, inradar, radnum                              &
                          ,radarlons, radarlats, radardist, radarhgts, radarlhgts  &
+                         ,radartopo, radartopomask                                &
                          ,radarlon_bnds, radarlat_bnds, radarhgt_bnds             &
                          ,ngridradar, ijgridradar, ijdistgridradar                &              
                          ,lutgrid                                                 &
@@ -936,7 +937,7 @@ CHARACTER(LEN=8) :: name
 #ifdef SIMRADAR
 ! simrad.AR
   INTEGER, INTENT(in)                                    :: nradar, e_angle, e_dist, e_azimuth,       &
-    nr4coord, nrnncoord, nrnn, nncoord 
+    nr4coord, nrnncoord, nrnn, nncoord, nrd
   REAL, INTENT(in)                                       :: londbg, latdbg
   REAL, DIMENSION(ims:ime, jms:jme), INTENT(in)          :: xlong_v, xlat_u
   INTEGER, DIMENSION(2), INTENT(out)                     :: ijdbg
@@ -950,11 +951,13 @@ CHARACTER(LEN=8) :: name
   REAL, DIMENSION(e_dist, nradar),INTENT(out)            :: radars_dist
   REAL, DIMENSION(e_angle, nradar),INTENT(out)           :: radars_angle
   REAL, DIMENSION(e_azimuth, nradar),INTENT(out)         :: radars_azimuth
-  REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist
+  REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out)   :: radarlons, radarlats, radardist, radartopo
   REAL, DIMENSION(e_azimuth, e_dist, nradar),INTENT(out) :: radarhgts, radarlhgts
   REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out)   :: radarlon_bnds, radarlat_bnds
   REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                             &
                                                          :: radarhgt_bnds
+  INTEGER, DIMENSION(e_angle, e_azimuth, nrd),                                                        &
+    INTENT(out)                                          :: radartopomask
   INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                        &
     INTENT(out)                                          :: ngridradar
   INTEGER, DIMENSION(ims:ime, jms:jme, nrnncoord),                                                    &
@@ -1810,7 +1813,7 @@ CHARACTER(LEN=8) :: name
        ,model_config_rec%nradar, model_config_rec%ngrid_radar                                         & 
        ,model_config_rec%nradar_ngrid, model_config_rec%nradar_ngrid_coord2                           &
        ,model_config_rec%nradar_coord2, model_config_rec%nradar_coord4                                &
-       ,model_config_rec%ngrid_coord2                                                                 &
+       ,model_config_rec%ngrid_coord2, model_config_rec%nradar_dist                                   &
        ,model_config_rec%e_angle, model_config_rec%e_azimuth, model_config_rec%e_dist                 &
 
        ! output
@@ -1819,6 +1822,7 @@ CHARACTER(LEN=8) :: name
        ,ra, rf, elipsn                                                                                &
        ,gatehdist, inradar, radnum                                                                    &
        ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                        &
+       ,radartopo, radartopomask                                                                      &
        ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                   &
        ,ngridradar, ijgridradar, ijdistgridradar                                                      &
        ,lutgrid                                                                                       &
@@ -5846,7 +5850,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,nradar, ngrid_radar                                                                              &
     ,nrnn, nrnncoord                                                                                  &
     ,nrcoord, nr4coord                                                                                &
-    ,nncoord                                                                                          &
+    ,nncoord, nrd                                                                                     &
     ,e_angle, e_azimuth, e_dist                                                                       &
 !    ,gatelon, gatelat, gatehgt, distmax, heightmax, radards                                           &
 
@@ -5856,6 +5860,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     ,ra, rf, elipsn                                                                                   &
     ,gatehdist, inradar, radnum                                                                       &
     ,radarlons, radarlats, radardist, radarhgts, radarlhgts                                           &
+    ,radartopo, radartopomask                                                                         &
     ,radarlon_bnds, radarlat_bnds, radarhgt_bnds                                                      &
     ,ngridradar, ijgridradar, ijdistgridradar                                                         &
     ,lutgrid                                                                                          &
@@ -5891,7 +5896,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 !    REAL, INTENT(in)                                     :: radii_ddist
 !    REAL, INTENT(in)                                     :: missing_value
     ! Compressed dimensions
-    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord, nncoord  
+    INTEGER, INTENT(in)                                  :: nrnn, nrnncoord, nrcoord, nr4coord,       &
+      nncoord, nrd
 
     ! Output
     INTEGER, DIMENSION(2), INTENT(out)                   :: ijdbg
@@ -5905,10 +5911,12 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(out)    :: inradar
     INTEGER, DIMENSION(ims:ime, jms:jme, nradar),                                                     &
       INTENT(out)                                        :: radnum
-    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist
+    REAL, DIMENSION(e_angle, e_dist, nradar),INTENT(out) :: radarlons, radarlats, radardist, radartopo
     REAL, DIMENSION(e_azimuth,e_dist,nradar),INTENT(out) :: radarhgts, radarlhgts
     REAL,DIMENSION(e_angle,e_dist,nr4coord), INTENT(out) :: radarlon_bnds, radarlat_bnds
     REAL, DIMENSION(e_azimuth,e_dist,nr4coord), INTENT(out)                                           &
+    INTEGER, DIMENSION(e_angle, e_azimuth, nrd),                                                      &
+      INTENT(out)                                        :: radartopomask
                                                          :: radarhgt_bnds
     INTEGER, DIMENSION(ims:ime,jms:jme, nradar),                                                      &
       INTENT(out)                                        :: ngridradar
@@ -5920,10 +5928,13 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     TYPE(lut_vars), INTENT(out)                          :: lutgrid
 
     ! Local
-    INTEGER                                              :: ir
+    INTEGER                                              :: ir, ij12
+    INTEGER                                              :: ii1, ei1, ii2, ei2
+    INTEGER                                              :: iwi, iwe, jwi, jwe
+    INTEGER                                              :: ix, iy, iz, inrd
     INTEGER                                              :: ierr
     INTEGER                                              :: inrnn, inrnncoord, inncoord, inrcoord,    &
-      inr4coord
+      inr4coord, inrd
     INTEGER                                              :: i,j,k,l,n
     INTEGER                                              :: idbg, jdbg
     INTEGER                                              :: itile_rad, jtile_rad
@@ -5942,6 +5953,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL                                                 :: lonmin, lonmax, latmin, latmax
     REAL                                                 :: lonrad, latrad, distrad
     REAL, DIMENSION(4)                                   :: lonvertices, latvertices
+    REAL, DIMENSION(9)                                   :: hvals
     REAL, DIMENSION( its:ite , jts:jte )                 :: dist, ddist, dlon, dlat
     REAL, DIMENSION( its:ite , jts:jte, 4 )              :: bnds_lon, bnds_lat
     REAL, DIMENSION( its:ite )                           :: distlon
@@ -5951,6 +5963,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       radarhgt_bnds_NOc
     INTEGER, DIMENSION(ims:ime, jms:jme, ngrid_radar, 2) :: ijgridradar_NOc
     REAL, DIMENSION(ims:ime, jms:jme, ngrid_radar)       :: ijdistgridradar_NOc
+    REAL, DIMENSION(ngrid_radar, 9)                      :: wghts_NOc
+    INTEGER, DIMENSION(e_angle, e_azimuth, e_dist)       :: radartopomask_NOc
     CHARACTER (LEN=1000)                                 :: diag_message
     LOGICAL                                              :: found, inside, dbg
     CHARACTER(len=50)                                    :: fname
@@ -6005,6 +6019,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
 ! nrnncoord = nradar*ngrid_radar*2
 ! nncoord = ngrid_radar*2
 ! nr4coord = nradar*4
+! nrd = nradar*e_dist
 
     fname = 'simradar_init'
     
@@ -6280,6 +6295,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     
       rlon = model_config_rec%radar_clon(ir)
       rlat = model_config_rec%radar_clat(ir)
+      rtopo = model_config_rec%radar_ctopo(ir)
       rhgt = model_config_rec%radar_chgt(ir)
       rband = model_config_rec%radar_band(ir)
       rtype = model_config_rec%radar_scan(ir)
@@ -6310,7 +6326,89 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
         model_config_rec%missing_value, ngrid_radar, gatehdist(its:ite,jts:jte,ir),                   &
         inradar(its:ite,jts:jte), radnum(its:ite,jts:jte,ir), ngridradar(its:ite,jts:jte,ir), 2,      &
         ijgridradar_NOc(its:ite,jts:jte,:,:), ijdistgridradar_NOc(its:ite,jts:jte,:), inside, dbg) !4
+       
+      ! Getting horizontal weights
+      radartopomask_NOc(its:ite,jts:jte,ir) = 0
+      radartopo(its:ite,jts:jte,ir) = 0.
+      IF (inside) THEN
+        !$OMP PARALLEL DO   &
+        !$OMP PRIVATE ( ij )
+        tiles_loop: DO ij = 1 , num_tiles
+          DO i = i_start(ij), i_end(ij)
+            DO j = j_start(ij), j_end(ij)
+              IF (ij == 1 .AND. i == i2(ij) .AND. j == j2(ij)) ijdbg = .TRUE.
+                i1 = MIN(i+1,i_end(ij))
+                i_1 = MAX(i-1,i_start(ij))
+                j1 = MIN(j+1,j_end(ij))
+                j_1 = MAX(j-1,j_start(ij))
           
+                IF (ngridradar(i,j,ir) == 0) CYCLE
+
+                ii1 = i1-1
+                ei1 = i1+1
+                ij1 = j1-1
+                ej1 = j1+1
+                iwi = -1
+                iwe = 1
+                jwi = -1
+                jwe = 1
+                IF (i == ips) THEN
+                  ii1 = i
+                  iwi = 0
+                END IF
+                IF (i == ipe) THEN
+                  ei1 = i
+                  iwe = 0
+                END IF
+                IF (j == jps) THEN
+                  ij1 = j
+                  jwi = 0
+                END IF
+                IF (j == jpe) THEN
+                  ej1 = j
+                  jwe = 0
+                END IF
+
+                ! Computing 27 weights around each WRF i,j,k for all radar cells
+                CALL weights_9pts_passed1coords_ellipsoide(i, j, ips, ipe, jps, jpe, a, f, elips,     &
+                  xlong(its:ite,jts:jte), xlat(its:ite,jts:jte), ngrid_radar, ngridradar(i,j,ir), 2,  &
+                  ijgridradar_NOc(i,j,:,:), 1, e_dist, 1, e_angle, rlon, rlat, 9, wghts_NOc, dbg)
+
+                hvals = 0.
+                ij12 = 1
+                ! Interpolating radar relative height HGT-HGT_radar+radar_chgt
+                DO ii1=iwi, iwe
+                  DO ii2=jwi, jwe
+                    hvals(ij12) = hgt(i+ii1,j+ii2)
+                    ij12 = ij12 + 1
+                  END DO
+                END DO
+                
+                DO ic=1, ngridradar(i,j,ir)
+                  !! Angle
+                  iy = ijgridradar_NOc(i,j,ic,1)
+                  !! Dist
+                  ix = ijgridradar_NOc(i,j,ic,2)
+          
+                  radartopo(iy,ix,ir) = SUM(hvals*wghts_NOc(ic,:)) + rhgt - rtopo
+                  ! Shadowing by topography the tile can not know if along a given beam in previous 
+                  !   tiles there was a high mountain. We can only shadow inside the tile, not even 
+                  !   along a beam
+                  DO iz=1, e_azimuth
+                    IF (radarhgts(iz,ix,ir) < radartopo(iy,ix,ir)) radartopomask_NOc(iy,ix,iz) = 1
+                    !! Compressing 
+                    inrd = (ir-1)*e_dist + ix
+                    radartopomask(iy,iz,inrd) = radartopomask_NOc(iy,ix,iz)
+                  END DO
+                END DO
+                
+            END DO
+          END DO
+        END DO tiles
+        !$OMP END PARALLEL DO
+        
+      END IF      
+
       ! Compressing results
       DO i=its, ite
         DO j=jts, jte
