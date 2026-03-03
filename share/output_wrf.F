@@ -1007,6 +1007,7 @@ endif
 
     CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CLON' , model_config_rec%radar_clon(1:model_config_rec%nradar) , model_config_rec%nradar , ierr )
     CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CLAT' , model_config_rec%radar_clat(1:model_config_rec%nradar) , model_config_rec%nradar , ierr )
+    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CTOPO' , model_config_rec%radar_ctopo(1:model_config_rec%nradar) , model_config_rec%nradar , ierr )
     CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADAR_CHGT' , model_config_rec%radar_chgt(1:model_config_rec%nradar) , model_config_rec%nradar , ierr )
 ! No character vectors as attribute
 !rconfig   character radar_band   namelist,simradar     max_nradar    (/'-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-','-'/) rh{11}    "radar_band"     "band of the radar: 'c', 's', or 'x'"            ""
@@ -1018,6 +1019,7 @@ endif
     CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_RADARINTERP' , model_config_rec%radinterp , 1 , ierr )
     CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_RADII_DIST' , model_config_rec%radii_dist , 1 , ierr )
     CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_ELOPTION' , model_config_rec%eloption , 1 , ierr )
+    CALL wrf_put_dom_ti_integer ( fid , 'SIMRADAR_DOPPLER_SCHEME' , model_config_rec%doppler_scheme , 1 , ierr )
 !    CALL wrf_put_dom_ti_char ( fid , 'SIMRADAR_ELLIPSE_NAME' , TRIM(model_config_rec%elips_name) , ierr )
 !    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_A' , model_config_rec%elips_a , 1 , ierr )
 !    CALL wrf_put_dom_ti_real ( fid , 'SIMRADAR_ELLIPSE_F' , model_config_rec%elips_f , 1 , ierr )
