@@ -253,7 +253,7 @@ MODULE module_simradar_tools
     INTEGER, INTENT(in)                                  :: id1x, ed1x, id1y, ed1y, MaxNcoords, Nc2,  &
       Na2
     REAL(kind=rr8), INTENT(in)                           :: a, f
-    CHARACTER(len=30), INTENT(in)                        :: elips
+    CHARACTER(len=S32), INTENT(in)                       :: elips
     INTEGER, INTENT(in)                                  :: id2x, ed2x, id2y, ed2y
     REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
     INTEGER, INTENT(in)                                  :: ij21Ncoords
