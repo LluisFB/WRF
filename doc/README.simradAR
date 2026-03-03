@@ -25,7 +25,7 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 &simradar
 /
 
-| type     | name                | default value       | description                                                         | units |
+| type      | name                | default value       | description                                                        | units |
 | ---- | ---- | ---- | ---- | ---- |
 | integer   | nradar              | 1                   | amount of surface radar                                            | # |
 | integer   | e_dist              | 2000                | radar grid points along the radii [computed as                     | # |
@@ -49,7 +49,8 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 | character | radar_name          | '-'                 | name of the radar [one per radar]                                  | - |
 | real      | radar_clon          | 0.0                 | longitude of the location of the radar    [one per radar]          | degree_east  |
 | real      | radar_clat          | 0.0                 | latitude of the location of the radar [one per radar]              | degree_north |
-| real      | radar_chgt          | 0.0                 | height of the location of the radar  [one per radar]               | m |
+| real      | radar_ctopo         | 0.0                 | topographical height of the location of the radar  [one per radar] | m |
+| real      | radar_chgt          | 0.0                 | height above ground of the location of the radar [one per radar]   | m |
 | character | radar_band          | '-'                 | band of the radar: 'C', 'S', or 'X'  [one per radar]               | - |
 | integer   | radar_scan          | 1                   | type of scan 1:             [one per radar]                        | - |
 | real      | radar_distmax       | 250.                | maximum distance from radar [one per radar]                        | km |
@@ -57,7 +58,8 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 | integer   | em_ray              | 1                   | type of propagation of em ray. 1: 4/3 Ref [one per radar]          | - |
 |           |                     |                     |      1:     4/3 Ref                                                |   |
 | real      | radards             | 250.                | nominal horizontal resolution of radar values [one per radar]      | m |
-| integer   | radinterp           | 1                   | method of interpolation to the radar space (1: inverted distance weighted) | - |
+| integer   | radinterp           | 1                   | method of interpolation to the radar space (1: inverted distance   | - |
+|           |                     |                     |    weighted)                                                       |   |
 | real      | radii_dist          | 15.                 | radii at which arc resolution is the same as minimum radards       | km |
 | integer   | eloption            | 1                   | Ellipsoide                                                         | - |
 |           |                     |                     |      1: 'GRS80 / WGS84  (NAD83)'                                   |   |
@@ -298,6 +300,9 @@ Accordingly to thge set-up provided for auxhist11, the specific file will contai
 | integer | NGRIDRADAR      | west_east, south_north, nradar              | amount of radar cells inside the grid point                 | 1 |
 | integer | IJGRIDRADAR     | west_east, south_north, nradar_ngrid_coord2 | coordinates of radar cells inside the grid point            | - |
 | real    | IJDISTGRIDRADAR | west_east, south_north, nradar_ngrid        | distance of radar cells inside the grid point to its center | m |
+| real    | RADARTOPO       | e_angle, e_dist, nradar                     | Radar hegiht relative to ground HGT-radar_ctopo+radar_chgt  | m |
+| integer | RADARTOPOMASK   | e_angle, e_azimuth, nradar_dist             | Radar shadow from topography (RADARHGTS < RADARTOPO --> 1:  | 0/1 |
+|         |                 |                                             |    shadow)                                                  |   |
 | real    | ZH_RAIN         | e_angle, e_azimuth, nradar_dist             | Reflectivity for Rain                                       | dBz |
 | real    | ZDR_RAIN        | e_angle, e_azimuth, nradar_dist             | ZDR for Rain                                                | dBz |
 | real    | KDP_RAIN        | e_angle, e_azimuth, nradar_dist             | KDP for Rain                                                | degree/km |
