@@ -270,7 +270,7 @@ MODULE module_simradar_tools
     REAL, DIMENSION(3,3)                                 :: ijlon1, ijlat1, dists, wgs
     REAL, DIMENSION(Na2)                                 :: dist9
     LOGICAL                                              :: dbg
-    CHARACTER(len=Sl)                                    :: fname
+    CHARACTER(len=S32)                                   :: fname
     
     !!!!!!! Variables
     ! id1x, ed1x, id1y, ed1y: Extent of the reference space
