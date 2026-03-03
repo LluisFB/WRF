@@ -292,8 +292,8 @@ MODULE module_simradar_tools
     dbg = set_dbg(idbg)
     
     icc = 1
-    IF (ij21Ncoords == 0) CYCLE
-    DO ic=1, ij21Ncoords(i1,j1)
+    IF (ij21Ncoords == 0) RETURN
+    DO ic=1, ij21Ncoords
       iwi = -1
       iwe = -1
       jwi = -1
