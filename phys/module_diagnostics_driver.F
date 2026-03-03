@@ -1262,9 +1262,6 @@ CONTAINS
       lutgrid%rho_h = grid%rho_h
       lutgrid%n0h = grid%n0h
 
-      PRINT *,'  Lluis in module_diagnostics_driver.F '
-      PRINT *,'      N_TOCOMPUTE=', grid%N_tocompute, ' TOCOMPUTE=', (grid%tocompute(i), i=1, grid%N_tocompute)
-      PRINT *,'      NMOIST=', grid%N_tcmoist, ' IMOIST=', (grid%tcmoist(i), i=1, grid%N_tcmoist)
       IF (is_output_t_simradar) THEN
         CALL simradar_calc(                                                                           &
              IS_RESTART=config_flags%restart, IS_OUTPUT_TIME=is_output_t_simradar,                    &

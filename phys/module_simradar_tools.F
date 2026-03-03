@@ -656,7 +656,7 @@ MODULE module_simradar_tools
       v_grau = calc_vt(330., 0.8, lambdag)*rhofac
     END IF
 
-    ! Hail (LLUIS not know range !!)
+    ! Hail (L. Fita not known range !!)
     IF (qh > 0.) THEN
       lambdah = (dpict*rho_h*n0h / (qh))**(1./4.)
       v_hail = calc_vt(-9999., -9999., lambdah)*rhofac
@@ -792,7 +792,6 @@ MODULE module_simradar_tools
         END DO
       END DO
 
-      PRINT *,' Lluis ici,icj:', ici, ', ', icj, ii1i, ii1e, ii2i, ii2e
       
       CALL real_distances(1, 3, 1, 3, ijlon1, ijlat1, lon2(ici,icj), lat2(ici,icj), ijdists)
 

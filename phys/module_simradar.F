@@ -564,7 +564,6 @@ MODULE module_simradar
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij )
       DO ij = 1 , num_tiles
-        PRINT *,'  Lluis itile:', ij, ' i range:', i_start(ij), i_end(ij), ' j: ', j_start(ij), j_end(ij)
         DO i = i_start(ij), i_end(ij)
           DO j = j_start(ij), j_end(ij)
 
@@ -724,29 +723,7 @@ MODULE module_simradar
               ! Removing too small values...
               DO iv=1, 12
                 DO iar=1, around3
-                  PRINT *, ' Lluis iv, ia:', iv, ', ', iar, ' reps: ', reps
-                  PRINT *,'    i,j,k', i, ', ', j, ', ', k
-                  !PRINT *,'      N_tocompute:', N_tocompute, ' tocompute:', tocompute(1:N_tocompute)
-                  !PRINT *,'     Nmoist:', Nmoist, ' imoist:', imoist(1:Nmoist)
                   IF (cvals(iv,iar) /= cvals(iv,iar)) THEN
-                    IF (TRIM(cvals_varn(iv)) == 'V') THEN
-                      DO ii1=iwi, iwe
-                        DO ii2=jwi, jwe
-                          PRINT *,'      Lluis ips,ipe; jps,jpe; kps,kpe:', ips, ', ', ipe, '; ',     &
-                            jps, ', ', jpe, '; ', kps, ', ', kpe
-                          PRINT *,'      Lluis iwi,iwe; jwi,jwe; kwi,kwe:', iwi, ', ', iwe, '; ',     &
-                            jwi, ', ', jwe, '; ', kwi, ', ', kwe
-                          PRINT *,'      Lluis around NaN i,j:', i+ii1,', ', j+ii2 , ' cosa, sina:', cosa(i+ii1,j+ii2), &
-                            ', ', sina(i+ii1,j+ii2)
-                          DO ii3=kwi, kwe
-                            PRINT *,'      k:', k+ii3,' unua, unva:', unua(i+ii1,k+ii3,j+ii2), ', ', unva(i+ii1,k+ii3,j+ii2), &
-                           ' u, v:', u(i+ii1,k+ii3,j+ii2), ', ', v(i+ii1,k+ii3,j+ii2), ' earth rot.:', &
-                           u(i+ii1,k+ii3,j+ii2)*cosa(i+ii1,j+ii2)-v(i+ii1,k+ii3,j+ii2)*sina(i+ii1,j+ii2), &
-                           u(i+ii1,k+ii3,j+ii2)*sina(i+ii1,j+ii2)+v(i+ii1,k+ii3,j+ii2)*cosa(i+ii1,j+ii2)
-                          END DO
-                        END DO
-                      END DO
-                    END IF
                     PRINT *,'     around 27 values [1: bottom, SW], ..., 27: top, NE]:', cvals(iv,:)
                     WRITE (msg , * ) &
                       "simrad.AR: " // TRIM(errormsg) // " " // TRIM(fname) // " NaN value found " // &
@@ -755,7 +732,6 @@ MODULE module_simradar
                     CALL wrf_error_fatal ( msg )
                   END IF
                   IF (cvals(iv,iar) < reps) cvals(iv,iar) = 0. 
-                  PRINT *, ' Lluis cvals:',cvals(iv,iar)
                 END DO
               END DO
   
