@@ -80,7 +80,7 @@ rconfig   integer  radinterp     namelist,simradar     1                1     rh
 rconfig   real     radii_dist    namelist,simradar     1              15.     rh{11}    "radii_dist"        "radii (km) at which arc resolution is the same as minimum ddist" "km"
 rconfig   integer  eloption      namelist,simradar     1                1     rh{11}    "eloption"          "Ellipsoide"                                             ""
 rconfig   real     missing_value namelist,simradar     1            1.e20     rh{11}    "missing_value"     "missing value"                                          ""
-rconfig   integer  doppler_scheme namelist,simradar    1                1     rh{11}    "doppler_scheme"    "method to compute the doppler velocities"               ""
+rconfig   integer  doppler_scheme namelist,simradar    1                0     rh{11}    "doppler_scheme"    "method to compute the doppler velocities 0:massweightedmeanvt, 1:PSD integrated backscattering [not ready]"               ""
 
 rconfig   integer  timedbg       namelist,simradar     1              720     rh{11}    "timedbg"           "frecuency of time-debugging"                 "minute"
 rconfig   real     londbg        namelist,simradar     1             -999.    rh{11}    "londbg"            "longitude of grid-point debugging (-999., not used)"  "degree"
