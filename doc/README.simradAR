@@ -69,7 +69,7 @@ A new section into the WRF's namelist calles 'simradar' has to be set up
 |           |                     |                     |        a = 6378206.4d0                                             |   |
 |           |                     |                     |        f = 1.d0/294.9786982138d0                                   |   |
 | real      | missing_value       | 1.e20               | missing value                                                      | - |
-| integer   | doppler_scheme      | 1                   | method to compute the doppler velocities                           | - |
+| integer   | doppler_scheme      | 0                   | method to compute the doppler velocities                           | - |
 |           |                     |                     |   0: Reflectivity weighted terminal velocity                       |   |
 |           |                     |                     |   1: Get PSD integrated backscattering cross section int = v S/S   |   |
 |           |                     |                     |      [not implemented]                                             |   |
