@@ -258,7 +258,7 @@ MODULE module_simradar_tools
     REAL, DIMENSION(id1x:ed1x,id1y:ed1y), INTENT(in)     :: lon1, lat1
     INTEGER, INTENT(in)                                  :: ij21Ncoords
     INTEGER, DIMENSION(MaxNcoords,Nc2), INTENT(in)       :: ij21coords
-    REAL, DIMENSION(id2x:ed2x,id2y:ed2y), INTENT(in)     :: lon2, lat2
+    REAL, DIMENSION(id2y:ed2y,id2x:ed2x), INTENT(in)     :: lon2, lat2
     LOGICAL, OPTIONAL                                    :: idbg
     REAL, DIMENSION(MaxNcoords,Na2), INTENT(out)         :: wghts
     
