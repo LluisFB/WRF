@@ -6227,7 +6227,8 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       WRITE(diag_message,*) '  londbg, latdbg:', londbg, ', ', latdbg, ' mindist:', mindist, ' mindd:', &
         mindd
       CALL wrf_debug(75,diag_message)
-      IF (mindist < mindd) THEN
+      ! Almost the half of the minimal diagonal
+      IF (mindist < mindd/1.99) THEN
         DO i=its, ite
           DO j=jts, jte
   
@@ -6325,7 +6326,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       WRITE(diag_message,*) '   minimal distance within the patch to the radar:', mindist,            &
         ' minimal diagnoal distance betwen 2 grid points within the patch:', mindd
       CALL wrf_debug(75,diag_message)
-      # Almost the half of the minimal diagonal
+      ! Almost the half of the minimal diagonal
       IF (mindist < mindd/1.99) THEN
         DO i=its, ite
           DO j=jts, jte
@@ -6384,10 +6385,10 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
             DO j = j_start(ij), j_end(ij)
           
               IF (ngridradar(i,j,ir) == 0) CYCLE
-              !ii1 = i-1
-              !ei1 = i+1
-              !ij1 = j-1
-              !ej1 = j+1
+              ii1 = i-1
+              ei1 = i+1
+              ij1 = j-1
+              ej1 = j+1
               iwi = -1
               iwe = 1
               jwi = -1
