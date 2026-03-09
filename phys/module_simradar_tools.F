@@ -758,6 +758,7 @@ MODULE module_simradar_tools
     v_rain = fillValueD
     v_snow = fillValueD
     v_grau = fillValueD
+    v_hail = fillValueD
 
     lambdar = fillValueR
     lambdas = fillValueR
