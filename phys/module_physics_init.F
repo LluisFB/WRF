@@ -5968,6 +5968,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     REAL, DIMENSION( its:ite )                           :: distlon
     REAL, DIMENSION( jts:jte )                           :: distlat
     LOGICAL, DIMENSION( its:ite , jts:jte )              :: lonlatmask
+    REAL,DIMENSION(e_azimuth)                            :: azimuths1D
     REAL,DIMENSION(e_angle,e_dist,4)                     :: radarlon_bnds_NOc, radarlat_bnds_NOc,     &
       radarhgt_bnds_NOc
     INTEGER, DIMENSION(ims:ime, jms:jme, ngrid_radar, 2) :: ijgridradar_NOc
@@ -6272,6 +6273,20 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
     e_angle2 = e_angle / 2
     e_azimuth2 = e_azimuth / 2
     e_dist2 = e_dist / 2
+        
+    !! Look-up tables space for T-matrix
+    CALL read_lut(model_config_rec%lutfilen, lutgrid, dbg)
+
+    ! LUT elevations = e_azimuth
+    IF ( lutgrid%Nlutelevs /= e_azimuth) THEN
+      PRINT *, '  e_azimuth: ', e_azimuth, ' N elevations: ', lutgrid%Nlutelevs
+      WRITE (diag_message , * ) &
+        "simrad.AR: " // TRIM(errormsg) // " individual ranges namslit.input e_azimuth: " //          &
+        TRIM(ItoS(e_azimuth)) // " and amount of elevations: " // TRIM(ItoS(lutgrid%Nlutelevs)) //    &
+        " from LUT file '" // TRIM(model_config_rec%lutfilen) // "' do not coincide!"
+      CALL wrf_error_fatal ( diag_message )
+    END IF
+    azimuths1D = lutgrid%elevations
   
     ! Getting projection details for the radar space
     ! Ellipsoide
@@ -6356,7 +6371,7 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       ! Polar coordinates of the radar space
       !!
       CALL compute_radar_lonlat_radial(e_angle, e_azimuth, e_dist, rlon, rlat, rhgt, rddist,          &
-        rdistx*1000., rhgtx*1000., radars_azimuth(:,ir), a, f, elipsn, radars_angle(:,ir),            &
+        rdistx*1000., rhgtx*1000., azimuths1D, a, f, elipsn, radars_angle(:,ir),                      &
         radars_dist(:,ir), radars_azimuth(:,ir), radarlons(:,:,ir), radarlats(:,:,ir),                &
         radarhgts(:,:,ir), radarlhgts(:,:,ir), radarlon_bnds_NOc, radarlat_bnds_NOc,                  &
         radarhgt_bnds_NOc, dbg)
@@ -6574,9 +6589,6 @@ subroutine interp_vec_cu(locvec,locwant,periodic,loc1,loc2,wght1,wght2)
       PRINT *, '      Amount of moist species to interpolate:', lutgrid%Nmoist,                        &
         (lutgrid%imoist(i), ', ', i=1, lutgrid%Nmoist)
     END IF
-        
-    !! Look-up tables space for T-matrix
-    CALL read_lut(model_config_rec%lutfilen, lutgrid, dbg)
     
     ! From namelist or from file? 
     ! Let's put all into lutgrid for simplicity (but, duplicity)
