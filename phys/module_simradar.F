@@ -872,8 +872,11 @@ MODULE module_simradar
 !                  zh_rain_NOc = REAL(dZh_q)
 !                  zdr_rain_NOc = REAL(dZdr_q)
 !                  kdp_rain_NOc = REAL(dKDP_q)
+                ELSE
+                  zh_rain_NOc = 0.
+                  zdr_rain_NOc = 0.
+                  kdp_rain_NOc = 0.
                 END IF
-
                 
                 ! Snow
                 IF (m_qs .GE. prm_first_scalar .AND. iqs > 0.) THEN
@@ -884,6 +887,10 @@ MODULE module_simradar
 !                  zh_snow_NOc = REAL(dZh_q)
 !                  zdr_snow_NOc = REAL(dZdr_q)
 !                  kdp_snow_NOc = REAL(dKDP_q)
+                ELSE
+                  zh_snow_NOc = 0.
+                  zdr_snow_NOc = 0.
+                  kdp_snow_NOc = 0.
                 END IF
 
                 ! Graupel
@@ -894,7 +901,11 @@ MODULE module_simradar
 !                  lutKDP_RAIN(iband,iz,:), dZh_q, dZdr_q, dKDP_q, dbg)
 !                zh_grau_NOc = REAL(dZh_q)
 !                zdr_grau_NOc = REAL(dZdr_q)
-!                kdp_grau_NOc = REAL(dKDP_q)
+!                lkdp_grau_NOc = REAL(dKDP_q)
+                ELSE
+                  zh_grau_NOc = 0.
+                  zdr_grau_NOc = 0.
+                  kdp_grau_NOc = 0.
                 END IF
 
                 ! Cloud ice
@@ -906,8 +917,11 @@ MODULE module_simradar
 !                  zh_ice_NOc = REAL(dZh_q)
 !                  zdr_ice_NOc = REAL(dZdr_q)
 !                  kdp_ice_NOc = REAL(dKDP_q)
-
-                 END IF
+                ELSE
+                  zh_ice_NOc = 0.
+                  zdr_ice_NOc = 0.
+                  kdp_ice_NOc = 0.
+                END IF
 
                 ! Hail
                 IF (m_qh .GE. prm_first_scalar .AND. iqh > 0.) THEN
@@ -918,7 +932,12 @@ MODULE module_simradar
 !                  zh_hail_NOc = REAL(dZh_q)
 !                  zdr_hail_NOc = REAL(dZdr_q)
 !                  kdp_hail_NOc = REAL(dKDP_q)
+                ELSE
+                  zh_hail_NOc = 0.
+                  zdr_hail_NOc = 0.
+                  kdp_hail_NOc = 0.
                 END IF
+
                 IF (printdbg) THEN
                   PRINT *, '    band:', TRIM(model_config_rec%radar_band(ir)), ' RAIN Zh:',           &
                     zh_rain_NOc, ' Zdr: ', zdr_rain_NOc, ' KDP: ', kdp_rain_NOc
