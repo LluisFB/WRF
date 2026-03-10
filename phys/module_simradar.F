@@ -972,7 +972,7 @@ MODULE module_simradar
                 ELSE IF (model_config_rec%doppler_scheme == 1) THEN
                   ! Get PSD integrated backscattering cross section int = v S/S
                   CALL ErrMsg('Still need to add this functionality. Get the backscattering cross '// &
-                    'section for everygrid point', fname, -1)
+                          'section for everygrid point. Set in namelist doppler_scheme = 0', fname, -1)
                 END IF
               
                 ! Compressing
