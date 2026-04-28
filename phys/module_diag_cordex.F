@@ -981,7 +981,7 @@ CONTAINS
         ! air-temperature
         CALL var_ta(thp(i,:,j), press(i,:,j), dimz, ta(i,:,j))
 
-#if CXWRF>= 2
+#if CDXWRF>= 2
         ! 2m relative humidity
         CALL var_hurs(t2(i,j), ps(i,j), q2(i,j), hurs(i,j))
 
