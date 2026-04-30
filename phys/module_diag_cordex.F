@@ -346,6 +346,8 @@ CONTAINS
                      fog, vis,                                                                       & 
                      tds, tws                                                                        & 
 #endif
+#if CDXWRF>=4
+#endif
 #endif
 !! End of INSTVALS
 #endif

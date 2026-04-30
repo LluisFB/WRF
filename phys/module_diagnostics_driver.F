@@ -1604,6 +1604,8 @@ CONTAINS
                    ,FOG=grid%fog, VIS=grid%fogvisblty                     & 
                    ,TDS=grid%tds, TWS=grid%tws                            & 
 #endif
+#if CDXWRF>=4
+#endif
 #endif
 !! End of INSTVALS
 #endif
