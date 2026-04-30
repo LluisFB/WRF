@@ -337,7 +337,7 @@ state    real  QS_ZADV          ikj     misc        1         -      h{19}    "q
 state    real  QI_ZADV          ikj     misc        1         -      h{19}    "qi_zadv"               "Instantaneous QI Vertical advection"                     "kgkg-1"
 state    real  QH_ZADV          ikj     misc        1         -      h{19}    "qh_zadv"               "Instantaneous QH Vertical advection"                     "kgkg-1"
 state    real  QG_ZADV          ikj     misc        1         -      h{19}    "qg_zadv"               "Instantaneous QG Vertical advection"                     "kgkg-1"
-state    real  CDXDIABH         ij      misc        1         -      h{19}    "cdxdiabh"              "diabatic heating from Micro-Physics"                     "K"
+state    real  CDXDIABH         ikj      misc       1         -      h{19}    "cdxdiabh"              "diabatic heating from Micro-Physics"                     "K"
 else 
 state    real  QVTTEND          ikj     misc        1         -      -        "qvttend"               "inter time-step water vapor tendency"                    "kgkg-1s-1"
 state    real  QCTTEND          ikj     misc        1         -      -        "qcttend"               "inter time-step cloud tendency"                          "kgkg-1s-1"
