@@ -849,9 +849,6 @@ CONTAINS
   INTEGER, DIMENSION(ims:ime,jms:jme)                    :: gustpoint
   REAL, DIMENSION(ims:ime,jms:jme)                       :: totwsgs, totugustwind, totvgustwind
   INTEGER, DIMENSION(ims:ime,jms:jme)                    :: totgustpoint
-  REAL, DIMENSION(ims:ime,jms:jme)                       :: wsgsb01, ugustwindb01, vgustwindb01
-  REAL, DIMENSION(ims:ime,jms:jme)                       :: wsgshp, ugustwindhp, vgustwindhp
-  INTEGER, DIMENSION(ims:ime,jms:jme)                    :: gustpointb01, gustpointhp
   REAL, DIMENSION(ims:ime,jms:jme)                       :: potevap, potevapgen
 #if CDXWRF>=1
   REAL, DIMENSION(ims:ime,jms:jme)                       :: cape, cin, zlfc, plfc, lidx
@@ -887,6 +884,10 @@ CONTAINS
   REAL, DIMENSION(kms:kme)                               :: qvar, zagl, ri, qsolid
   REAL, DIMENSION(ims:ime,kms:kme+1,jms:jme)             :: stzg
   REAL, DIMENSION(ims:ime,jms:jme)                       :: smoothp
+  REAL, DIMENSION(ims:ime,jms:jme)                       :: wsgsb01, ugustwindb01, vgustwindb01
+  REAL, DIMENSION(ims:ime,jms:jme)                       :: wsgshp, ugustwindhp, vgustwindhp
+  INTEGER, DIMENSION(ims:ime,jms:jme)                    :: gustpointb01, gustpointhp
+
 #ifdef CDXWRF
 #if CDXWRF>=1
 
