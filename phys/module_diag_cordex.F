@@ -337,8 +337,8 @@ CONTAINS
                      , clt, cll, clm, clh,                                                           &
                      iut, ivt,                                                                       &
                      wsgs, ugustwind, vgustwind, gustpoint,                                          &
-                     totwsgs, totugustwind, totvgustwind, gustpoint,                                 &
-                     potevap, potevapogen,                                                           & 
+                     totwsgs, totugustwind, totvgustwind, totgustpoint,                              &
+                     potevap, potevapgen,                                                            &
 #if CDXWRF>=1
                      cape, cin, zlfc, plfc, lidx,                                                    &
 #endif
