@@ -1307,7 +1307,7 @@ CONTAINS
 #if CDXWRF>=4
 #ifdef INSTVALS
       !! INSTVALS: Instantaneous values (uncomment and re-compile)
-          grid%cdxdiabh = grid%diab_h
+          grid%cdxdiabh = grid%h_diabatic
 #endif
 #endif
 #endif
@@ -1593,7 +1593,7 @@ CONTAINS
                    ,TOTVGUSTWIND=grid%totvsgs                             &
                    ,TOTGUSTPOINT=grid%totgustpoint                        &
                    ,POTEVAPO=grid%potevapo                                &
-                   ,POTEVAPOGEN=grid%potevapogen                          &
+                   ,POTEVAPGEN=grid%potevapogen                           &
 #ifdef CDXWRF
 #if CDXWRF>=1
                    ,CAPE=grid%cdxcape                                     &
