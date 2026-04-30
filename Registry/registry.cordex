@@ -315,6 +315,30 @@ state    real  WBACZMH          ij      misc        1         -      rh{19}   "w
 state    real  WBACZHH          ij      misc        1         -      rh{19}   "wbaczhh"               "W.B. high level acc. ver. convergence of QH"             "mm"
 
 # Instantaneous values. If one require them into the output, modify the second '-' by 'h{19}'
+ifdef INSTVALS
+state    real  QVTTEND          ikj     misc        1         -      h{19}    "qvttend"               "inter time-step water vapor tendency"                    "kgkg-1s-1"
+state    real  QCTTEND          ikj     misc        1         -      h{19}    "qcttend"               "inter time-step cloud tendency"                          "kgkg-1s-1"
+state    real  QRTTEND          ikj     misc        1         -      h{19}    "qrttend"               "inter time-step rain tendency"                           "kgkg-1s-1"
+state    real  QSTTEND          ikj     misc        1         -      h{19}    "qsttend"               "inter time-step snow tendency"                           "kgkg-1s-1"
+state    real  QITTEND          ikj     misc        1         -      h{19}    "qittend"               "inter time-step ice tendency"                            "kgkg-1s-1"
+state    real  QHTTEND          ikj     misc        1         -      h{19}    "qhttend"               "inter time-step hail tendency"                           "kgkg-1s-1"
+state    real  QGTTEND          ikj     misc        1         -      h{19}    "qgttend"               "inter time-step  graupel tendency"                       "kgkg-1s-1"
+state    real  QV_HADV          ikj     misc        1         -      h{19}    "qv_hadv"               "Instantaneous QV Horizontal advection"                   "kgkg-1"
+state    real  QC_HADV          ikj     misc        1         -      h{19}    "qc_hadv"               "Instantaneous QC Horizontal advection"                   "kgkg-1"
+state    real  QR_HADV          ikj     misc        1         -      h{19}    "qr_hadv"               "Instantaneous QR Horizontal advection"                   "kgkg-1"
+state    real  QS_HADV          ikj     misc        1         -      h{19}    "qs_hadv"               "Instantaneous QS Horizontal advection"                   "kgkg-1"
+state    real  QI_HADV          ikj     misc        1         -      h{19}    "qi_hadv"               "Instantaneous QI Horizontal advection"                   "kgkg-1"
+state    real  QH_HADV          ikj     misc        1         -      h{19}    "qh_hadv"               "Instantaneous QH Horizontal advection"                   "kgkg-1"
+state    real  QG_HADV          ikj     misc        1         -      h{19}    "qg_hadv"               "Instantaneous QG Horizontal advection"                   "kgkg-1"
+state    real  QV_ZADV          ikj     misc        1         -      h{19}    "qv_zadv"               "Instantaneous QV Vertical advection"                     "kgkg-1"
+state    real  QC_ZADV          ikj     misc        1         -      h{19}    "qc_zadv"               "Instantaneous QC Vertical advection"                     "kgkg-1"
+state    real  QR_ZADV          ikj     misc        1         -      h{19}    "qr_zadv"               "Instantaneous QR Vertical advection"                     "kgkg-1"
+state    real  QS_ZADV          ikj     misc        1         -      h{19}    "qs_zadv"               "Instantaneous QS Vertical advection"                     "kgkg-1"
+state    real  QI_ZADV          ikj     misc        1         -      h{19}    "qi_zadv"               "Instantaneous QI Vertical advection"                     "kgkg-1"
+state    real  QH_ZADV          ikj     misc        1         -      h{19}    "qh_zadv"               "Instantaneous QH Vertical advection"                     "kgkg-1"
+state    real  QG_ZADV          ikj     misc        1         -      h{19}    "qg_zadv"               "Instantaneous QG Vertical advection"                     "kgkg-1"
+state    real  CDXDIABH         ij      misc        1         -      h{19}    "cdxdiabh"              "diabatic heating from Micro-Physics"                     "K"
+else 
 state    real  QVTTEND          ikj     misc        1         -      -        "qvttend"               "inter time-step water vapor tendency"                    "kgkg-1s-1"
 state    real  QCTTEND          ikj     misc        1         -      -        "qcttend"               "inter time-step cloud tendency"                          "kgkg-1s-1"
 state    real  QRTTEND          ikj     misc        1         -      -        "qrttend"               "inter time-step rain tendency"                           "kgkg-1s-1"
@@ -358,17 +382,17 @@ state    real  TOTVSGS          ij      misc        1         -      h{19}    "t
 state  integer TOTGUSTPOINT     ij      misc        1         -      h{19}    "totgustpoint"          "whether grid point got total wind gust (1) or not (0)"   "1"
 state    real  POTEVAPO         ij      misc        1         -      h{19}    "potevapo"              "potential evapotranspiration"                            "kgm-2s-1"
 state    real  POTEVAPOGEN      ij      misc        1         -      h{19}    "potevapogen"           "generic potential evapotranspiration"                    "kgm-2s-1"
+ifdef CDXWRF_1
 state    real  CDXCAPE          ij      misc        1         -      h{19}    "cdxcape"               "convective available potential energy"                   "Jkg-1"
 state    real  CIN              ij      misc        1         -      h{19}    "cin"                   "convective inhibition"                                   "Jkg-1"
 state    real  LFCP             ij      misc        1         -      h{19}    "lfcp"                  "PRESSURE LEVEL FREE CONVECTION"                          "Pa"
 state    real  LFCZ             ij      misc        1         -      h{19}    "lfcz"                  "HEIGHT LEVEL FREE CONVECTION"                            "m"
 state    real  LI               ij      misc        1         -      h{19}    "li"                    "LIFTED INDEX"                                            "1"
+endif
+ifdef CDXWRF_2
 state    integer fog            ij      misc        1         -      h{19}    "fog"                   "Whether there is fog (1: yes [vis < 1km]; 0: not)"       "-"
 state    real  fogvisblty       ij      misc        1         -      h{19}    "fogvisblty"            "visibility inside fog"                                   "km"
 state    real  tds              ij      misc        1         -      h{19}    "tds"                   "surface dew point temperature"                           "K"
 state    real  tws              ij      misc        1         -      h{19}    "tws"                   "surface wet-bulb temperature"                           "K"
-state    real  CDXDIABH         ij      misc        1         -      h{19}    "cdxdiabh"              "diabatic heating from Micro-Physics"                     "K"
 endif
-
-# Water budget related. Only to work if CDXWRF = 3.
-
+endif
