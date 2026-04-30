@@ -1601,7 +1601,7 @@ CONTAINS
                    ,PLFC=grid%lfcp, LIDX=grid%li                          &
 #endif
 #if CDXWRF>=2
-                   ,FOG=grid%fog, FOGVISBLTY=grid%fogvisblty              & 
+                   ,FOG=grid%fog, VIS=grid%fogvisblty                     & 
                    ,TDS=grid%tds, TWS=grid%tws                            & 
 #endif
 #endif
