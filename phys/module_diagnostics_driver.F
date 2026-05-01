@@ -1587,6 +1587,7 @@ CONTAINS
 !! INSTVALS: Instantaneous values
                    ,CLT=grid%clt                                          &
                    ,CLL=grid%cll, CLM=grid%clm, CLH=grid%clh              &
+                   ,IUT=grid%iut, VT=grid%ivt                             &
                    ,WSGS=grid%wsgs, UGUSTWIND=grid%usgs                   &
                    ,VGUSTWIND=grid%vsgs, GUSTPOINT=grid%gustpoint         &
                    ,TOTWSGS=grid%totwsgs, TOTUGUSTWIND=grid%totusgs       &
