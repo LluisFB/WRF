@@ -460,6 +460,8 @@ if [ -n "$CORDEX" ]; then
   if [ -n "$CDX_INSTVALS" ]; then
     if [ $CDX_INSTVALS = 1 ]; then
       compileflags="${compileflags}!-DINSTVALS"
+    else
+      compileflags="${compileflags}!-DNOINSTVALS"    
     fi
   fi
   if [ $CORDEX -le 0 ]; then

@@ -338,7 +338,8 @@ state    real  QI_ZADV          ikj     misc        1         -      h{19}    "q
 state    real  QH_ZADV          ikj     misc        1         -      h{19}    "qh_zadv"               "Instantaneous QH Vertical advection"                     "kgkg-1"
 state    real  QG_ZADV          ikj     misc        1         -      h{19}    "qg_zadv"               "Instantaneous QG Vertical advection"                     "kgkg-1"
 state    real  CDXDIABH         ikj      misc       1         -      h{19}    "cdxdiabh"              "diabatic heating from Micro-Physics"                     "K"
-else 
+endif
+ifdef NOINSTVALS
 state    real  QVTTEND          ikj     misc        1         -      -        "qvttend"               "inter time-step water vapor tendency"                    "kgkg-1s-1"
 state    real  QCTTEND          ikj     misc        1         -      -        "qcttend"               "inter time-step cloud tendency"                          "kgkg-1s-1"
 state    real  QRTTEND          ikj     misc        1         -      -        "qrttend"               "inter time-step rain tendency"                           "kgkg-1s-1"
@@ -364,6 +365,7 @@ endif
 
 ##state    real  H_TENDENCY       ikj     misc        1         -      -        "h_tendency"            "Horizontal tendency"                                     ""
 ##state    real  Z_TENDENCY       ikj     misc        1         -      -        "z_tendency"            "Vertical tendency"                                       ""
+endif
 
 ### L. Fita, January 2018. CIMA
 ### These variables would make too much output for a climate run. Include them if you need instantaneaous values (change '##INST##state' by 'state')
