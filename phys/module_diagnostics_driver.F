@@ -1592,7 +1592,7 @@ CONTAINS
                    ,TOTWSGS=grid%totwsgs, TOTUGUSTWIND=grid%totusgs       &
                    ,TOTVGUSTWIND=grid%totvsgs                             &
                    ,TOTGUSTPOINT=grid%totgustpoint                        &
-                   ,POTEVAPO=grid%potevapo                                &
+                   ,POTEVAP=grid%potevapo                                 &
                    ,POTEVAPGEN=grid%potevapogen                           &
 #ifdef CDXWRF
 #if CDXWRF>=1
