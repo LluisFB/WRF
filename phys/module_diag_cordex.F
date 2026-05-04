@@ -2322,6 +2322,14 @@ CONTAINS
           !WRITE(msg, *)'i:',i,' i+1', i+1, ' j:', j, ' j+1:', j+1, ' ilims:', i_start(ij), i_end(ij), ' jlims:', j_start(ij), j_end(ij)
           !CALL wrf_debug(10,'  ' // TRIM(msg) )
 
+#if CDXWRF< 2
+          ! 2m relative humidity
+          CALL var_hurs(t2(i,j), ps(i,j), q2(i,j), hurs(i,j))
+
+          ! 10m Earth rotated winds
+          CALL var_uasvas(u10(i,j), v10(i,j), sina(i,j), cosa(i,j), uas(i,j), vas(i,j))
+#endif
+
           ! Height above surface at half-mass levels
           zsfc = zg(i,:,j)-hgt(i,j)
 
