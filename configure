@@ -461,8 +461,6 @@ if [ -n "$CORDEX" ]; then
     if [ $CDX_INSTVALS = 1 ]; then
       compileflags="${compileflags}!-DINSTVALS"
     fi
-  else
-    compileflags="${compileflags}!-DNOINSTVALS"    
   fi
   if [ $CORDEX -le 0 ]; then
     echo "CORDEX option must have value >= 1"
